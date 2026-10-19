@@ -27,7 +27,7 @@ describe('num', () => {
 })
 
 describe('buildFfmpegArgs', () => {
-  it('cuts one segment like HandBrake did (seconds 50 → 60)', () => {
+  it('cuts one segment (seconds 50 → 60)', () => {
     const args = buildFfmpegArgs({
       timeline: compileRenderTimeline([{ sourcePath: 'C:/clip.mp4', start: 50, end: 60 }], [], 1 / 30),
       audioTracks: { 'C:/clip.mp4': 1 },

@@ -5,7 +5,7 @@ import { fullRange, shiftRange, withEnd, withStart, type TimeRange } from '../do
 const MAX_REMEMBERED = 50
 
 interface TrimState {
-  /** In/out selection (whole video by default, like HandBrake). */
+  /** In/out selection (whole video by default). */
   range: TimeRange | null
   /** Video the selection belongs to. */
   rangeSource: string | null

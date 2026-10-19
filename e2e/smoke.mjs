@@ -112,7 +112,7 @@ try {
   await page.keyboard.press('Control+r')
   check('Ctrl+R vuelve a 1.00x', (await rate()) === 1, `rate=${await rate()}`)
 
-  // Selection 50 → 60 s typed like in HandBrake.
+  // Selection 50 → 60 s typed in the time fields.
   const startField = page.getByRole('textbox', { name: 'Inicio' })
   const endField = page.getByRole('textbox', { name: 'Fin' })
   await startField.fill('50')

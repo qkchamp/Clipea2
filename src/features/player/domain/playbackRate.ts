@@ -1,6 +1,6 @@
 import { clamp } from '@shared/domain/time'
 
-/** Same feel as MPC-HC: start at 1.00x and move in 0.25x steps with Ctrl+↑ / Ctrl+↓. */
+/** Starts at 1.00x and moves in 0.25x steps with Ctrl+↑ / Ctrl+↓. */
 export const PLAYBACK_RATE = { min: 0.25, max: 4, step: 0.25, normal: 1 } as const
 
 export function stepPlaybackRate(current: number, direction: 1 | -1): number {

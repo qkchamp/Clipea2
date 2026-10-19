@@ -18,7 +18,7 @@ const drawings = useAnnotationStore.getState
 const currentFrameTime = (): number => frameStartTime(getFrameClock(), player().currentTime)
 const togglePlay = (): void => player().controller?.togglePlay()
 
-/** Ctrl+key. Player keys follow MPC-HC: Ctrl+↑/↓ speed in 0.25x steps, Ctrl+←/→ one frame. */
+/** Ctrl+key. Player keys: Ctrl+↑/↓ speed in 0.25x steps, Ctrl+←/→ one frame. */
 const CTRL_BINDINGS: Record<string, Binding> = {
   arrowup: () => player().stepRate(1),
   arrowdown: () => player().stepRate(-1),

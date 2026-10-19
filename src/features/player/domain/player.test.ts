@@ -19,7 +19,7 @@ describe('stepPlaybackRate', () => {
     expect(stepPlaybackRate(1.1, 1)).toBe(1.25)
   })
 
-  it('formats like MPC-HC', () => {
+  it('always shows two decimals', () => {
     expect(formatPlaybackRate(0.75)).toBe('0.75x')
     expect(formatPlaybackRate(1)).toBe('1.00x')
   })

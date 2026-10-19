@@ -5,7 +5,7 @@ import styles from './shortcuts.module.css'
 
 const GROUPS: Array<{ title: string; items: Array<{ keys: string[][]; what: string }> }> = [
   {
-    title: 'Reproductor (como MPC-HC)',
+    title: 'Reproductor',
     items: [
       { keys: [['Espacio'], ['K']], what: 'Reproducir / pausar' },
       { keys: [['Ctrl', '←'], ['Ctrl', '→']], what: 'Cuadro anterior / siguiente' },

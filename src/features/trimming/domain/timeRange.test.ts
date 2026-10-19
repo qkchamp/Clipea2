@@ -4,7 +4,7 @@ import { isValidRange, rangeDuration, shiftRange, withEnd, withStart } from './t
 describe('in/out points', () => {
   const duration = 60
 
-  it('sets the in point like HandBrake seconds 50 → 60', () => {
+  it('sets the in and out points (seconds 50 → 60)', () => {
     const range = withEnd(withStart({ start: 0, end: 60 }, 50, duration), 60, duration)
     expect(range).toEqual({ start: 50, end: 60 })
     expect(rangeDuration(range)).toBe(10)
