@@ -1,0 +1,10 @@
+node_modules/
+out/
+dist/
+e2e/artifacts/
+*.log
+*.tsbuildinfo
+.DS_Store
+desktop.ini
+design/
+privado/

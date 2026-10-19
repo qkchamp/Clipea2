@@ -1,0 +1,516 @@
+/* ---------- Button ---------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s,
+    transform 0.08s;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.4;
+}
+
+.button svg {
+  flex: none;
+}
+
+.sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  gap: 5px;
+}
+
+.lg {
+  height: 42px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+/* The one action that matters on each screen: white, like a light switch in the dark. */
+.primary {
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--ink-hover);
+}
+
+.secondary {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: #3a3a3a;
+  background: var(--surface-hover);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.danger {
+  border-color: rgba(242, 84, 91, 0.45);
+  background: transparent;
+  color: var(--danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+.discord {
+  background: var(--discord);
+  color: #fff;
+}
+
+.discord:hover:not(:disabled) {
+  background: var(--discord-hover);
+}
+
+.block {
+  width: 100%;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- IconButton ---------- */
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.iconButton:hover:not(:disabled) {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.iconButton:disabled {
+  opacity: 0.3;
+}
+
+.iconButton.small {
+  width: 26px;
+  height: 26px;
+}
+
+.iconButton.active {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+/* ---------- Kbd ---------- */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* On a white button the key chip turns dark. */
+.primary .kbd {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.08);
+  color: #3f3f46;
+}
+
+/* ---------- Badge ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-neutral {
+  color: var(--text-muted);
+}
+
+.badge-accent {
+  border-color: rgba(255, 122, 26, 0.35);
+  color: var(--accent);
+}
+
+.badge-success {
+  border-color: rgba(61, 220, 132, 0.3);
+  color: var(--success);
+}
+
+.badge-danger {
+  border-color: rgba(242, 84, 91, 0.35);
+  color: var(--danger);
+}
+
+.badge-warning {
+  border-color: rgba(245, 196, 81, 0.3);
+  color: var(--warning);
+}
+
+.badge-discord {
+  border-color: rgba(88, 101, 242, 0.4);
+  color: #aab1ff;
+}
+
+/* ---------- ProgressBar ---------- */
+.progress {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.progressFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--ink);
+  transition: width 0.2s ease-out;
+}
+
+.progressFill.success {
+  background: var(--success);
+}
+
+.progressFill.danger {
+  background: var(--danger);
+}
+
+.progressFill.warning {
+  background: var(--warning);
+}
+
+/* ---------- Fields (select, text, time) ---------- */
+.select,
+.input {
+  height: 34px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--field);
+  min-width: 0;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.15s;
+}
+
+.select {
+  padding: 0 30px 0 11px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+      no-repeat right 10px center,
+    var(--field);
+  appearance: none;
+}
+
+.input {
+  padding: 0 11px;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.select:hover,
+.input:hover:not(:disabled) {
+  border-color: #3a3a3a;
+}
+
+.select:focus,
+.input:focus {
+  outline: none;
+  border-color: #525252;
+  box-shadow: var(--ring);
+}
+
+.input:disabled {
+  opacity: 0.45;
+}
+
+.input.invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+/* ---------- SegmentedControl ---------- */
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+}
+
+.segment {
+  flex: 1;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+
+.segment:hover:not(:disabled):not(.selected) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.segment.selected {
+  background: var(--ink);
+  color: var(--ink-contrast);
+}
+
+.segment:disabled {
+  opacity: 0.35;
+}
+
+/* ---------- Field ---------- */
+.field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.field > * {
+  min-width: 0;
+}
+
+.fieldLabel {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.fieldHint {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* ---------- TimeField ---------- */
+.timeField {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeField .input {
+  width: 92px;
+  text-align: center;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- PanelHeader ---------- */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px 0 16px;
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.panelMeta {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+/* ---------- EmptyState ---------- */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 8px 12px;
+  padding: 28px 20px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  text-align: center;
+  color: var(--text-faint);
+}
+
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.emptyTitle {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.emptyBody {
+  margin: 0;
+  max-width: 260px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* ---------- Tabs ---------- */
+/* A strip of cells split by hairlines, like a top navigation bar. */
+.tabs {
+  display: flex;
+  margin: 12px 12px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+
+.tab + .tab {
+  border-left: 1px solid var(--border);
+}
+
+.tab:hover:not(.tabSelected) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.tabSelected {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* Thin orange line under the open tab. */
+.tabSelected::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.tabCount {
+  min-width: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.tabSelected .tabCount {
+  border-color: transparent;
+  background: var(--ink);
+  color: var(--ink-contrast);
+}

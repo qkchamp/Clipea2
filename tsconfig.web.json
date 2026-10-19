@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "paths": {
+      "@features/*": ["./src/features/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": [
+    "src/renderer/**/*",
+    "src/shared/domain/**/*",
+    "src/shared/contracts/**/*",
+    "src/shared/ui/**/*",
+    "src/features/*/domain/**/*",
+    "src/features/*/ui/**/*"
+  ],
+  "exclude": ["src/**/*.test.ts"]
+}

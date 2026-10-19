@@ -1,0 +1,58 @@
+{
+  "name": "clipea2",
+  "productName": "Clipea2",
+  "version": "0.1.0",
+  "description": "Recortá, uní, dibujá y mandá tus clips de juegos a Discord sin pasarte del límite de tamaño.",
+  "author": "QKCHAMP",
+  "license": "MIT",
+  "private": true,
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "electron-vite build && node e2e/smoke.mjs",
+    "icons": "node scripts/build-icons.mjs",
+    "dist": "electron-vite build && electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.clipea2.app",
+    "productName": "Clipea2",
+    "directories": {
+      "buildResources": "resources",
+      "output": "dist"
+    },
+    "files": [
+      "out/**",
+      "resources/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.png"
+    }
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "lucide-react": "^1.51.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^24.19.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.6",
+    "vitest": "^5.0.3"
+  }
+}

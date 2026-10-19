@@ -1,0 +1,251 @@
+.stageWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px 12px 0;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #000;
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: var(--surface);
+}
+
+.placeholder img {
+  border-radius: 18px;
+}
+
+.placeholderTitle {
+  margin: 12px 0 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.placeholderTitle span {
+  color: #8b8b94;
+}
+
+.placeholderBody {
+  margin: 0;
+  max-width: 400px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.osd {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  z-index: 2;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  pointer-events: none;
+  animation: osd 1.4s ease-in forwards;
+}
+
+@keyframes osd {
+  0%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.badges {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.previewBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.85);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.previewBadge svg:first-child {
+  color: var(--accent);
+}
+
+.error {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(242, 84, 91, 0.45);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.9);
+  color: #ffb4b8;
+  transform: translateX(-50%);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-height: 56px;
+  padding: 6px 12px;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.playButton {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  transition:
+    background-color 0.12s,
+    transform 0.08s;
+}
+
+.playButton:hover:not(:disabled) {
+  background: var(--ink-hover);
+}
+
+.playButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.playButton:disabled {
+  opacity: 0.35;
+}
+
+.clock {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.clockTotal {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.frameCounter {
+  margin-left: 2px;
+  white-space: nowrap;
+  padding: 0 7px;
+  border-left: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.rateBox {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.rate {
+  min-width: 54px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.rate:hover {
+  background: var(--surface-3);
+}
+
+.rate[data-modified] {
+  color: var(--accent);
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.volumeSlider {
+  width: 58px;
+  accent-color: var(--ink);
+}
+
+.controlsEnd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Shortcuts and settings: app-wide tools, grouped apart from the playback ones. */
+.appTools {
+  display: flex;
+  gap: 2px;
+  padding-left: 6px;
+  border-left: 1px solid var(--border);
+}

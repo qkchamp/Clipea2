@@ -1,0 +1,64 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(242, 84, 91, 0.4);
+  background: #140506;
+  color: #ffc9cc;
+}
+
+.banner span {
+  flex: 1;
+}
+
+.banner code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  font-family: var(--mono);
+}
+
+.workspace {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 296px minmax(0, 1fr) 356px;
+  min-height: 0;
+}
+
+.left {
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sidebarBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 180px;
+  overflow-y: auto;
+}
