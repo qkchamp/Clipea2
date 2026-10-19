@@ -118,8 +118,11 @@ describe('videoEncoderArgs', () => {
   })
 
   it('falls back to the CPU without a GPU', () => {
+    expect(videoEncoderArgs({ ...output, gpu: null })).toEqual(
+      expect.arrayContaining(['libx265', '-crf', '22', '-maxrate', '1485k', 'hvc1'])
+    )
     expect(videoEncoderArgs({ ...output, gpu: null, codec: 'h264' })).toEqual(
-      expect.arrayContaining(['libx264', '-crf', '24', '-maxrate', '1485k'])
+      expect.arrayContaining(['libx264', '-crf', '22', '-maxrate', '1485k'])
     )
   })
 })

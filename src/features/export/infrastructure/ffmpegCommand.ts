@@ -74,15 +74,20 @@ function gpuEncoderArgs(output: RenderOutput, vendor: GpuVendor, kbps: number): 
   }
 }
 
+/**
+ * Without a GPU. Calibrated against NVENC with VMAF on 15 s clips: at cq - 3, x265 and x264 medium
+ * land within about half a point of it, and VBV keeps them under the cap. SVT-AV1 doesn't hold maxrate strictly (7% over it at
+ * cq + 1), so it keeps cq + 4 to stay within the size limit.
+ */
 export function videoEncoderArgs(output: RenderOutput): string[] {
   const kbps = Math.max(1, Math.round(output.videoKbps))
   const rate = ['-maxrate', `${kbps}k`, '-bufsize', `${kbps}k`]
   if (output.gpu) return gpuEncoderArgs(output, output.gpu, kbps)
   switch (output.codec) {
     case 'hevc':
-      return ['-c:v', 'libx265', '-preset', 'medium', '-crf', String(output.cq + 1), ...rate, '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1']
+      return ['-c:v', 'libx265', '-preset', 'medium', '-crf', String(output.cq - 3), ...rate, '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1']
     case 'h264':
-      return ['-c:v', 'libx264', '-preset', 'medium', '-crf', String(output.cq - 1), ...rate, '-pix_fmt', 'yuv420p', '-profile:v', 'high']
+      return ['-c:v', 'libx264', '-preset', 'medium', '-crf', String(output.cq - 3), ...rate, '-pix_fmt', 'yuv420p', '-profile:v', 'high']
     case 'av1':
       return ['-c:v', 'libsvtav1', '-preset', '8', '-crf', String(output.cq + 4), ...rate, '-pix_fmt', 'yuv420p']
   }
