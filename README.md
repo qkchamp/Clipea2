@@ -20,6 +20,12 @@ Sirve para clips de cualquier app que grabe (NVIDIA ShadowPlay, OBS, Medal, AMD 
 
 Sin Nitro el máximo es **20 MB por archivo** (Discord lo subió de 10 MB en agosto de 2026; [FAQ oficial](https://support.discord.com/hc/en-us/articles/25444343291031-File-Attachments-FAQ)). Clipea2 usa 20 MB y se puede cambiar a 50 MB (Nitro Basic), 10 MB o sin límite.
 
+## Vista previa
+
+![Clipea2 de punta a punta: elegir un clip, recortarlo, dibujarle encima, armar un montaje, exportarlo y mandarlo a Discord](docs/preview.webp)
+
+[Ver en MP4](docs/preview.mp4). El Discord del video es una simulación con nombres inventados.
+
 ## Requisitos
 
 - Windows 10/11, Node 22+.
