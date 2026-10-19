@@ -6,5 +6,3 @@ e2e/artifacts/
 *.tsbuildinfo
 .DS_Store
 desktop.ini
-design/
-privado/
