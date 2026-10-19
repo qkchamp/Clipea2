@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { Keyboard, Minus, Pause, PenLine, Play, Plus, Settings, StepBack, StepForward, Volume2, VolumeX } from 'lucide-react'
 import { formatTime } from '@shared/domain/time'
 import { Button, IconButton, Kbd } from '@shared/ui/atoms'
+import { useCrowded } from '@shared/ui/useCrowded'
 import { useHoldRepeat } from '@shared/ui/useHoldRepeat'
 import { useUiStore } from '@shared/ui/uiStore'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
@@ -42,9 +44,12 @@ export function PlayerControls() {
   // Click: one frame. Hold: keeps stepping frame by frame until released.
   const stepBack = useHoldRepeat(() => usePlayerStore.getState().controller?.stepFrame(-1))
   const stepForward = useHoldRepeat(() => usePlayerStore.getState().controller?.stepFrame(1))
+  // When the row doesn't fit on one line, "Dibujar" shrinks to its icon before anything wraps.
+  const row = useRef<HTMLDivElement>(null)
+  const crowded = useCrowded(row)
 
   return (
-    <div className={styles.controls}>
+    <div ref={row} className={styles.controls}>
       <div className={styles.transport}>
         <IconButton label="Cuadro anterior (Ctrl+←) · mantené apretado para seguir" disabled={disabled} {...stepBack}>
           <StepBack size={17} />
@@ -105,11 +110,14 @@ export function PlayerControls() {
           size="sm"
           variant={drawing ? 'primary' : 'secondary'}
           icon={<PenLine size={14} />}
+          className={crowded ? styles.drawCompact : undefined}
+          title={crowded ? 'Dibujar (D)' : undefined}
+          aria-label={crowded ? 'Dibujar (D)' : undefined}
           disabled={disabled}
           aria-pressed={drawing}
           onClick={() => useAnnotationStore.getState().setDrawing(!drawing)}
         >
-          Dibujar <Kbd>D</Kbd>
+          {crowded ? <Kbd>D</Kbd> : <>Dibujar <Kbd>D</Kbd></>}
         </Button>
         <div className={styles.appTools}>
           <IconButton small label="Atajos de teclado (?)" onClick={() => useUiStore.getState().openDialog('help')}>

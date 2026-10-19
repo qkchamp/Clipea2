@@ -130,6 +130,7 @@
   transform: translateX(-50%);
 }
 
+/* PlayerControls compacts "Dibujar" when the row runs out of room; it only wraps if that isn't enough. */
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -240,6 +241,10 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
+}
+
+.drawCompact {
+  padding: 0 7px;
 }
 
 /* Shortcuts and settings: app-wide tools, grouped apart from the playback ones. */
