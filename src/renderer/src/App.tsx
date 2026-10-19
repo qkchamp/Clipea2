@@ -4,6 +4,7 @@ import { formatBytes } from '@shared/domain/time'
 import { api } from '@shared/ui/api'
 import { Button } from '@shared/ui/atoms'
 import { Tabs } from '@shared/ui/molecules'
+import { InstantTooltip } from '@shared/ui/organisms/InstantTooltip'
 import { Toasts } from '@shared/ui/organisms/Toasts'
 import { useUiStore } from '@shared/ui/uiStore'
 import { AnnotationList } from '@features/annotations/ui/AnnotationList'
@@ -164,6 +165,7 @@ export function App() {
       {dialog === 'settings' ? <SettingsDialog onClose={closeDialog} /> : null}
       {dialog === 'discord' && discordClipPath ? <SendToChannelDialog clipPath={discordClipPath} onClose={closeDialog} /> : null}
       <Toasts />
+      <InstantTooltip />
     </div>
   )
 }

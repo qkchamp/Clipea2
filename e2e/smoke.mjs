@@ -123,7 +123,7 @@ try {
   check('selección 50 → 60 = 10,0 s', true)
 
   // Frame stepping (wait for the exact frame table first).
-  await page.waitForFunction(() => document.querySelector('[title="Número de cuadro exacto"]'), null, { timeout: 15_000 })
+  await page.waitForFunction(() => document.querySelector('[title="Número de cuadro exacto"], [data-tip="Número de cuadro exacto"]'), null, { timeout: 15_000 })
   await page.keyboard.press('Home')
   const frameNumber = async () => {
     await page.waitForFunction(() => !document.querySelector('video').seeking)
