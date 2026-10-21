@@ -1,5 +1,6 @@
 // End-to-end smoke test on the real app: open a ShadowPlay clip, change speed, step frames,
-// draw with a freeze, build a two-cut montage and export it under the Discord limit. Also covers
+// draw (each drawing gets its bar in the timeline), build a two-cut montage and export it under
+// the Discord limit. Also covers
 // undo, text drawings, remembered selections, cancel without leftovers, the library watcher and
 // the session saved on close.
 // Run with `CLIPEA2_SAMPLE=<clip.mp4> npm run e2e` (builds first).
@@ -139,13 +140,12 @@ try {
   check('Ctrl+→ avanza 1 cuadro', next === base + 1, `${base} → ${next}`)
   check('Ctrl+← retrocede 1 cuadro', previous === base - 1, `${next} → ${previous}`)
 
-  // Draw an arrow that freezes the image for 1 s, a few frames after the in point.
+  // Draw an arrow a few frames after the in point.
   await page.keyboard.press('Home')
   for (let step = 0; step < 3; step++) await page.keyboard.press('Control+ArrowRight')
   await frameNumber()
   await page.keyboard.press('d')
   await page.getByRole('toolbar', { name: 'Herramientas de dibujo' }).waitFor()
-  await page.getByRole('radio', { name: '1s' }).last().click()
   const canvas = page.locator('canvas').first()
   const box = await canvas.boundingBox()
   await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3)
@@ -154,7 +154,7 @@ try {
   await page.mouse.up()
 
   // Two texts in a row: clicking elsewhere commits the first one and opens the second box.
-  await page.getByRole('button', { name: 'Texto' }).click()
+  await page.getByRole('button', { name: 'Texto', exact: true }).click()
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.72)
   await page.getByRole('textbox', { name: 'Texto del dibujo' }).waitFor({ timeout: 2000 })
   await page.keyboard.type('uno')
@@ -163,10 +163,12 @@ try {
   await page.keyboard.press('Enter')
   await page.screenshot({ path: join(artifacts, '02-dibujo.png') })
   await page.keyboard.press('Escape')
-  await page.getByText('1 en este video').waitFor({ timeout: 2000 })
-  check('dibuja una flecha con congelado', true)
-  const strokes = await page.locator('[aria-label="Dibujos de este video"] li').first().innerText()
-  check('dos textos seguidos quedan los dos', /3 trazos/.test(strokes), strokes.replace(/\s+/g, ' '))
+  await page.getByText('3 en este video').waitFor({ timeout: 2000 })
+  check('dibuja una flecha', true)
+  const drawn = await page.locator('[aria-label="Dibujos de este video"]').innerText()
+  check('dos textos seguidos quedan los dos', /uno/.test(drawn) && /dos/.test(drawn), drawn.replace(/\s+/g, ' '))
+  const bars = page.locator('[aria-label="Dibujos en la línea de tiempo"] > div > div')
+  check('cada dibujo tiene su barra en la línea de tiempo', (await bars.count()) === 3)
 
   // Montage: 50→60 plus 10→13.
   await page.keyboard.press('Enter')
@@ -216,7 +218,7 @@ try {
   )
   const duration = Number(probe.format.duration)
   const video = probe.streams.find((stream) => stream.width)
-  check('dura 10 s + 1 s congelado + 3 s', Math.abs(duration - 14) < 0.15, `${duration.toFixed(3)} s`)
+  check('dura 10 s + 3 s', Math.abs(duration - 13) < 0.15, `${duration.toFixed(3)} s`)
   check('H.265 hvc1 720p30', video.codec_name === 'hevc' && video.codec_tag_string === 'hvc1' && video.height === 720 && video.avg_frame_rate === '30/1', JSON.stringify(video))
 
   // Next clip: empty the montage, open another recording and the estimate follows it.

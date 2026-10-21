@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { CircleAlert, Clapperboard, Snowflake, Square } from 'lucide-react'
+import { CircleAlert, Clapperboard, Square } from 'lucide-react'
 import { toMediaUrl } from '@shared/contracts/mediaUrl'
 import { clamp } from '@shared/domain/time'
-import { Badge, Button, Kbd } from '@shared/ui/atoms'
-import { freezeCrossed, snapToFrames, type Annotation } from '@features/annotations/domain/annotation'
+import { Button, Kbd } from '@shared/ui/atoms'
+import { snapToFrames } from '@features/annotations/domain/annotation'
 import type { VideoRect } from '@features/annotations/ui/AnnotationLayer'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { useMediaStore } from '@features/media/ui/mediaStore'
 import { untracked } from '@features/undo/ui/undoStore'
-import { frameDuration, frameStepTarget, seekTimeForFrameAt } from '../domain/frameClock'
+import { frameDuration, frameStepTarget } from '../domain/frameClock'
 import { canRecover } from '../domain/mediaRecovery'
 import { DrawingToolbar, PlayerOverlay } from './PlayerOverlay'
 import { usePlayerStore, type PlayerController } from './playerStore'
@@ -17,7 +17,7 @@ import { getFrameClock, useFrameClock } from './useFrameClock'
 import logo from '@shared/ui/assets/logo.svg'
 import styles from './player.module.css'
 
-/** Container of the <video>: owns playback, frame stepping, freezes and the drawing overlay. */
+/** Container of the <video>: owns playback, frame stepping and the drawing overlay. */
 export function VideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -28,7 +28,6 @@ export function VideoPlayer() {
   const rate = usePlayerStore((state) => state.rate)
   const volume = usePlayerStore((state) => state.volume)
   const muted = usePlayerStore((state) => state.muted)
-  const freezingId = usePlayerStore((state) => state.freezingId)
   const osd = usePlayerStore((state) => state.osd)
   const preview = usePlayerStore((state) => state.preview)
   const drawing = useAnnotationStore((state) => state.drawing)
@@ -77,8 +76,6 @@ export function VideoPlayer() {
     let queuedSeek: number | null = null
     let recoveries: number[] = []
     let lastFrameTime: number | null = null
-    let skipFreezeCheck = false
-    let freezeTimer: number | undefined
     let frameRequest = 0
 
     const measure = (): void => {
@@ -95,24 +92,6 @@ export function VideoPlayer() {
       })
     }
 
-    const cancelFreeze = (): void => {
-      if (freezeTimer === undefined) return
-      window.clearTimeout(freezeTimer)
-      freezeTimer = undefined
-      player().setFreezing(null)
-    }
-
-    const startFreeze = (annotation: Annotation): void => {
-      video.pause()
-      video.currentTime = seekTimeForFrameAt(getFrameClock(), annotation.time)
-      player().setFreezing(annotation.id)
-      freezeTimer = window.setTimeout(() => {
-        freezeTimer = undefined
-        player().setFreezing(null)
-        void video.play().catch(() => undefined)
-      }, annotation.freezeFor * 1000)
-    }
-
     const checkPreviewEnd = (time: number): void => {
       const preview = player().preview
       if (!preview || video.paused) return
@@ -124,16 +103,8 @@ export function VideoPlayer() {
 
     const onFrame: VideoFrameRequestCallback = (_now, metadata) => {
       const time = metadata.mediaTime
-      const previous = lastFrameTime
       lastFrameTime = time
       if (pendingTarget === null) player().setTime(time)
-      if (skipFreezeCheck) {
-        skipFreezeCheck = false
-      } else if (!video.paused && previous !== null && time > previous && time - previous < 1) {
-        const path = player().sourcePath
-        const hit = path ? freezeCrossed(useAnnotationStore.getState().annotations, path, previous, time) : undefined
-        if (hit) startFreeze(hit)
-      }
       checkPreviewEnd(time)
       frameRequest = video.requestVideoFrameCallback(onFrame)
     }
@@ -162,9 +133,6 @@ export function VideoPlayer() {
         if (seek.play) void video.play().catch(() => undefined)
       }
       measure()
-    }
-    const onSeeking = (): void => {
-      skipFreezeCheck = true
     }
     const onSeeked = (): void => {
       if (queuedSeek !== null) {
@@ -203,17 +171,10 @@ export function VideoPlayer() {
     }
 
     const controller: PlayerController = {
-      play: () => {
-        cancelFreeze()
-        void video.play().catch(() => undefined)
-      },
-      pause: () => {
-        cancelFreeze()
-        video.pause()
-      },
-      togglePlay: () => (video.paused || freezeTimer !== undefined ? controller.play() : controller.pause()),
+      play: () => void video.play().catch(() => undefined),
+      pause: () => video.pause(),
+      togglePlay: () => (video.paused ? controller.play() : controller.pause()),
       seek: (time) => {
-        cancelFreeze()
         pendingTarget = null
         const end = Number.isFinite(video.duration) ? video.duration : getFrameClock().duration
         const target = clamp(time, 0, end)
@@ -222,7 +183,6 @@ export function VideoPlayer() {
       },
       seekBy: (delta) => controller.seek((queuedSeek ?? pendingTarget ?? video.currentTime) + delta),
       stepFrame: (delta) => {
-        cancelFreeze()
         const wasPlaying = !video.paused
         if (wasPlaying) video.pause()
         // Holding Ctrl+→ (or the button) steps from the last target, not from the frame still decoding.
@@ -236,7 +196,6 @@ export function VideoPlayer() {
 
     const listeners: Array<[keyof HTMLVideoElementEventMap, () => void]> = [
       ['loadedmetadata', onLoaded],
-      ['seeking', onSeeking],
       ['seeked', onSeeked],
       ['timeupdate', onTimeUpdate],
       ['play', onPlay],
@@ -254,7 +213,6 @@ export function VideoPlayer() {
       for (const [name, handler] of listeners) video.removeEventListener(name, handler)
       video.cancelVideoFrameCallback(frameRequest)
       observer.disconnect()
-      cancelFreeze()
       player().setController(null)
     }
   }, [])
@@ -263,7 +221,7 @@ export function VideoPlayer() {
 
   return (
     <div className={styles.stageWrap}>
-      {drawing && sourcePath ? <DrawingToolbar sourcePath={sourcePath} /> : null}
+      {drawing && sourcePath ? <DrawingToolbar /> : null}
       <div
         ref={stageRef}
         className={styles.stage}
@@ -296,11 +254,6 @@ export function VideoPlayer() {
                 Parar
               </Button>
             </div>
-          ) : null}
-          {freezingId ? (
-            <Badge tone="discord">
-              <Snowflake size={12} /> Imagen congelada
-            </Badge>
           ) : null}
         </div>
 

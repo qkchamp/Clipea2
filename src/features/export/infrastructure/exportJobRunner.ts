@@ -76,7 +76,7 @@ export class ExportJobRunner {
       for (const annotation of request.annotations.filter((a) => shown.has(a.id))) {
         const pngPath = join(tempDir, `${annotation.id}.png`)
         await writeFile(pngPath, annotation.png)
-        overlays.push({ annotationId: annotation.id, pngPath })
+        overlays.push({ annotationId: annotation.id, pngPath, motion: annotation.motion })
       }
 
       const sources = [...new Set(request.segments.map((segment) => segment.sourcePath))]

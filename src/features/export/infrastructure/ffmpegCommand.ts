@@ -1,6 +1,7 @@
 import type { RenderOutput, RenderSpec } from '../application/ports'
 import type { GpuVendor } from '../domain/encoderSupport'
 import type { VideoCodec } from '../domain/encodingPlan'
+import type { MotionKey, OverlayWindow } from '../domain/renderTimeline'
 
 const GPU_SUFFIX: Record<GpuVendor, string> = { nvidia: 'nvenc', amd: 'amf', intel: 'qsv' }
 /**
@@ -34,9 +35,29 @@ export function num(value: number): string {
   return value.toFixed(6).replace(/\.?0+$/, '') || '0'
 }
 
-function chainEnd(filter: 'split' | 'asplit', labels: readonly string[]): string {
-  if (labels.length === 1) return `[${labels[0]}]`
-  return `,${filter}=${labels.length}${labels.map((label) => `[${label}]`).join('')}`
+/** ffmpeg expression of a value that goes linearly from key to key along `time` (held before the first and after the last). */
+function piecewiseLinear(keys: readonly { time: number; value: number }[], time: string): string {
+  let expression = num(keys[keys.length - 1].value)
+  for (let index = keys.length - 2; index >= 0; index--) {
+    const a = keys[index]
+    const b = keys[index + 1]
+    const slope = (b.value - a.value) / (b.time - a.time)
+    expression = `if(lt(${time},${num(b.time)}),${num(a.value)}+(${num(slope)})*(${time}-(${num(a.time)})),${expression})`
+  }
+  return `if(lt(${time},${num(keys[0].time)}),${num(keys[0].value)},${expression})`
+}
+
+/**
+ * Overlay position of an animated drawing in pixels: inside each window the clip time `t` maps back
+ * to the source time its keyframes use.
+ */
+function motionExpression(windows: readonly OverlayWindow[], motion: readonly MotionKey[], axis: 'dx' | 'dy', size: number): string {
+  const keys = motion.map((key) => ({ time: key.time, value: key[axis] * size }))
+  return windows.reduceRight(
+    (rest, window) =>
+      `if(between(t,${num(window.start)},${num(window.end)}),${piecewiseLinear(keys, `(t+(${num(window.sourceStart - window.start)}))`)},${rest})`,
+    '0'
+  )
 }
 
 function audioSource(input: number, tracks: number, duration: number): string {
@@ -95,8 +116,7 @@ export function videoEncoderArgs(output: RenderOutput): string[] {
 
 /**
  * One input per segment (fast, frame-accurate input seeking), normalised to the output size and
- * frame rate, split into parts where drawings freeze the image, concatenated, then the drawings
- * are overlaid during their windows.
+ * frame rate, concatenated, then the drawings are overlaid during their windows.
  *
  * Cuts work in whole output frames: video trims at half-frame boundaries so exactly the intended
  * frames are kept, audio trims at the matching frame boundaries so both stay in sync.
@@ -118,28 +138,14 @@ export function buildFfmpegArgs(spec: RenderSpec): string[] {
   const concatInputs: string[] = []
 
   timeline.segments.forEach((segment, input) => {
-    const videoLabels = segment.parts.map((_, part) => `s${input}v${part}`)
-    const audioLabels = segment.parts.map((_, part) => `s${input}a${part}`)
     const tracks = spec.audioTracks[segment.sourcePath] ?? 0
-    graph.push(`[${input}:v:0]${normalize}${chainEnd('split', videoLabels)}`)
-    graph.push(`${audioSource(input, tracks, segment.end - segment.start)}${chainEnd('asplit', audioLabels)}`)
-
-    segment.parts.forEach((part, index) => {
-      const fromFrame = Math.round((part.from - segment.start) * fps)
-      const toFrame = Math.max(fromFrame + 1, Math.round((part.to - segment.start) * fps))
-      const holdFrames = Math.round(part.holdAfter * fps)
-      const label = `p${concatInputs.length}`
-      const hold = holdFrames > 0 ? `,tpad=stop_mode=clone:stop_duration=${num(holdFrames / fps)}` : ''
-      graph.push(
-        `[${videoLabels[index]}]trim=start=${num(Math.max(0, (fromFrame - 0.5) / fps))}:end=${num((toFrame - 0.5) / fps)},` +
-          `setpts=PTS-STARTPTS${hold}[${label}v]`
-      )
-      graph.push(
-        `[${audioLabels[index]}]atrim=start=${num(fromFrame / fps)}:end=${num(toFrame / fps)},asetpts=PTS-STARTPTS,` +
-          `apad=whole_dur=${num((toFrame - fromFrame + holdFrames) / fps)}[${label}a]`
-      )
-      concatInputs.push(`[${label}v][${label}a]`)
-    })
+    const frames = Math.max(1, Math.round((segment.end - segment.start) * fps))
+    graph.push(`[${input}:v:0]${normalize},trim=start=0:end=${num((frames - 0.5) / fps)},setpts=PTS-STARTPTS[p${input}v]`)
+    graph.push(
+      `${audioSource(input, tracks, segment.end - segment.start)},atrim=start=0:end=${num(frames / fps)},asetpts=PTS-STARTPTS,` +
+        `apad=whole_dur=${num(frames / fps)}[p${input}a]`
+    )
+    concatInputs.push(`[p${input}v][p${input}a]`)
   })
 
   graph.push(`${concatInputs.join('')}concat=n=${concatInputs.length}:v=1:a=1[catv][cata]`)
@@ -149,8 +155,12 @@ export function buildFfmpegArgs(spec: RenderSpec): string[] {
     const windows = timeline.overlays.filter((window) => window.annotationId === overlay.annotationId)
     if (windows.length === 0) return
     const enable = windows.map((window) => `between(t,${num(window.start)},${num(window.end)})`).join('+')
+    const position =
+      overlay.motion && overlay.motion.length >= 2
+        ? `x='${motionExpression(windows, overlay.motion, 'dx', output.width)}':y='${motionExpression(windows, overlay.motion, 'dy', output.height)}'`
+        : '0:0'
     graph.push(`[${overlayBase + index}:v]scale=${output.width}:${output.height},format=rgba[img${index}]`)
-    graph.push(`[${videoLabel}][img${index}]overlay=0:0:enable='${enable}'[ov${index}]`)
+    graph.push(`[${videoLabel}][img${index}]overlay=${position}:enable='${enable}'[ov${index}]`)
     videoLabel = `ov${index}`
   })
   graph.push(`[${videoLabel}]format=yuv420p[outv]`)

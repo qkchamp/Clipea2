@@ -1,13 +1,10 @@
 import { useEffect } from 'react'
 import { api } from '@shared/ui/api'
 import { useUiStore } from '@shared/ui/uiStore'
-import { findAnnotationAt } from '@features/annotations/domain/annotation'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { startExport } from '@features/export/ui/startExport'
 import { openRecording } from '@features/library/ui/LibraryPanel'
-import { frameStartTime } from '@features/player/domain/frameClock'
 import { usePlayerStore } from '@features/player/ui/playerStore'
-import { getFrameClock } from '@features/player/ui/useFrameClock'
 import { commitSelection, goToSelectionEdge, markInAtPlayhead, markOutAtPlayhead } from '@features/trimming/ui/trimActions'
 import { redo, undo } from '@features/undo/ui/undoStore'
 
@@ -15,7 +12,6 @@ type Binding = (event: KeyboardEvent) => void
 
 const player = usePlayerStore.getState
 const drawings = useAnnotationStore.getState
-const currentFrameTime = (): number => frameStartTime(getFrameClock(), player().currentTime)
 const togglePlay = (): void => player().controller?.togglePlay()
 
 /** Ctrl+key. Player keys: Ctrl+↑/↓ speed in 0.25x steps, Ctrl+←/→ one frame. */
@@ -49,11 +45,11 @@ const KEY_BINDINGS: Record<string, Binding> = {
     if (drawings().drawing) drawings().setDrawing(false)
     else player().stopPreview()
   },
+  // The drawing picked with the cursor or on its bar in the timeline.
   delete: () => {
-    const { sourcePath } = player()
-    if (!drawings().drawing || !sourcePath) return
-    const active = findAnnotationAt(drawings().annotations, sourcePath, currentFrameTime())
-    if (active) drawings().remove(active.id)
+    const { selectedId, annotations } = drawings()
+    const selected = annotations.find((annotation) => annotation.id === selectedId)
+    if (selected && selected.sourcePath === player().sourcePath) drawings().remove(selected.id)
   }
 }
 

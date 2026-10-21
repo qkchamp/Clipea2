@@ -1,14 +1,17 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { ArrowRight, Check, Plus, X } from 'lucide-react'
 import { formatDuration } from '@shared/domain/time'
 import { Button, Kbd } from '@shared/ui/atoms'
 import { TimeField } from '@shared/ui/molecules'
-import { annotationsForSource } from '@features/annotations/domain/annotation'
+import { annotationLabel, annotationsForSource, assignLanes } from '@features/annotations/domain/annotation'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { useMontageStore } from '@features/montage/ui/montageStore'
+import { frameDuration, frameStartTime } from '@features/player/domain/frameClock'
 import { usePlayerStore } from '@features/player/ui/playerStore'
+import { getFrameClock } from '@features/player/ui/useFrameClock'
+import { beginGesture } from '@features/undo/ui/undoStore'
 import { fullRange, isValidRange, rangeDuration, withEnd, withStart } from '../domain/timeRange'
-import { Timeline, TimelinePlayhead } from './Timeline'
+import { Timeline, TimelinePlayhead, type DrawingEdit } from './Timeline'
 import { commitSelection, markInAtPlayhead, markOutAtPlayhead } from './trimActions'
 import { useFilmstrip } from './useFilmstrip'
 import { useTrimStore } from './trimStore'
@@ -19,6 +22,26 @@ function Playhead({ duration, toPercent }: { duration: number; toPercent: (time:
   return <TimelinePlayhead time={currentTime} duration={duration} toPercent={toPercent} />
 }
 
+/** Nearest frame boundary; the end of the video counts as one, so a drawing can last until the last frame. */
+function snapToFrame(time: number, duration: number): number {
+  const clock = getFrameClock()
+  const frame = frameDuration(clock)
+  if (time >= duration - frame / 2) return duration
+  return frameStartTime(clock, Math.max(0, time) + frame / 2)
+}
+
+/** Drawing bar dragged in the timeline: whole frames, never shorter than one; the video shows the edge being moved. */
+function changeDrawingTimes(id: string, start: number, end: number, edit: DrawingEdit, duration: number): void {
+  const frame = frameDuration(getFrameClock())
+  let from = snapToFrame(start, duration)
+  let until = snapToFrame(end, duration)
+  if (edit === 'start') from = Math.min(from, until - frame)
+  else if (edit === 'end') until = Math.max(until, from + frame)
+  else until = from + (end - start)
+  useAnnotationStore.getState().setTimes(id, Math.max(0, from), until, edit === 'move')
+  usePlayerStore.getState().controller?.seek(edit === 'end' ? until - frame / 2 : from + frame / 2)
+}
+
 export function TrimPanel() {
   const sourcePath = usePlayerStore((state) => state.sourcePath)
   const duration = usePlayerStore((state) => state.duration)
@@ -27,20 +50,30 @@ export function TrimPanel() {
   const editingSegmentId = useTrimStore((state) => state.editingSegmentId)
   const segments = useMontageStore((state) => state.segments)
   const annotations = useAnnotationStore((state) => state.annotations)
+  const selectedDrawingId = useAnnotationStore((state) => state.selectedId)
+  const drawingMode = useAnnotationStore((state) => state.drawing)
   const frames = useFilmstrip(sourcePath, duration)
+  // One undo step per drag of a drawing bar, however many frames it went through.
+  const endGesture = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (sourcePath && duration > 0 && rangeSource !== sourcePath) useTrimStore.getState().reset(sourcePath, duration)
   }, [sourcePath, duration, rangeSource])
 
   const selection = sourcePath && rangeSource === sourcePath ? range : null
-  const markers = useMemo(
-    () =>
-      sourcePath
-        ? annotationsForSource(annotations, sourcePath).map((a) => ({ id: a.id, time: a.time, freeze: a.freezeFor > 0 }))
-        : [],
-    [annotations, sourcePath]
-  )
+  const drawings = useMemo(() => {
+    const list = sourcePath ? annotationsForSource(annotations, sourcePath) : []
+    const lanes = assignLanes(list)
+    return list.map((annotation, index) => ({
+      id: annotation.id,
+      start: annotation.start,
+      end: annotation.end,
+      label: annotationLabel(annotation),
+      color: annotation.shape.style.color,
+      lane: lanes[index],
+      keyframes: annotation.keyframes?.map((keyframe) => keyframe.time) ?? []
+    }))
+  }, [annotations, sourcePath])
   const bands = useMemo(
     () =>
       segments
@@ -62,14 +95,26 @@ export function TrimPanel() {
         duration={duration}
         range={selection}
         frames={frames}
-        markers={markers}
         bands={bands}
+        drawings={drawings}
+        showDrawings={drawingMode || drawings.length > 0}
+        selectedDrawingId={selectedDrawingId}
         disabled={!sourcePath}
         onSeek={seek}
         onRangeChange={(next) => trim().setRange(next)}
-        onMarkerClick={(time) => {
+        onDrawingSelect={(id, time) => {
+          useAnnotationStore.getState().select(id)
+          const drawing = drawings.find((item) => item.id === id)
           usePlayerStore.getState().controller?.pause()
-          seek(time + 0.001)
+          if (drawing) seek((time ?? drawing.start) + frameDuration(getFrameClock()) / 2)
+        }}
+        onDrawingChange={(id, start, end, edit) => {
+          endGesture.current ??= beginGesture()
+          changeDrawingTimes(id, start, end, edit, duration)
+        }}
+        onDrawingDragEnd={() => {
+          endGesture.current?.()
+          endGesture.current = null
         }}
         renderPlayhead={(toPercent) => <Playhead duration={duration} toPercent={toPercent} />}
       />

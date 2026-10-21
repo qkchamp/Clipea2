@@ -29,9 +29,9 @@ const GROUPS: Array<{ title: string; items: Array<{ keys: string[][]; what: stri
     title: 'Dibujo y exportación',
     items: [
       { keys: [['D']], what: 'Dibujar sobre el cuadro actual (Esc para terminar)' },
-      { keys: [['Ctrl', 'Z']], what: 'Deshacer (trazos, cortes, dibujos borrados, vaciar montaje)' },
+      { keys: [['Ctrl', 'Z']], what: 'Deshacer (dibujos, cortes, dibujos borrados, vaciar montaje)' },
       { keys: [['Ctrl', 'Y'], ['Ctrl', 'Shift', 'Z']], what: 'Rehacer' },
-      { keys: [['Supr']], what: 'Borrar el dibujo de este cuadro' },
+      { keys: [['Supr']], what: 'Borrar el dibujo elegido (con el cursor o en su barra de la línea de tiempo)' },
       { keys: [['Ctrl', 'E']], what: 'Exportar a disco (elegís dónde guardarlo)' }
     ]
   }

@@ -76,7 +76,7 @@ export const CHANGE_LABELS: Record<ChangeKind, string> = {
   'montage-replaced': 'montaje reemplazado',
   'montage-reordered': 'orden del montaje',
   'segment-edited': 'corte editado',
-  'drawing-added': 'trazo agregado',
+  'drawing-added': 'dibujo agregado',
   'drawing-removed': 'dibujo borrado',
   'drawing-edited': 'dibujo cambiado',
   none: 'cambio'

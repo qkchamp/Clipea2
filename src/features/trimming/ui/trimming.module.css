@@ -172,26 +172,94 @@
   right: 0;
 }
 
-.marker {
+.drawings {
+  position: relative;
+  overflow: hidden auto;
+  /* Same box as the track, so a time sits at the same x on both. */
+  border: 1px solid transparent;
+  border-width: 0 1px;
+}
+
+.drawingRows {
+  position: relative;
+  overflow: hidden;
+}
+
+.drawingBar {
   position: absolute;
-  top: 4px;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  padding: 0;
-  border: 2px solid var(--bg);
-  border-radius: 2px;
-  background: var(--ink);
-  transform: rotate(45deg);
+  height: 16px;
+  min-width: 6px;
+  overflow: hidden;
+  border: 1px solid var(--drawing-color);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--drawing-color) 30%, var(--surface-2));
+  cursor: grab;
+  touch-action: none;
+}
+
+.drawingBar:active {
+  cursor: grabbing;
+}
+
+.drawingBar[data-selected] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+  z-index: 1;
+}
+
+.drawingLabel {
+  display: block;
+  padding: 0 8px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.drawingEdge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  /* Above a keyframe sitting on the edge: stretching the bar wins. */
   z-index: 2;
 }
 
-.marker[data-freeze] {
-  background: #aab1ff;
+.drawingEdge[data-side='start'] {
+  left: 0;
 }
 
-.marker:hover {
+.drawingEdge[data-side='end'] {
+  right: 0;
+}
+
+.keyframe {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  background: #fff;
+  transform: rotate(45deg);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.keyframe:hover {
   background: var(--accent);
+}
+
+.drawingBar:hover .drawingEdge,
+.drawingBar[data-selected] .drawingEdge {
+  background: color-mix(in srgb, var(--drawing-color) 70%, transparent);
 }
 
 .playhead {

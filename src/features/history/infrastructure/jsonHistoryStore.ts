@@ -1,5 +1,6 @@
 import { AtomicJsonFile } from '@shared/infrastructure/atomicJsonFile'
 import { fileExists } from '@shared/infrastructure/fileExists'
+import { migrateAnnotations } from '@features/annotations/domain/annotation'
 import { addRecord, removeRecord, type ExportRecord, type HistoryEntry } from '../domain/exportRecord'
 
 /** Export history in userData/history.json; the main process owns it so no export is lost. */
@@ -44,7 +45,10 @@ export class JsonHistoryStore {
   private async load(): Promise<ExportRecord[]> {
     if (this.records) return this.records
     const parsed = await this.file.read()
-    this.records = Array.isArray(parsed) ? (parsed as ExportRecord[]) : []
+    // Exports from older versions kept their drawings in the old format.
+    this.records = Array.isArray(parsed)
+      ? (parsed as ExportRecord[]).map((record) => ({ ...record, annotations: migrateAnnotations(record.annotations ?? []) }))
+      : []
     return this.records
   }
 

@@ -1,6 +1,6 @@
 import type { GpuVendor } from '../domain/encoderSupport'
 import type { VideoCodec } from '../domain/encodingPlan'
-import type { RenderTimeline } from '../domain/renderTimeline'
+import type { MotionKey, RenderTimeline } from '../domain/renderTimeline'
 
 export interface RenderOutput {
   path: string
@@ -20,8 +20,8 @@ export interface RenderSpec {
   timeline: RenderTimeline
   /** Audio track count per source path (ShadowPlay can save game and mic separately). */
   audioTracks: Record<string, number>
-  /** One transparent PNG per drawing, already at the output resolution. */
-  overlays: Array<{ annotationId: string; pngPath: string }>
+  /** One transparent PNG per drawing, already at the output resolution; animated ones carry their motion. */
+  overlays: Array<{ annotationId: string; pngPath: string; motion?: MotionKey[] }>
   /** GPU that decodes the recordings (heavy 1440p/4K HEVC decodes ~2.5x faster); null decodes on the CPU. */
   hwDecode: GpuVendor | null
   output: RenderOutput

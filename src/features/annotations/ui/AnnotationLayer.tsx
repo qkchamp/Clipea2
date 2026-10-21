@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { clamp } from '@shared/domain/time'
-import type { Point, Shape, ShapeKind } from '../domain/annotation'
-import { drawShapes, textSizeFor } from './drawShapes'
+import { translateShape, type Annotation, type Point, type Shape, type StrokeStyle } from '../domain/annotation'
+import { shapeAt, shapeBox, type TextMeasure } from '../domain/shapeGeometry'
+import type { DrawTool } from './annotationStore'
+import { drawSelection, drawShapes, measureText, textSizeFor } from './drawShapes'
 import styles from './annotations.module.css'
 
 export interface VideoRect {
@@ -13,26 +15,56 @@ export interface VideoRect {
 
 interface AnnotationLayerProps {
   rect: VideoRect
-  /** Drawings visible on the current frame. */
-  shapes: readonly Shape[]
+  /** Drawings visible on the current frame, in drawing order. */
+  items: readonly Annotation[]
   drawing: boolean
-  tool: ShapeKind
+  tool: DrawTool
   color: string
   width: number
+  selectedId: string | null
   onShape: (shape: Shape) => void
+  onSelect: (id: string | null) => void
+  onMove: (id: string, dx: number, dy: number) => void
+  onEditText: (id: string, text: string) => void
 }
+
+/** Pixels around a stroke that still grab it with the cursor. */
+const GRAB_PX = 6
 
 const distance = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y)
 
-/** Canvas exactly over the visible video frame: paints drawings and, in draw mode, captures new ones. */
-export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onShape }: AnnotationLayerProps) {
+/**
+ * Canvas exactly over the visible video frame: paints drawings and, in draw mode, captures new
+ * ones. With the cursor tool it picks drawings to drag them, and a double click edits a text.
+ */
+export function AnnotationLayer({
+  rect,
+  items,
+  drawing,
+  tool,
+  color,
+  width,
+  selectedId,
+  onShape,
+  onSelect,
+  onMove,
+  onEditText
+}: AnnotationLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [draft, setDraft] = useState<Shape | null>(null)
+  const [drag, setDrag] = useState<{ id: string; origin: Point; dx: number; dy: number } | null>(null)
+  const [overShape, setOverShape] = useState(false)
   // Each text box gets its own id: a late blur from an old box must never commit or close a new one.
-  const [textBox, setTextBox] = useState<{ id: number; at: Point } | null>(null)
+  const [textBox, setTextBox] = useState<{ id: number; at: Point; style: StrokeStyle; editId?: string } | null>(null)
   const [text, setText] = useState('')
   const textBoxIds = useRef(0)
-  const openBox = useRef<{ id: number; at: Point; text: string } | null>(null)
+  const openBox = useRef<{ id: number; at: Point; text: string; editId?: string } | null>(null)
+  const picking = drawing && tool === 'select'
+
+  const measure: TextMeasure = (shape) => {
+    const context = canvasRef.current?.getContext('2d')
+    return context ? measureText(context, shape, rect.height) : { width: 0, height: 0 }
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -46,12 +78,23 @@ export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onS
     context.setTransform(1, 0, 0, 1, 0, 0)
     context.clearRect(0, 0, pixelWidth, pixelHeight)
     context.scale(ratio, ratio)
+    const placed = items
+      // The text being edited is the input box for now.
+      .filter((item) => item.id !== textBox?.editId)
+      .map((item) => ({ id: item.id, shape: drag?.id === item.id ? translateShape(item.shape, drag.dx, drag.dy) : item.shape }))
+    const shapes = placed.map((item) => item.shape)
     drawShapes(context, draft ? [...shapes, draft] : shapes, rect.width, rect.height)
-  }, [rect.width, rect.height, shapes, draft])
+    const selected = picking ? placed.find((item) => item.id === selectedId) : undefined
+    if (selected) {
+      const frame = { width: rect.width, height: rect.height }
+      drawSelection(context, shapeBox(selected.shape, frame, (shape) => measureText(context, shape, rect.height)))
+    }
+  }, [rect.width, rect.height, items, draft, drag, picking, selectedId, textBox?.editId])
 
   useEffect(() => {
     if (!drawing) {
       setDraft(null)
+      setDrag(null)
       openBox.current = null
       setTextBox(null)
       setText('')
@@ -63,12 +106,17 @@ export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onS
     return { x: clamp((event.clientX - box.left) / box.width, 0, 1), y: clamp((event.clientY - box.top) / box.height, 0, 1) }
   }
 
+  const drawingAt = (point: Point): Annotation | undefined =>
+    shapeAt(items, { x: point.x * rect.width, y: point.y * rect.height }, rect, measure, GRAB_PX)
+
   /** Commits the open text box (if `id` matches it) exactly once. */
   const commitText = (id: number): void => {
     const box = openBox.current
     if (!box || box.id !== id) return
     openBox.current = null
-    if (box.text.trim() !== '') onShape({ kind: 'text', at: box.at, text: box.text.trim(), style: { color, width } })
+    const value = box.text.trim()
+    if (box.editId) onEditText(box.editId, value)
+    else if (value !== '') onShape({ kind: 'text', at: box.at, text: value, style: { color, width } })
     setTextBox(null)
     setText('')
   }
@@ -79,27 +127,43 @@ export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onS
     setText('')
   }
 
+  const openTextBox = (at: Point, style: StrokeStyle, initial = '', editId?: string): void => {
+    if (openBox.current) commitText(openBox.current.id)
+    const id = ++textBoxIds.current
+    openBox.current = { id, at, text: initial, editId }
+    setTextBox({ id, at, style, editId })
+    setText(initial)
+  }
+
   const onPointerDown = (event: PointerEvent<HTMLCanvasElement>): void => {
     if (!drawing || event.button !== 0) return
     event.preventDefault()
     event.stopPropagation()
     const point = pointFrom(event)
-    if (tool === 'text') {
+    if (tool === 'select') {
       if (openBox.current) commitText(openBox.current.id)
-      const id = ++textBoxIds.current
-      openBox.current = { id, at: point, text: '' }
-      setTextBox({ id, at: point })
-      setText('')
+      const hit = drawingAt(point)
+      onSelect(hit?.id ?? null)
+      if (!hit) return
+      event.currentTarget.setPointerCapture(event.pointerId)
+      setDrag({ id: hit.id, origin: point, dx: 0, dy: 0 })
       return
     }
+    if (tool === 'text') return openTextBox(point, { color, width })
     event.currentTarget.setPointerCapture(event.pointerId)
     const style = { color, width }
     setDraft(tool === 'pen' ? { kind: 'pen', points: [point], style } : { kind: tool, from: point, to: point, style })
   }
 
   const onPointerMove = (event: PointerEvent<HTMLCanvasElement>): void => {
-    if (!draft) return
+    if (picking && !drag) {
+      const over = drawingAt(pointFrom(event)) !== undefined
+      if (over !== overShape) setOverShape(over)
+      return
+    }
     const point = pointFrom(event)
+    if (drag) return setDrag({ ...drag, dx: point.x - drag.origin.x, dy: point.y - drag.origin.y })
+    if (!draft) return
     setDraft((current) => {
       if (!current) return current
       if (current.kind === 'pen') return { ...current, points: [...current.points, point] }
@@ -109,12 +173,26 @@ export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onS
   }
 
   const onPointerUp = (): void => {
+    if (drag) {
+      if (Math.hypot(drag.dx, drag.dy) > 0.001) onMove(drag.id, drag.dx, drag.dy)
+      setDrag(null)
+      return
+    }
     if (!draft) return
     const meaningful =
       draft.kind === 'pen' ? draft.points.length > 1 : draft.kind !== 'text' && distance(draft.from, draft.to) > 0.008
     if (meaningful) onShape(draft)
     setDraft(null)
   }
+
+  const onDoubleClick = (event: MouseEvent<HTMLCanvasElement>): void => {
+    if (!picking) return
+    const box = event.currentTarget.getBoundingClientRect()
+    const hit = drawingAt({ x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height })
+    if (hit?.shape.kind === 'text') openTextBox(hit.shape.at, hit.shape.style, hit.shape.text, hit.id)
+  }
+
+  const boxStyle = textBox?.style ?? { color, width }
 
   return (
     <div
@@ -126,10 +204,15 @@ export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onS
         ref={canvasRef}
         className={styles.canvas}
         data-tool={tool}
+        data-over={(picking && (overShape || drag !== null)) || undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={() => setDraft(null)}
+        onPointerCancel={() => {
+          setDraft(null)
+          setDrag(null)
+        }}
+        onDoubleClick={onDoubleClick}
         // Keeps the focus in the open text box: clicking the canvas must not blur (and close) it.
         onMouseDown={(event) => drawing && event.preventDefault()}
         onClick={(event) => drawing && event.stopPropagation()}
@@ -142,8 +225,8 @@ export function AnnotationLayer({ rect, shapes, drawing, tool, color, width, onS
           style={{
             left: textBox.at.x * rect.width,
             top: textBox.at.y * rect.height,
-            color,
-            fontSize: textSizeFor(width, rect.height)
+            color: boxStyle.color,
+            fontSize: textSizeFor(boxStyle.width, rect.height)
           }}
           value={text}
           aria-label="Texto del dibujo"

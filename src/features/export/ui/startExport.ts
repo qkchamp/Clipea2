@@ -1,7 +1,7 @@
 import { formatBytes, formatDuration } from '@shared/domain/time'
 import { api } from '@shared/ui/api'
-import type { Annotation } from '@features/annotations/domain/annotation'
-import { rasterizeAnnotation } from '@features/annotations/ui/rasterize'
+import { groupSameTimes, isAnimated, shapeOnFrame, type Annotation } from '@features/annotations/domain/annotation'
+import { rasterizeShapes } from '@features/annotations/ui/rasterize'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { reexportName, type HistoryEntry } from '@features/history/domain/exportRecord'
 import { baseName, recordingLabel } from '@features/library/domain/libraryClip'
@@ -54,8 +54,8 @@ async function runExport({ target, annotations, fileName, labels, outputPath }: 
     const summary = sourceSummary(sources, Object.fromEntries(infos.map((info) => [info.path, info])))
     if (!summary) throw new Error('Alguno de los videos no tiene imagen.')
 
-    const drawn = annotations.filter((annotation) => sources.includes(annotation.sourcePath) && annotation.shapes.length > 0)
-    const { plan, preferences } = computePlanning(target, summary, preferencesFrom(settings), drawn)
+    const drawn = annotations.filter((annotation) => sources.includes(annotation.sourcePath))
+    const { plan, preferences } = computePlanning(target, summary, preferencesFrom(settings))
     if (!plan.fits && preferences.sizeLimitBytes !== null) {
       throw new Error(
         `No entra en ${formatBytes(preferences.sizeLimitBytes)} ni bajando la calidad. ` +
@@ -63,15 +63,25 @@ async function runExport({ target, annotations, fileName, labels, outputPath }: 
       )
     }
 
+    // Drawings with the same times travel as one image: a scribble of 20 strokes is one overlay, not 20.
+    // An animated drawing goes alone, drawn where it was drawn, and ffmpeg slides it along its keyframes.
     const rendered = await Promise.all(
-      drawn.map(async (annotation) => ({
-        id: annotation.id,
-        sourcePath: annotation.sourcePath,
-        time: annotation.time,
-        showFor: annotation.showFor,
-        freezeFor: annotation.freezeFor,
-        png: await rasterizeAnnotation(annotation, plan.width, plan.height)
-      }))
+      groupSameTimes(drawn).map(async (group) => {
+        const [first] = group
+        const animated = isAnimated(first)
+        return {
+          id: first.id,
+          sourcePath: first.sourcePath,
+          start: first.start,
+          end: first.end,
+          motion: animated ? first.keyframes : undefined,
+          png: await rasterizeShapes(
+            group.map((annotation) => (animated ? annotation.shape : shapeOnFrame(annotation, annotation.start))),
+            plan.width,
+            plan.height
+          )
+        }
+      })
     )
 
     const { jobId } = await api.exporter.start({

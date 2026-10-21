@@ -1,4 +1,5 @@
 import type { Point, Shape } from '../domain/annotation'
+import type { Box, TextShape } from '../domain/shapeGeometry'
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
 
@@ -13,6 +14,31 @@ const MIN_TEXT = 0.02
 /** Font size of text drawings, derived from the stroke width so the size picker affects both. */
 export function textSizeFor(width: number, frameHeight: number): number {
   return Math.max(MIN_TEXT, width * 6) * frameHeight
+}
+
+const textFont = (size: number): string => `800 ${size}px 'Segoe UI', system-ui, sans-serif`
+
+/** Pixel size of a text drawing on a frame of that height. */
+export function measureText(ctx: Context2D, shape: TextShape, frameHeight: number): { width: number; height: number } {
+  const size = textSizeFor(shape.style.width, frameHeight)
+  ctx.save()
+  ctx.font = textFont(size)
+  const width = ctx.measureText(shape.text).width
+  ctx.restore()
+  return { width, height: size * 1.2 }
+}
+
+/** Dashed frame around the drawing picked with the cursor; only on screen, never exported. */
+export function drawSelection(ctx: Context2D, box: Box): void {
+  const pad = 6
+  ctx.save()
+  ctx.lineWidth = 1.5
+  ctx.setLineDash([5, 4])
+  ctx.strokeStyle = '#ffffff'
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+  ctx.shadowBlur = 3
+  ctx.strokeRect(box.left - pad, box.top - pad, box.width + pad * 2, box.height + pad * 2)
+  ctx.restore()
 }
 
 /**
@@ -87,7 +113,7 @@ function drawShape(ctx: Context2D, shape: Shape, width: number, height: number):
     case 'text': {
       const at = toPx(shape.at)
       const size = textSizeFor(shape.style.width, height)
-      ctx.font = `800 ${size}px 'Segoe UI', system-ui, sans-serif`
+      ctx.font = textFont(size)
       ctx.textBaseline = 'top'
       ctx.shadowBlur = 0
       ctx.lineWidth = size / 5

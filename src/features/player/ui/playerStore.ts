@@ -31,8 +31,6 @@ interface PlayerState {
   rate: number
   volume: number
   muted: boolean
-  /** Drawing whose freeze is holding the image right now. */
-  freezingId: string | null
   osd: { text: string; id: number } | null
   pendingSeek: PendingSeek | null
   controller: PlayerController | null
@@ -47,7 +45,6 @@ interface PlayerState {
   resetRate(): void
   setVolume(volume: number): void
   toggleMute(): void
-  setFreezing(id: string | null): void
   showOsd(text: string): void
   takePendingSeek(): PendingSeek | null
   /** Where to land once the current file (re)loads. */
@@ -67,7 +64,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   rate: PLAYBACK_RATE.normal,
   volume: 1,
   muted: false,
-  freezingId: null,
   osd: null,
   pendingSeek: null,
   controller: null,
@@ -82,7 +78,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
       return
     }
-    set({ sourcePath: path, currentTime: seek?.time ?? 0, duration: 0, playing: false, freezingId: null, pendingSeek: seek ?? null })
+    set({ sourcePath: path, currentTime: seek?.time ?? 0, duration: 0, playing: false, pendingSeek: seek ?? null })
   },
 
   setController: (controller) => set({ controller }),
@@ -103,7 +99,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setVolume: (volume) => set({ volume: Math.min(1, Math.max(0, volume)), muted: false }),
   toggleMute: () => set((state) => ({ muted: !state.muted })),
-  setFreezing: (freezingId) => set({ freezingId }),
   showOsd: (text) => set({ osd: { text, id: ++osdCounter } }),
 
   takePendingSeek() {

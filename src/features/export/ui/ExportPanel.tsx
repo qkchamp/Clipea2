@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Info, SlidersHorizontal, Snowflake, TriangleAlert, Upload, X } from 'lucide-react'
+import { Info, SlidersHorizontal, TriangleAlert, Upload, X } from 'lucide-react'
 import { formatBytes, formatDuration } from '@shared/domain/time'
 import { api } from '@shared/ui/api'
 import { Button, IconButton, Kbd, ProgressBar, TextInput } from '@shared/ui/atoms'
@@ -21,7 +21,7 @@ import styles from './export.module.css'
 function Warnings({ planning }: { planning: ExportPlanning }) {
   const { plan, preferences } = planning
   const limit = preferences.sizeLimitBytes
-  const notes: Array<{ tone: 'danger' | 'warning' | 'info'; text: string }> = []
+  const notes: Array<{ tone: 'danger' | 'warning'; text: string }> = []
   if (limit !== null && !plan.fits) {
     notes.push({
       tone: 'danger',
@@ -34,14 +34,11 @@ function Warnings({ planning }: { planning: ExportPlanning }) {
     })
   }
   if (plan.fits && plan.grade === 'baja') notes.push({ tone: 'warning', text: 'Es mucho video para ese tamaño: la calidad va a ser baja.' })
-  if (planning.frozenSec > 0.05) {
-    notes.push({ tone: 'info', text: `Incluye ${formatDuration(planning.frozenSec)} de imagen congelada por los dibujos.` })
-  }
   return (
     <>
       {notes.map((note) => (
         <p key={note.text} className={styles.note} data-tone={note.tone}>
-          {note.tone === 'info' ? <Snowflake size={14} /> : note.tone === 'danger' ? <TriangleAlert size={14} /> : <Info size={14} />}
+          {note.tone === 'danger' ? <TriangleAlert size={14} /> : <Info size={14} />}
           {note.text}
         </p>
       ))}

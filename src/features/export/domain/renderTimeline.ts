@@ -4,26 +4,26 @@ export interface RenderSegmentInput {
   end: number
 }
 
+/** Offset of an animated drawing at a moment of the source video, in fractions of the frame. */
+export interface MotionKey {
+  time: number
+  dx: number
+  dy: number
+}
+
 export interface RenderAnnotationInput {
   id: string
   sourcePath: string
-  time: number
-  showFor: number
-  freezeFor: number
-}
-
-/** Continuous piece of source video; `holdAfter` freezes its last frame for that many seconds. */
-export interface RenderPart {
-  from: number
-  to: number
-  holdAfter: number
+  start: number
+  end: number
+  /** Animated drawings glide between these (two or more, sorted by time). */
+  motion?: MotionKey[]
 }
 
 export interface RenderSegment {
   sourcePath: string
   start: number
   end: number
-  parts: RenderPart[]
   outputStart: number
   outputDuration: number
 }
@@ -33,6 +33,8 @@ export interface OverlayWindow {
   annotationId: string
   start: number
   end: number
+  /** Moment of the source video shown at `start` (animated drawings follow the source time). */
+  sourceStart: number
 }
 
 export interface RenderTimeline {
@@ -45,7 +47,7 @@ const EPSILON = 1e-6
 
 /**
  * Turns the montage plus its drawings into what the encoder needs: the source pieces to
- * concatenate (split wherever a drawing freezes the image) and when each drawing shows up.
+ * concatenate and when each drawing shows up in the exported clip.
  */
 export function compileRenderTimeline(
   segments: readonly RenderSegmentInput[],
@@ -57,72 +59,25 @@ export function compileRenderTimeline(
   let outputCursor = 0
 
   for (const segment of segments) {
-    const parts: RenderPart[] = []
-    let cursor = segment.start
-    let outputAtCursor = outputCursor
-    const fromSource = annotations.filter((annotation) => annotation.sourcePath === segment.sourcePath)
-
-    // Drawings made just before the cut that are still on screen when it starts.
-    for (const annotation of fromSource) {
-      const visibleUntil = annotation.time + Math.max(annotation.showFor, frameDuration)
-      if (annotation.time < segment.start - EPSILON && visibleUntil > segment.start + EPSILON) {
+    for (const annotation of annotations) {
+      if (annotation.sourcePath !== segment.sourcePath) continue
+      // Every drawing lasts at least one frame, like in the player.
+      const from = Math.max(annotation.start, segment.start)
+      const until = Math.min(Math.max(annotation.end, annotation.start + frameDuration), segment.end)
+      if (until - from > EPSILON) {
         overlays.push({
           annotationId: annotation.id,
-          start: outputCursor,
-          end: outputCursor + Math.min(visibleUntil, segment.end) - segment.start
+          start: outputCursor + from - segment.start,
+          end: outputCursor + until - segment.start,
+          sourceStart: from
         })
       }
     }
 
-    const inside = fromSource
-      .filter((annotation) => annotation.time >= segment.start - EPSILON && annotation.time < segment.end - EPSILON)
-      .sort((a, b) => a.time - b.time)
-
-    for (const annotation of inside) {
-      const shownAt = outputAtCursor + Math.max(0, annotation.time - cursor)
-      if (annotation.freezeFor > 0) {
-        const frameEnd = Math.min(Math.max(annotation.time, segment.start) + frameDuration, segment.end)
-        if (frameEnd > cursor + EPSILON) {
-          parts.push({ from: cursor, to: frameEnd, holdAfter: annotation.freezeFor })
-          outputAtCursor += frameEnd - cursor + annotation.freezeFor
-          cursor = frameEnd
-        } else if (parts.length > 0) {
-          parts[parts.length - 1].holdAfter += annotation.freezeFor
-          outputAtCursor += annotation.freezeFor
-        }
-        overlays.push({
-          annotationId: annotation.id,
-          start: shownAt,
-          end: shownAt + frameDuration + annotation.freezeFor + annotation.showFor
-        })
-      } else {
-        overlays.push({
-          annotationId: annotation.id,
-          start: shownAt,
-          end: shownAt + Math.max(annotation.showFor, frameDuration)
-        })
-      }
-    }
-
-    if (segment.end - cursor > EPSILON || parts.length === 0) {
-      parts.push({ from: cursor, to: segment.end, holdAfter: 0 })
-      outputAtCursor += segment.end - cursor
-    }
-
-    rendered.push({
-      sourcePath: segment.sourcePath,
-      start: segment.start,
-      end: segment.end,
-      parts,
-      outputStart: outputCursor,
-      outputDuration: outputAtCursor - outputCursor
-    })
-    outputCursor = outputAtCursor
+    const duration = segment.end - segment.start
+    rendered.push({ sourcePath: segment.sourcePath, start: segment.start, end: segment.end, outputStart: outputCursor, outputDuration: duration })
+    outputCursor += duration
   }
 
-  const visible = overlays
-    .map((window) => ({ ...window, start: Math.max(0, window.start), end: Math.min(outputCursor, window.end) }))
-    .filter((window) => window.end - window.start > EPSILON)
-
-  return { segments: rendered, overlays: visible, totalDuration: outputCursor }
+  return { segments: rendered, overlays, totalDuration: outputCursor }
 }

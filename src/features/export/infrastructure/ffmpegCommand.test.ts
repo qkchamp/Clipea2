@@ -44,21 +44,38 @@ describe('buildFfmpegArgs', () => {
     expect(args.at(-1)).toBe('C:/out/clip.mp4')
   })
 
-  it('splits, freezes and overlays a drawing', () => {
+  it('overlays a drawing during its window', () => {
     const timeline = compileRenderTimeline(
       [{ sourcePath: 'a.mp4', start: 50, end: 54 }],
-      [{ id: 'd1', sourcePath: 'a.mp4', time: 52, showFor: 1, freezeFor: 1.5 }],
+      [{ id: 'd1', sourcePath: 'a.mp4', start: 52, end: 53.5 }],
       1 / 30
     )
     const graph = filterOf(
       buildFfmpegArgs({ timeline, audioTracks: { 'a.mp4': 1 }, overlays: [{ annotationId: 'd1', pngPath: 'd1.png' }], hwDecode: null, output })
     )
-    expect(graph).toContain('split=2[s0v0][s0v1]')
-    expect(graph).toContain('trim=start=0:end=2.016667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.5[p0v]')
-    expect(graph).toContain('apad=whole_dur=3.533333[p0a]')
-    expect(graph).toContain('trim=start=2.016667:end=3.983333')
-    expect(graph).toContain("[catv][img0]overlay=0:0:enable='between(t,2,4.533333)'[ov0]")
+    expect(graph).toContain('trim=start=0:end=3.983333,setpts=PTS-STARTPTS[p0v]')
+    expect(graph).toContain('apad=whole_dur=4[p0a]')
+    expect(graph).toContain("[catv][img0]overlay=0:0:enable='between(t,2,3.5)'[ov0]")
     expect(graph).toContain('[ov0]format=yuv420p[outv]')
+  })
+
+  it('slides an animated drawing along its keyframes, in source time', () => {
+    const timeline = compileRenderTimeline(
+      [{ sourcePath: 'a.mp4', start: 50, end: 54 }],
+      [{ id: 'd1', sourcePath: 'a.mp4', start: 51, end: 53 }],
+      1 / 30
+    )
+    const motion = [
+      { time: 51, dx: 0, dy: 0 },
+      { time: 52, dx: 0.5, dy: -0.25 }
+    ]
+    const graph = filterOf(
+      buildFfmpegArgs({ timeline, audioTracks: { 'a.mp4': 1 }, overlays: [{ annotationId: 'd1', pngPath: 'd1.png', motion }], hwDecode: null, output })
+    )
+    // Clip second 1 is source second 51: x goes 0 → 640 px (half of 1280) by source second 52, y 0 → -180.
+    expect(graph).toContain("overlay=x='if(between(t,1,3),if(lt((t+(50)),51),0,if(lt((t+(50)),52),0+(640)*((t+(50))-(51)),640)),0)'")
+    expect(graph).toContain("y='if(between(t,1,3),if(lt((t+(50)),51),0,if(lt((t+(50)),52),0+(-180)*((t+(50))-(51)),-180)),0)'")
+    expect(graph).toContain(":enable='between(t,1,3)'[ov0]")
   })
 
   it('joins pieces of different recordings and fills missing audio with silence', () => {
@@ -84,7 +101,7 @@ describe('buildFfmpegArgs', () => {
         { sourcePath: 'a.mp4', start: 0, end: 2 },
         { sourcePath: 'b.mp4', start: 5, end: 6 }
       ],
-      [{ id: 'd1', sourcePath: 'a.mp4', time: 1, showFor: 1, freezeFor: 0 }],
+      [{ id: 'd1', sourcePath: 'a.mp4', start: 1, end: 2 }],
       1 / 30
     )
     const overlays = [{ annotationId: 'd1', pngPath: 'd1.png' }]

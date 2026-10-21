@@ -4,7 +4,7 @@ import type { Segment } from '@features/montage/domain/montage'
 import { describeChange, EMPTY_HISTORY, isDestructive, MAX_UNDO, record, redo, undo, type EditSnapshot } from './editHistory'
 
 const segment = (id: string, start = 0): Segment => ({ id, sourcePath: 'a.mp4', sourceLabel: 'A', start, end: start + 5 })
-const drawing = (id: string): Annotation => ({ id, sourcePath: 'a.mp4', time: 1, showFor: 2, freezeFor: 0, shapes: [] })
+const drawing = (id: string): Annotation => ({ id, sourcePath: 'a.mp4', start: 1, end: 3, shape: { kind: 'text', at: { x: 0, y: 0 }, text: id, style: { color: '#fff', width: 0.007 } } })
 const snap = (segments: Segment[], annotations: Annotation[] = []): EditSnapshot => ({ segments, annotations })
 
 describe('edit history', () => {

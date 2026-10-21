@@ -97,22 +97,8 @@ describe('compileRenderTimeline', () => {
 
   it('passes a plain cut through', () => {
     const timeline = compileRenderTimeline([{ sourcePath: 'a.mp4', start: 50, end: 60 }], [], frame)
-    expect(timeline.segments[0].parts).toEqual([{ from: 50, to: 60, holdAfter: 0 }])
+    expect(timeline.segments).toEqual([{ sourcePath: 'a.mp4', start: 50, end: 60, outputStart: 0, outputDuration: 10 }])
     expect(timeline.totalDuration).toBe(10)
-  })
-
-  it('splits the cut where a drawing freezes the image', () => {
-    const timeline = compileRenderTimeline(
-      [{ sourcePath: 'a.mp4', start: 50, end: 60 }],
-      [{ id: 'f', sourcePath: 'a.mp4', time: 52, showFor: 2, freezeFor: 1.5 }],
-      frame
-    )
-    expect(timeline.segments[0].parts).toEqual([
-      { from: 50, to: 52 + frame, holdAfter: 1.5 },
-      { from: 52 + frame, to: 60, holdAfter: 0 }
-    ])
-    expect(timeline.totalDuration).toBeCloseTo(11.5)
-    expect(timeline.overlays).toEqual([{ annotationId: 'f', start: 2, end: 2 + frame + 1.5 + 2 }])
   })
 
   it('places drawings of later segments after the earlier ones', () => {
@@ -122,13 +108,13 @@ describe('compileRenderTimeline', () => {
         { sourcePath: 'b.mp4', start: 10, end: 13 }
       ],
       [
-        { id: 'b1', sourcePath: 'b.mp4', time: 11, showFor: 1, freezeFor: 0 },
-        { id: 'other', sourcePath: 'c.mp4', time: 11, showFor: 1, freezeFor: 0 }
+        { id: 'b1', sourcePath: 'b.mp4', start: 11, end: 12 },
+        { id: 'other', sourcePath: 'c.mp4', start: 11, end: 12 }
       ],
       frame
     )
     expect(timeline.segments[1].outputStart).toBe(10)
-    expect(timeline.overlays).toEqual([{ annotationId: 'b1', start: 11, end: 12 }])
+    expect(timeline.overlays).toEqual([{ annotationId: 'b1', start: 11, end: 12, sourceStart: 11 }])
     expect(timeline.totalDuration).toBe(13)
   })
 
@@ -136,14 +122,30 @@ describe('compileRenderTimeline', () => {
     const timeline = compileRenderTimeline(
       [{ sourcePath: 'a.mp4', start: 50, end: 60 }],
       [
-        { id: 'before', sourcePath: 'a.mp4', time: 49, showFor: 2, freezeFor: 0 },
-        { id: 'tail', sourcePath: 'a.mp4', time: 59, showFor: 2, freezeFor: 0 }
+        { id: 'before', sourcePath: 'a.mp4', start: 49, end: 51 },
+        { id: 'tail', sourcePath: 'a.mp4', start: 59, end: 61 },
+        { id: 'outside', sourcePath: 'a.mp4', start: 45, end: 50 }
       ],
       frame
     )
     expect(timeline.overlays).toEqual([
-      { annotationId: 'before', start: 0, end: 1 },
-      { annotationId: 'tail', start: 9, end: 10 }
+      { annotationId: 'before', start: 0, end: 1, sourceStart: 50 },
+      { annotationId: 'tail', start: 9, end: 10, sourceStart: 59 }
+    ])
+  })
+
+  it('shows a drawing in every cut of the montage that covers it, at least one frame', () => {
+    const timeline = compileRenderTimeline(
+      [
+        { sourcePath: 'a.mp4', start: 0, end: 4 },
+        { sourcePath: 'a.mp4', start: 2, end: 6 }
+      ],
+      [{ id: 'd', sourcePath: 'a.mp4', start: 3, end: 3 }],
+      frame
+    )
+    expect(timeline.overlays).toEqual([
+      { annotationId: 'd', start: 3, end: 3 + frame, sourceStart: 3 },
+      { annotationId: 'd', start: 5, end: 5 + frame, sourceStart: 3 }
     ])
   })
 })

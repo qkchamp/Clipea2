@@ -1,12 +1,12 @@
-import type { ReactNode } from 'react'
-import { ArrowUpRight, Check, Circle, PenLine, Snowflake, Square, Trash, Type, Undo2 } from 'lucide-react'
-import { IconButton } from '@shared/ui/atoms'
-import { SegmentedControl } from '@shared/ui/molecules'
-import type { Annotation, ShapeKind } from '../domain/annotation'
-import { DRAW_COLORS, DRAW_WIDTHS, useAnnotationStore } from './annotationStore'
+import { useRef, type ReactNode } from 'react'
+import { ArrowUpRight, Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2, Square, Type, Undo2 } from 'lucide-react'
+import { Button, IconButton } from '@shared/ui/atoms'
+import { useCrowded } from '@shared/ui/useCrowded'
+import { DRAW_COLORS, DRAW_WIDTHS, useAnnotationStore, type DrawTool } from './annotationStore'
 import styles from './annotations.module.css'
 
-const TOOLS: Array<{ kind: ShapeKind; label: string; icon: ReactNode }> = [
+const TOOLS: Array<{ kind: DrawTool; label: string; icon: ReactNode }> = [
+  { kind: 'select', label: 'Mover dibujos (doble clic en un texto para editarlo)', icon: <MousePointer2 size={16} /> },
   { kind: 'arrow', label: 'Flecha', icon: <ArrowUpRight size={17} /> },
   { kind: 'ellipse', label: 'Círculo', icon: <Circle size={16} /> },
   { kind: 'rect', label: 'Rectángulo', icon: <Square size={15} /> },
@@ -14,27 +14,31 @@ const TOOLS: Array<{ kind: ShapeKind; label: string; icon: ReactNode }> = [
   { kind: 'text', label: 'Texto', icon: <Type size={16} /> }
 ]
 
-const SHOW_OPTIONS = [1, 2, 3, 5] as const
-const FREEZE_OPTIONS = [0, 1, 2, 3] as const
-
 interface AnnotationToolbarProps {
-  /** Drawing on the frame on screen, if any: the timing controls edit it. */
-  active: Annotation | undefined
+  canUndo: boolean
+  canRedo: boolean
+  /** What the keyframe button does on the selected drawing at this frame ('none': nothing selected on screen). */
+  keyframe: 'add' | 'remove' | 'none'
   onUndo: () => void
-  onDelete: (id: string) => void
+  onRedo: () => void
+  onKeyframe: () => void
   onClose: () => void
 }
 
-export function AnnotationToolbar({ active, onUndo, onDelete, onClose }: AnnotationToolbarProps) {
-  const { tool, color, width, showFor, freezeFor, setTool, setColor, setWidth, setShowFor, setFreezeFor } = useAnnotationStore()
-  const currentShow = active?.showFor ?? showFor
-  const currentFreeze = active?.freezeFor ?? freezeFor
+/**
+ * One row above the video: tools, color, thickness, keyframe, undo/redo and "Listo". How long each drawing
+ * lasts is set on its bar in the timeline. In a narrow window it shrinks before wrapping.
+ */
+export function AnnotationToolbar({ canUndo, canRedo, keyframe, onUndo, onRedo, onKeyframe, onClose }: AnnotationToolbarProps) {
+  const { tool, color, width, setTool, setColor, setWidth } = useAnnotationStore()
+  const row = useRef<HTMLDivElement>(null)
+  const crowded = useCrowded(row, 'parent')
 
   return (
-    <div className={styles.toolbar} role="toolbar" aria-label="Herramientas de dibujo" onClick={(event) => event.stopPropagation()}>
+    <div ref={row} className={styles.toolbar} role="toolbar" aria-label="Herramientas de dibujo" onClick={(event) => event.stopPropagation()}>
       <div className={styles.group}>
         {TOOLS.map((item) => (
-          <IconButton key={item.kind} label={item.label} active={tool === item.kind} onClick={() => setTool(item.kind)}>
+          <IconButton key={item.kind} small={crowded} label={item.label} active={tool === item.kind} onClick={() => setTool(item.kind)}>
             {item.icon}
           </IconButton>
         ))}
@@ -73,37 +77,41 @@ export function AnnotationToolbar({ active, onUndo, onDelete, onClose }: Annotat
       </div>
 
       <div className={styles.group}>
-        <span className={styles.groupLabel}>Visible</span>
-        <SegmentedControl
-          label="Tiempo visible del dibujo"
-          value={String(currentShow)}
-          options={SHOW_OPTIONS.map((seconds) => ({ value: String(seconds), label: `${seconds}s` }))}
-          onChange={(value) => setShowFor(Number(value), active?.id)}
-        />
+        <IconButton
+          small={crowded}
+          label={
+            keyframe === 'remove'
+              ? 'Quitar el keyframe de este cuadro'
+              : 'Keyframe en este cuadro: fija dónde está el dibujo elegido. En otro cuadro, arrastralo y se mueve solo entre los dos'
+          }
+          active={keyframe === 'remove'}
+          disabled={keyframe === 'none'}
+          onClick={onKeyframe}
+        >
+          {keyframe === 'remove' ? <DiamondMinus size={16} /> : <DiamondPlus size={16} />}
+        </IconButton>
       </div>
 
       <div className={styles.group}>
-        <span className={styles.groupLabel} title="Congela la imagen en este cuadro mientras se ve el dibujo">
-          <Snowflake size={13} /> Congelar
-        </span>
-        <SegmentedControl
-          label="Congelar imagen"
-          value={String(currentFreeze)}
-          options={FREEZE_OPTIONS.map((seconds) => ({ value: String(seconds), label: seconds === 0 ? 'No' : `${seconds}s` }))}
-          onChange={(value) => setFreezeFor(Number(value), active?.id)}
-        />
-      </div>
-
-      <div className={styles.group}>
-        <IconButton label="Deshacer trazo (Ctrl+Z)" onClick={onUndo} disabled={!active}>
+        <IconButton small={crowded} label="Deshacer (Ctrl+Z)" onClick={onUndo} disabled={!canUndo}>
           <Undo2 size={16} />
         </IconButton>
-        <IconButton label="Borrar dibujo de este cuadro (Supr)" onClick={() => active && onDelete(active.id)} disabled={!active}>
-          <Trash size={16} />
+        <IconButton small={crowded} label="Rehacer (Ctrl+Y)" onClick={onRedo} disabled={!canRedo}>
+          <Redo2 size={16} />
         </IconButton>
-        <IconButton label="Terminar de dibujar (D o Esc)" onClick={onClose}>
-          <Check size={17} />
-        </IconButton>
+      </div>
+
+      <div className={styles.group}>
+        <Button
+          size="sm"
+          variant="primary"
+          icon={<Check size={14} />}
+          title="Terminar de dibujar (D o Esc)"
+          aria-label={crowded ? 'Listo' : undefined}
+          onClick={onClose}
+        >
+          {crowded ? null : 'Listo'}
+        </Button>
       </div>
     </div>
   )

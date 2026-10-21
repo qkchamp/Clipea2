@@ -1,43 +1,30 @@
 import { useEffect, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { useMediaStore } from '@features/media/ui/mediaStore'
 import { useMontageStore } from '@features/montage/ui/montageStore'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
-import type { Annotation } from '@features/annotations/domain/annotation'
 import type { EncodingPlan, EncodingPreferences, SourceVideoSummary } from '../domain/encodingPlan'
 import { planEncoding } from '../domain/encodingPlan'
-import { compileRenderTimeline } from '../domain/renderTimeline'
 import { preferencesFrom, resolveExportTarget, sourceSummary, uniqueSources, type ExportTarget } from './exportTarget'
 
 export interface ExportPlanning {
   target: ExportTarget
   plan: EncodingPlan
   preferences: EncodingPreferences
-  /** Output length, including frozen frames. */
+  /** Output length: every cut back to back. */
   durationSec: number
-  frozenSec: number
 }
 
 /** Same computation for the panel preview and for the export itself. */
 export function computePlanning(
   target: ExportTarget,
   summary: SourceVideoSummary,
-  preferences: EncodingPreferences,
-  annotations: readonly Annotation[]
+  preferences: EncodingPreferences
 ): ExportPlanning {
-  const fps = Math.min(summary.fps, preferences.maxFps ?? summary.fps)
-  const timeline = compileRenderTimeline(target.segments, annotations, 1 / fps)
-  const cutLength = target.segments.reduce((total, segment) => total + (segment.end - segment.start), 0)
-  return {
-    target,
-    preferences,
-    plan: planEncoding(timeline.totalDuration, summary, preferences),
-    durationSec: timeline.totalDuration,
-    frozenSec: Math.max(0, timeline.totalDuration - cutLength)
-  }
+  const durationSec = target.segments.reduce((total, segment) => total + (segment.end - segment.start), 0)
+  return { target, preferences, plan: planEncoding(durationSec, summary, preferences), durationSec }
 }
 
 export function useExportPlan(): { target: ExportTarget | null; planning: ExportPlanning | null } {
@@ -45,7 +32,6 @@ export function useExportPlan(): { target: ExportTarget | null; planning: Export
   const sourcePath = usePlayerStore((state) => state.sourcePath)
   const range = useTrimStore((state) => state.range)
   const rangeSource = useTrimStore((state) => state.rangeSource)
-  const annotations = useAnnotationStore((state) => state.annotations)
   const settings = useSettingsStore((state) => state.settings)
 
   const target = useMemo(
@@ -65,8 +51,8 @@ export function useExportPlan(): { target: ExportTarget | null; planning: Export
     if (!target || !settings) return null
     const infos = Object.fromEntries(sources.flatMap((path, index) => (sourceInfos[index] ? [[path, sourceInfos[index]]] : [])))
     const summary = sourceSummary(sources, infos)
-    return summary ? computePlanning(target, summary, preferencesFrom(settings), annotations) : null
-  }, [target, settings, sources, sourceInfos, annotations])
+    return summary ? computePlanning(target, summary, preferencesFrom(settings)) : null
+  }, [target, settings, sources, sourceInfos])
 
   return { target, planning }
 }

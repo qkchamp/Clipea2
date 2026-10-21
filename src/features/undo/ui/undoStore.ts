@@ -24,7 +24,6 @@ interface UndoState {
 export const useUndoStore = create<UndoState>(() => ({ history: EMPTY_HISTORY }))
 
 let applying = false
-let quiet = 0
 let lastSnapshot: EditSnapshot = current()
 
 function current(): EditSnapshot {
@@ -39,7 +38,7 @@ function onChange(): void {
   const kind = describeChange(before, next)
   if (kind === 'none') return
   useUndoStore.setState((state) => ({ history: record(state.history, before) }))
-  if (quiet === 0 && isDestructive(kind)) {
+  if (isDestructive(kind)) {
     const label = CHANGE_LABELS[kind]
     useUiStore.getState().showToast({
       text: label.charAt(0).toUpperCase() + label.slice(1),
@@ -63,16 +62,6 @@ function apply(snapshot: EditSnapshot): void {
   if (editing && !snapshot.segments.some((segment) => segment.id === editing)) useTrimStore.getState().stopEditing()
 }
 
-/** Runs a change that should be undoable but must not pop a "Deshacer" toast (e.g. undoing a stroke). */
-export function quietly(change: () => void): void {
-  quiet++
-  try {
-    change()
-  } finally {
-    quiet--
-  }
-}
-
 /** Runs a change that is not the user's own edit (e.g. snapping drawings to exact frames): no undo step. */
 export function untracked(change: () => void): void {
   const wasApplying = applying
@@ -81,6 +70,21 @@ export function untracked(change: () => void): void {
     change()
   } finally {
     applying = wasApplying
+  }
+}
+
+/**
+ * Starts a change made of many small ones (dragging a drawing's bar frame by frame): they update the
+ * stores live, and the returned function turns them into a single undo step.
+ */
+export function beginGesture(): () => void {
+  const before = current()
+  const wasApplying = applying
+  applying = true
+  return () => {
+    applying = wasApplying
+    lastSnapshot = before
+    onChange()
   }
 }
 

@@ -44,8 +44,3 @@ export function frameStepTarget(clock: FrameClock, time: number, delta: number):
   if (clock.index) return clock.index.seekTimeOf(target)
   return Math.min((target + 0.5) / clock.fps, clock.duration)
 }
-
-/** Seek target that shows exactly the frame containing `time`. */
-export function seekTimeForFrameAt(clock: FrameClock, time: number): number {
-  return frameStepTarget(clock, time, 0)
-}
