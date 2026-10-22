@@ -246,10 +246,34 @@
   border-radius: 50%;
 }
 
+/* Reads like a label, but it is a box: click it and type a code. */
 .mixerHex {
+  width: 96px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
   font-family: var(--mono);
   font-size: 13px;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mixerHex:hover {
+  border-color: var(--field-border);
+}
+
+.mixerHex:focus {
+  border-color: #525252;
+  background: var(--field);
+  box-shadow: var(--ring);
+  outline: none;
+}
+
+.mixerHex[data-invalid] {
+  border-color: var(--danger);
 }
 
 .channel {

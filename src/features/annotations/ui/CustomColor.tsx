@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@shared/ui/atoms'
 import { Popover } from '@shared/ui/organisms/Popover'
-import { clampChannel, hexToRgb, rgbToHex, type Rgb } from '../domain/color'
+import { clampChannel, hexToRgb, parseHex, rgbToHex, type Rgb } from '../domain/color'
 import { useAnnotationStore } from './annotationStore'
 import styles from './annotations.module.css'
 
@@ -24,14 +24,38 @@ function trackOf(key: keyof Rgb, rgb: Rgb): string {
 
 function ColorMixer({ start, hasCustom, onUse, onReset }: { start: string; hasCustom: boolean; onUse: (hex: string) => void; onReset: () => void }) {
   const [rgb, setRgb] = useState<Rgb>(() => hexToRgb(start))
+  // What is being typed in the hex box; null while it just shows the current color.
+  const [typed, setTyped] = useState<string | null>(null)
   const hex = rgbToHex(rgb)
   const set = (key: keyof Rgb, value: number): void => setRgb((current) => ({ ...current, [key]: clampChannel(value) }))
+  // Three digits ("#fc8") only count once the typing is done: halfway through a six digit code they would flash another color.
+  const finishTyping = (): void => {
+    const parsed = typed === null ? null : parseHex(typed, true)
+    if (parsed) setRgb(parsed)
+    setTyped(null)
+  }
 
   return (
     <div className={styles.mixer}>
       <div className={styles.mixerPreview}>
         <span className={styles.mixerSample} style={{ background: hex }} />
-        <span className={styles.mixerHex}>{hex.toUpperCase()}</span>
+        <input
+          className={styles.mixerHex}
+          aria-label="Código hex del color"
+          title="Escribí un código hex (#FFC389) y el color se ajusta solo"
+          spellCheck={false}
+          maxLength={7}
+          value={typed ?? hex.toUpperCase()}
+          data-invalid={(typed !== null && parseHex(typed, true) === null) || undefined}
+          onFocus={(event) => event.target.select()}
+          onChange={(event) => {
+            setTyped(event.target.value)
+            const parsed = parseHex(event.target.value)
+            if (parsed) setRgb(parsed)
+          }}
+          onBlur={finishTyping}
+          onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+        />
       </div>
       {CHANNELS.map(({ key, letter, name }) => (
         <div key={key} className={styles.channel}>
