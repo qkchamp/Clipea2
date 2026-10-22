@@ -1,3 +1,5 @@
+import { hasEffects, normalizeEffects, type Effect } from './effects'
+
 /** Position inside the video frame, 0..1 on both axes, so drawings survive any output resolution. */
 export interface Point {
   x: number
@@ -36,6 +38,8 @@ export interface Annotation {
   shape: Shape
   /** Sorted by time. With two or more the drawing glides from one to the next; before the first and after the last it stays put. */
   keyframes?: Keyframe[]
+  /** Fades, zooms, slides and loops; at most one of each kind (see effects.ts). */
+  effects?: Effect[]
 }
 
 export const DEFAULT_SHOW_FOR = 2
@@ -87,11 +91,12 @@ export function removeAnnotation(annotations: readonly Annotation[], id: string)
   return annotations.filter((annotation) => annotation.id !== id)
 }
 
-/** Drawings of the same video shown at exactly the same times, in drawing order. Animated ones always go alone. */
+/** Drawings of the same video shown at exactly the same times, in drawing order. Animated ones and ones with effects always go alone. */
 export function groupSameTimes(annotations: readonly Annotation[]): Annotation[][] {
   const groups = new Map<string, Annotation[]>()
   for (const annotation of annotations) {
-    const key = isAnimated(annotation) ? annotation.id : `${annotation.sourcePath}|${annotation.start}|${annotation.end}`
+    const alone = isAnimated(annotation) || hasEffects(annotation)
+    const key = alone ? annotation.id : `${annotation.sourcePath}|${annotation.start}|${annotation.end}`
     const group = groups.get(key)
     if (group) group.push(annotation)
     else groups.set(key, [annotation])
@@ -165,6 +170,12 @@ export function moveOnFrame(annotation: Annotation, time: number, dx: number, dy
   return setKeyframe(annotation, { time, dx: offset.dx + dx, dy: offset.dy + dy })
 }
 
+/** A shape resized where it is on screen on that frame: it is stored as drawn, before the keyframe offset. */
+export function reshapeOnFrame(annotation: Annotation, time: number, onScreen: Shape): Annotation {
+  const { dx, dy } = offsetAt(annotation, time)
+  return { ...annotation, shape: translateShape(onScreen, -dx, -dy) }
+}
+
 /** New times for a drawing; moving the whole bar carries its keyframes along. */
 export function retime(annotation: Annotation, start: number, end: number, carryKeyframes: boolean): Annotation {
   const shift = start - annotation.start
@@ -199,6 +210,13 @@ interface LegacyAnnotation {
   shapes: Shape[]
 }
 
+/** Saved files may hold anything: effects that don't make sense are dropped. */
+function cleanEffects(annotation: Annotation): Annotation {
+  if (annotation.effects === undefined) return annotation
+  const effects = normalizeEffects(annotation.effects)
+  return { ...annotation, effects: effects.length > 0 ? effects : undefined }
+}
+
 /**
  * Sessions and exports saved by older versions grouped every shape of a frame with `time` and
  * `showFor` (and could freeze the image): now each shape is its own drawing with a start and an end.
@@ -206,7 +224,7 @@ interface LegacyAnnotation {
 export function migrateAnnotations(saved: readonly unknown[]): Annotation[] {
   return saved.flatMap((item): Annotation[] => {
     if (!item || typeof item !== 'object') return []
-    if ('shape' in item) return [item as Annotation]
+    if ('shape' in item) return [cleanEffects(item as Annotation)]
     const legacy = item as Partial<LegacyAnnotation>
     if (!Array.isArray(legacy.shapes) || typeof legacy.time !== 'number' || !legacy.id || !legacy.sourcePath) return []
     const { id, sourcePath, time } = legacy

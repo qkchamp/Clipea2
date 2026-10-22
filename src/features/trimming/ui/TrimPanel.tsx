@@ -4,6 +4,7 @@ import { formatDuration } from '@shared/domain/time'
 import { Button, Kbd } from '@shared/ui/atoms'
 import { TimeField } from '@shared/ui/molecules'
 import { annotationLabel, annotationsForSource, assignLanes } from '@features/annotations/domain/annotation'
+import { EFFECT_LABELS, effectSpans } from '@features/annotations/domain/effects'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { useMontageStore } from '@features/montage/ui/montageStore'
 import { frameDuration, frameStartTime } from '@features/player/domain/frameClock'
@@ -71,7 +72,8 @@ export function TrimPanel() {
       label: annotationLabel(annotation),
       color: annotation.shape.style.color,
       lane: lanes[index],
-      keyframes: annotation.keyframes?.map((keyframe) => keyframe.time) ?? []
+      keyframes: annotation.keyframes?.map((keyframe) => keyframe.time) ?? [],
+      effects: effectSpans(annotation).map((span) => ({ ...span, label: EFFECT_LABELS[span.kind] }))
     }))
   }, [annotations, sourcePath])
   const bands = useMemo(

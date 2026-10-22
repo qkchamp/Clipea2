@@ -208,6 +208,8 @@
 }
 
 .drawingLabel {
+  position: relative;
+  z-index: 1;
   display: block;
   padding: 0 8px;
   overflow: hidden;
@@ -220,6 +222,45 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* Where an effect acts on the bar: a ramp for fades, a wedge for zooms, stripes for the rest. */
+.effectSpan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.effectSpan[data-kind='fadeIn'] {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+
+.effectSpan[data-kind='fadeOut'] {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+
+.effectSpan[data-kind='zoomIn'] {
+  background: rgba(255, 255, 255, 0.3);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+}
+
+.effectSpan[data-kind='zoomOut'] {
+  background: rgba(255, 255, 255, 0.3);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.effectSpan[data-kind='slideIn'],
+.effectSpan[data-kind='slideOut'] {
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0 3px, transparent 3px 6px);
+}
+
+.effectSpan[data-kind='blink'] {
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0 4px, transparent 4px 8px);
+}
+
+.effectSpan[data-kind='pulse'] {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 1.5px, transparent 2px) 0 0 / 8px 100%;
 }
 
 .drawingEdge {

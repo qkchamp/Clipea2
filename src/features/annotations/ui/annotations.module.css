@@ -26,6 +26,32 @@
   cursor: move;
 }
 
+/* Over a grip of the picked drawing: the cursor shows which way it stretches. */
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='nw'],
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='se'] {
+  cursor: nwse-resize;
+}
+
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='ne'],
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='sw'] {
+  cursor: nesw-resize;
+}
+
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='n'],
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='s'] {
+  cursor: ns-resize;
+}
+
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='e'],
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='w'] {
+  cursor: ew-resize;
+}
+
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='from'],
+.layer[data-drawing] .canvas[data-tool='select'][data-handle='to'] {
+  cursor: crosshair;
+}
+
 .layer[data-drawing] {
   box-shadow: 0 0 0 2px var(--accent);
 }
@@ -76,6 +102,28 @@
   height: 20px;
   border: 2px solid rgba(0, 0, 0, 0.4);
   border-radius: 50%;
+}
+
+/* The swatch (or button) and the panel that hangs from it travel together. */
+.customAnchor {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Custom color not set yet: an empty ring with a plus. */
+.swatchEmpty {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.swatchEmpty:hover,
+.swatchEmpty[aria-expanded='true'] {
+  border-color: #fff;
+  color: #fff;
 }
 
 .toolbar[data-crowded] {
@@ -176,4 +224,214 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---------- Custom color mixer ---------- */
+.mixer {
+  display: grid;
+  gap: 10px;
+  width: 240px;
+}
+
+.mixerPreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mixerSample {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+}
+
+.mixerHex {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.channel {
+  display: grid;
+  grid-template-columns: 14px 1fr 54px;
+  align-items: center;
+  gap: 8px;
+}
+
+.channelLetter {
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.channel input[type='range'] {
+  height: 8px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  appearance: none;
+  outline: none;
+}
+
+.channel input[type='range']::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  background: #fff;
+  appearance: none;
+}
+
+.channel input[type='range']:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.channelNumber,
+.numberInput,
+.effectSide {
+  height: 26px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.channelNumber {
+  width: 54px;
+  padding: 0 6px;
+  text-align: center;
+  appearance: textfield;
+}
+
+.channelNumber::-webkit-inner-spin-button,
+.channelNumber::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.channelNumber:focus,
+.numberInput:focus,
+.effectSide:focus {
+  outline: none;
+  border-color: #525252;
+  box-shadow: var(--ring);
+}
+
+.mixerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* ---------- Effects panel ---------- */
+.effects {
+  display: grid;
+  gap: 8px;
+  width: 340px;
+}
+
+.effectsHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.effectsTarget {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.effectGroup {
+  display: grid;
+  gap: 2px;
+}
+
+.effectGroupTitle {
+  margin: 0 0 2px;
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.effectRow {
+  display: grid;
+  grid-template-columns: 16px 76px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.effectCheck {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.effectName {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.effectRow[data-on] .effectName {
+  color: var(--text);
+}
+
+/* The fields of an effect that is off stay in place, dimmed, so the rows line up. */
+.effectRow:not([data-on]) .number,
+.effectRow:not([data-on]) .effectSide {
+  opacity: 0.4;
+}
+
+.effectSide {
+  grid-column: 3;
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.number {
+  display: inline-flex;
+  grid-column: 4;
+  align-items: center;
+  gap: 5px;
+  justify-self: end;
+}
+
+/* A number alone (no side picker) sits in the free column, next to the name. */
+.effectRow > .number:nth-child(3) {
+  grid-column: 3 / 5;
+}
+
+.numberInput {
+  width: 52px;
+  padding: 0 6px;
+  text-align: center;
+}
+
+.numberInput[data-invalid] {
+  border-color: var(--danger);
+}
+
+.numberUnit {
+  min-width: 28px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.effectsHint {
+  margin: 2px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
 }

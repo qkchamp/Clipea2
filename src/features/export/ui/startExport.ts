@@ -1,6 +1,8 @@
 import { formatBytes, formatDuration } from '@shared/domain/time'
 import { api } from '@shared/ui/api'
-import { groupSameTimes, isAnimated, shapeOnFrame, type Annotation } from '@features/annotations/domain/annotation'
+import { groupSameTimes, isAnimated, shapeOnFrame, type Annotation, type Shape } from '@features/annotations/domain/annotation'
+import { shapeBox } from '@features/annotations/domain/shapeGeometry'
+import { measureText } from '@features/annotations/ui/drawShapes'
 import { rasterizeShapes } from '@features/annotations/ui/rasterize'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { reexportName, type HistoryEntry } from '@features/history/domain/exportRecord'
@@ -63,23 +65,32 @@ async function runExport({ target, annotations, fileName, labels, outputPath }: 
       )
     }
 
+    // Effects scale a drawing around the middle of its shape, which only the canvas can measure for a text.
+    const probe = new OffscreenCanvas(1, 1).getContext('2d')
+    const centerOf = (shape: Shape): { x: number; y: number } => {
+      const frame = { width: plan.width, height: plan.height }
+      const box = shapeBox(shape, frame, (text) => (probe ? measureText(probe, text, plan.height) : { width: 0, height: 0 }))
+      return { x: (box.left + box.width / 2) / plan.width, y: (box.top + box.height / 2) / plan.height }
+    }
+
     // Drawings with the same times travel as one image: a scribble of 20 strokes is one overlay, not 20.
-    // An animated drawing goes alone, drawn where it was drawn, and ffmpeg slides it along its keyframes.
+    // An animated drawing or one with effects goes alone, drawn where it was drawn, and ffmpeg slides,
+    // fades and scales it from there.
     const rendered = await Promise.all(
       groupSameTimes(drawn).map(async (group) => {
         const [first] = group
         const animated = isAnimated(first)
+        const shapes = group.map((annotation) => (animated ? annotation.shape : shapeOnFrame(annotation, annotation.start)))
         return {
           id: first.id,
           sourcePath: first.sourcePath,
           start: first.start,
           end: first.end,
           motion: animated ? first.keyframes : undefined,
-          png: await rasterizeShapes(
-            group.map((annotation) => (animated ? annotation.shape : shapeOnFrame(annotation, annotation.start))),
-            plan.width,
-            plan.height
-          )
+          effects: first.effects?.length
+            ? { start: first.start, end: first.end, list: first.effects, center: centerOf(shapes[0]) }
+            : undefined,
+          png: await rasterizeShapes(shapes, plan.width, plan.height)
         }
       })
     )

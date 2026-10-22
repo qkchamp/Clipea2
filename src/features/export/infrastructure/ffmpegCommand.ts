@@ -1,7 +1,9 @@
 import type { RenderOutput, RenderSpec } from '../application/ports'
 import type { GpuVendor } from '../domain/encoderSupport'
 import type { VideoCodec } from '../domain/encodingPlan'
-import type { MotionKey, OverlayWindow } from '../domain/renderTimeline'
+import type { OverlayWindow } from '../domain/renderTimeline'
+import { num } from './num'
+import { inWindow, needsFrames, overlayLook, validEffects, type OverlayLook } from './overlayExpressions'
 
 const GPU_SUFFIX: Record<GpuVendor, string> = { nvidia: 'nvenc', amd: 'amf', intel: 'qsv' }
 /**
@@ -30,34 +32,46 @@ export function gpuEncoderName(codec: VideoCodec, vendor: GpuVendor): string {
   return `${codec}_${GPU_SUFFIX[vendor]}`
 }
 
-/** ffmpeg-friendly number: fixed precision without trailing zeros. */
-export function num(value: number): string {
-  return value.toFixed(6).replace(/\.?0+$/, '') || '0'
-}
-
-/** ffmpeg expression of a value that goes linearly from key to key along `time` (held before the first and after the last). */
-function piecewiseLinear(keys: readonly { time: number; value: number }[], time: string): string {
-  let expression = num(keys[keys.length - 1].value)
-  for (let index = keys.length - 2; index >= 0; index--) {
-    const a = keys[index]
-    const b = keys[index + 1]
-    const slope = (b.value - a.value) / (b.time - a.time)
-    expression = `if(lt(${time},${num(b.time)}),${num(a.value)}+(${num(slope)})*(${time}-(${num(a.time)})),${expression})`
-  }
-  return `if(lt(${time},${num(keys[0].time)}),${num(keys[0].value)},${expression})`
-}
-
 /**
- * Overlay position of an animated drawing in pixels: inside each window the clip time `t` maps back
- * to the source time its keyframes use.
+ * The image of a drawing as an overlay input. A still image can't fade or scale over time, so
+ * when it has to it becomes a stream with a frame for every frame of the clip, only over the
+ * stretch where it shows (what comes before is never rendered):
+ *
+ *   still PNG → frames → opacity: its own alpha × a gray frame (from `geq`, a tiny one scaled up) → scaled frame by frame
  */
-function motionExpression(windows: readonly OverlayWindow[], motion: readonly MotionKey[], axis: 'dx' | 'dy', size: number): string {
-  const keys = motion.map((key) => ({ time: key.time, value: key[axis] * size }))
-  return windows.reduceRight(
-    (rest, window) =>
-      `if(between(t,${num(window.start)},${num(window.end)}),${piecewiseLinear(keys, `(t+(${num(window.sourceStart - window.start)}))`)},${rest})`,
-    '0'
-  )
+function drawingImage(input: number, index: number, windows: readonly OverlayWindow[], look: OverlayLook, output: RenderOutput, half: number): string[] {
+  const { width, height, fps } = output
+  const image = `[${input}:v]scale=${width}:${height},format=rgba`
+  if (look.opacity === null && look.scale === null) return [`${image}[img${index}]`]
+
+  // Frames of the clip the windows cover, plus one on each side so no frame has to guess.
+  const first = Math.max(0, Math.ceil((windows[0].start - half) * fps - 1e-6) - 1)
+  const last = Math.ceil((windows[windows.length - 1].end - half) * fps - 1e-6)
+  const count = Math.max(2, last - first + 1)
+  // Exact frame times (rounded to the stream's units: truncating would drop a frame to float noise).
+  const clock = `setpts=(N/${num(fps)}+${num(first / fps)})/TB+0.5`
+  const frames = `${image},tpad=stop_mode=clone:stop_duration=${num((count - 1) / fps)},trim=end_frame=${count},${clock}`
+  const lines: string[] = []
+  let current: string
+
+  if (look.opacity !== null) {
+    current = look.scale === null ? `img${index}` : `faded${index}`
+    lines.push(`${frames},split=2[rgb${index}][alpha${index}]`)
+    lines.push(`[alpha${index}]alphaextract[shape${index}]`)
+    lines.push(
+      `color=c=white:s=16x16:r=${num(fps)}:d=${num(count / fps)},${clock},format=gray,` +
+        `geq=lum='255*(${look.opacity})',scale=${width}:${height}:flags=neighbor,format=gray[fade${index}]`
+    )
+    lines.push(`[fade${index}][shape${index}]blend=all_mode=multiply[mask${index}]`)
+    lines.push(`[rgb${index}][mask${index}]alphamerge[${current}]`)
+  } else {
+    current = `still${index}`
+    lines.push(`${frames}[${current}]`)
+  }
+  if (look.scale !== null) {
+    lines.push(`[${current}]scale=w='max(2,iw*(${look.scale}))':h='max(2,ih*(${look.scale}))':eval=frame[img${index}]`)
+  }
+  return lines
 }
 
 function audioSource(input: number, tracks: number, duration: number): string {
@@ -130,8 +144,14 @@ export function buildFfmpegArgs(spec: RenderSpec): string[] {
   for (const segment of timeline.segments) {
     args.push(...hwaccel, '-ss', num(segment.start), '-t', num(segment.end - segment.start), '-i', segment.sourcePath)
   }
+  // Effects come from the renderer: only what makes sense reaches the filter graph.
+  const overlays = spec.overlays.map((overlay) => ({ ...overlay, effects: validEffects(overlay.effects) }))
   const overlayBase = timeline.segments.length
-  for (const overlay of spec.overlays) args.push('-i', overlay.pngPath)
+  for (const overlay of overlays) {
+    // A drawing that fades or scales is read as frames at the clip's rate (see drawingImage).
+    if (needsFrames(overlay.effects)) args.push('-framerate', num(fps))
+    args.push('-i', overlay.pngPath)
+  }
 
   const normalize = normalizeChain(output, spec.hwDecode)
   const graph: string[] = []
@@ -151,15 +171,14 @@ export function buildFfmpegArgs(spec: RenderSpec): string[] {
   graph.push(`${concatInputs.join('')}concat=n=${concatInputs.length}:v=1:a=1[catv][cata]`)
 
   let videoLabel = 'catv'
-  spec.overlays.forEach((overlay, index) => {
+  const half = 0.5 / fps
+  overlays.forEach((overlay, index) => {
     const windows = timeline.overlays.filter((window) => window.annotationId === overlay.annotationId)
     if (windows.length === 0) return
-    const enable = windows.map((window) => `between(t,${num(window.start)},${num(window.end)})`).join('+')
-    const position =
-      overlay.motion && overlay.motion.length >= 2
-        ? `x='${motionExpression(windows, overlay.motion, 'dx', output.width)}':y='${motionExpression(windows, overlay.motion, 'dy', output.height)}'`
-        : '0:0'
-    graph.push(`[${overlayBase + index}:v]scale=${output.width}:${output.height},format=rgba[img${index}]`)
+    const enable = windows.map((window) => inWindow(window, 't', half)).join('+')
+    const look = overlayLook(windows, overlay.motion, overlay.effects, { width: output.width, height: output.height, half })
+    const position = look.x === '0' && look.y === '0' ? '0:0' : `x='${look.x}':y='${look.y}'`
+    graph.push(...drawingImage(overlayBase + index, index, windows, look, output, half))
     graph.push(`[${videoLabel}][img${index}]overlay=${position}:enable='${enable}'[ov${index}]`)
     videoLabel = `ov${index}`
   })

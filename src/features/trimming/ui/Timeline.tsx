@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { clamp, formatTime } from '@shared/domain/time'
+import type { EffectKind } from '@features/annotations/domain/effects'
 import { MIN_RANGE_SECONDS, rangeDuration, shiftRange, type TimeRange } from '../domain/timeRange'
 import styles from './trimming.module.css'
+
+/** Stretch of a drawing's bar that one of its effects covers (seconds of the video). */
+export interface TimelineEffect {
+  kind: EffectKind
+  label: string
+  from: number
+  to: number
+}
 
 /** A drawing on its bar under the filmstrip: drag the sides to change when it shows up and until when. */
 export interface TimelineDrawing {
@@ -13,6 +22,8 @@ export interface TimelineDrawing {
   lane: number
   /** Times of its animation keyframes, drawn as diamonds on the bar. */
   keyframes: readonly number[]
+  /** Fades, zooms… painted on the bar where they act. */
+  effects: readonly TimelineEffect[]
 }
 
 export type DrawingEdit = 'start' | 'end' | 'move'
@@ -322,13 +333,29 @@ export function Timeline({
                     top: drawing.lane * LANE_PX,
                     ['--drawing-color' as string]: drawing.color
                   }}
-                  title={`${drawing.label} · ${formatTime(drawing.start)} → ${formatTime(drawing.end)}`}
+                  title={`${drawing.label} · ${formatTime(drawing.start)} → ${formatTime(drawing.end)}${
+                    drawing.effects.length > 0 ? ` · ${drawing.effects.map((effect) => effect.label).join(', ')}` : ''
+                  }`}
                   onPointerDown={(event) => onDrawingPointerDown(event, drawing)}
                   onPointerMove={onDrawingPointerMove}
                   onPointerUp={endDrawingDrag}
                   onPointerCancel={endDrawingDrag}
                 >
                   <span className={styles.drawingEdge} data-role="start" data-side="start" />
+                  {drawing.effects.map((effect) => {
+                    const length = Math.max(drawing.end - drawing.start, 1e-6)
+                    return (
+                      <span
+                        key={effect.kind}
+                        className={styles.effectSpan}
+                        data-kind={effect.kind}
+                        style={{
+                          left: `${((effect.from - drawing.start) / length) * 100}%`,
+                          width: `${((effect.to - effect.from) / length) * 100}%`
+                        }}
+                      />
+                    )
+                  })}
                   <span className={styles.drawingLabel}>{drawing.label}</span>
                   {drawing.keyframes.map((time) => (
                     <span

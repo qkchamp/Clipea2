@@ -10,6 +10,7 @@ import {
   moveOnFrame,
   offsetAt,
   removeKeyframe,
+  reshapeOnFrame,
   retime,
   setKeyframe,
   shapeOnFrame,
@@ -117,6 +118,27 @@ describe('keyframes', () => {
   it('never groups an animated drawing with others for the export', () => {
     expect(groupSameTimes([animated, { ...animated, id: 'n2', keyframes: undefined }, { ...drawing, id: 'n3' }])).toHaveLength(2)
   })
+
+  it('stores a resize done on screen as drawn, keeping the keyframe offsets', () => {
+    const resizedOnScreen: Shape = { kind: 'arrow', from: { x: 0.2, y: 0.1 }, to: { x: 0.9, y: 0.6 }, style }
+    // Halfway through, the drawing is shifted by (0.1, -0.05): its stored shape sits before that shift.
+    const stored = reshapeOnFrame(animated, 10.5, resizedOnScreen).shape
+    expect(stored).toMatchObject({ from: { x: expect.closeTo(0.1), y: expect.closeTo(0.15) }, to: { x: expect.closeTo(0.8), y: expect.closeTo(0.65) } })
+    expect(shapeOnFrame(reshapeOnFrame(animated, 10.5, resizedOnScreen), 10.5)).toMatchObject({ to: { x: expect.closeTo(0.9), y: expect.closeTo(0.6) } })
+    expect(reshapeOnFrame(drawing, 10, resizedOnScreen).shape).toEqual(resizedOnScreen)
+  })
+})
+
+describe('effects on drawings', () => {
+  it('never groups a drawing with effects with others for the export', () => {
+    const faded: Annotation = { ...drawing, id: 'n2', effects: [{ kind: 'fadeIn', duration: 0.5 }] }
+    expect(groupSameTimes([drawing, faded, { ...drawing, id: 'n3' }]).map((group) => group.map((item) => item.id))).toEqual([['n1', 'n3'], ['n2']])
+  })
+
+  it('keeps the effects of a bar that moves, only its times change', () => {
+    const faded: Annotation = { ...drawing, effects: [{ kind: 'fadeOut', duration: 1 }] }
+    expect(retime(faded, 20, 25, true).effects).toEqual([{ kind: 'fadeOut', duration: 1 }])
+  })
 })
 
 describe('assignLanes', () => {
@@ -143,6 +165,13 @@ describe('migrateAnnotations', () => {
 
   it('keeps current drawings and skips broken entries', () => {
     expect(migrateAnnotations([drawing, null, { id: 'x' }])).toEqual([drawing])
+  })
+
+  it('cleans the effects of saved drawings: invalid ones go, a list left empty disappears', () => {
+    const [cleaned] = migrateAnnotations([{ ...drawing, effects: [{ kind: 'fadeIn', duration: 0.5 }, { kind: 'fadeOut' }, 'boom'] }])
+    expect(cleaned.effects).toEqual([{ kind: 'fadeIn', duration: 0.5 }])
+    const [none] = migrateAnnotations([{ ...drawing, effects: 'fadeIn' }])
+    expect(none.effects).toBeUndefined()
   })
 })
 

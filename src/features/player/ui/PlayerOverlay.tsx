@@ -5,10 +5,10 @@ import {
   keyframeAt,
   shapeOnFrame,
   visibleAnnotations,
-  type Annotation,
   type Shape
 } from '@features/annotations/domain/annotation'
-import { AnnotationLayer, type VideoRect } from '@features/annotations/ui/AnnotationLayer'
+import { PLAIN_LOOK, hasEffects, lookAt } from '@features/annotations/domain/effects'
+import { AnnotationLayer, type PlacedDrawing, type VideoRect } from '@features/annotations/ui/AnnotationLayer'
 import { AnnotationToolbar } from '@features/annotations/ui/AnnotationToolbar'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { redo, undo, useUndoStore } from '@features/undo/ui/undoStore'
@@ -33,12 +33,13 @@ const addShape = (shape: Shape): void => {
 const currentFrameTime = (): number => frameStartTime(getFrameClock(), usePlayerStore.getState().currentTime)
 const select = (id: string | null): void => drawings().select(id)
 const move = (id: string, dx: number, dy: number): void => drawings().move(id, dx, dy, currentFrameTime())
+const resize = (id: string, shape: Shape): void => drawings().reshape(id, shape, currentFrameTime())
 const editText = (id: string, text: string): void => drawings().setText(id, text)
 
 /**
  * Drawings over the video. It follows the playhead on every frame, so it lives apart from the
  * player: only this small piece re-renders while the video plays, and the canvas repaints only
- * when the set of visible drawings changes, or on every frame while one of them is animated.
+ * when the set of visible drawings changes, or on every frame while one of them has keyframes or effects.
  */
 export function PlayerOverlay({ rect, sourcePath }: { rect: VideoRect; sourcePath: string }) {
   const currentTime = usePlayerStore((state) => state.currentTime)
@@ -52,13 +53,18 @@ export function PlayerOverlay({ rect, sourcePath }: { rect: VideoRect; sourcePat
 
   const visible = visibleAnnotations(annotations, sourcePath, currentTime, frameDuration(clock))
   const visibleKey = visible.map((annotation) => annotation.id).join('|')
-  // Only a drawing with keyframes changes place from frame to frame.
-  const placedAt = visible.some((annotation) => annotation.keyframes?.length) ? frameStartTime(clock, currentTime) : null
-  const items = useMemo<Annotation[]>(() => {
+  // Only a drawing with keyframes or effects looks different from frame to frame.
+  const changes = visible.some((annotation) => annotation.keyframes?.length || hasEffects(annotation))
+  const placedAt = changes ? frameStartTime(clock, currentTime) : null
+  const items = useMemo<PlacedDrawing[]>(() => {
     const ids = new Set(visibleKey.split('|'))
     return annotations
       .filter((annotation) => ids.has(annotation.id))
-      .map((annotation) => (placedAt !== null && annotation.keyframes?.length ? { ...annotation, shape: shapeOnFrame(annotation, placedAt) } : annotation))
+      .map((annotation) => ({
+        id: annotation.id,
+        shape: placedAt !== null && annotation.keyframes?.length ? shapeOnFrame(annotation, placedAt) : annotation.shape,
+        look: placedAt !== null ? lookAt(annotation, placedAt) : PLAIN_LOOK
+      }))
   }, [annotations, visibleKey, placedAt])
 
   return (
@@ -73,6 +79,7 @@ export function PlayerOverlay({ rect, sourcePath }: { rect: VideoRect; sourcePat
       onShape={addShape}
       onSelect={select}
       onMove={move}
+      onResize={resize}
       onEditText={editText}
     />
   )

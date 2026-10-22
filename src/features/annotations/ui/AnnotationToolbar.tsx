@@ -1,13 +1,16 @@
 import { useRef, type ReactNode } from 'react'
-import { ArrowUpRight, Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2, Square, Type, Undo2 } from 'lucide-react'
+import { Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2, Square, Type, Undo2 } from 'lucide-react'
 import { Button, IconButton } from '@shared/ui/atoms'
 import { useCrowded } from '@shared/ui/useCrowded'
 import { DRAW_COLORS, DRAW_WIDTHS, useAnnotationStore, type DrawTool } from './annotationStore'
+import { CustomColor } from './CustomColor'
+import { EffectsMenu } from './EffectsMenu'
+import { ArrowToolIcon } from './ToolIcons'
 import styles from './annotations.module.css'
 
 const TOOLS: Array<{ kind: DrawTool; label: string; icon: ReactNode }> = [
   { kind: 'select', label: 'Mover dibujos (doble clic en un texto para editarlo)', icon: <MousePointer2 size={16} /> },
-  { kind: 'arrow', label: 'Flecha', icon: <ArrowUpRight size={17} /> },
+  { kind: 'arrow', label: 'Flecha', icon: <ArrowToolIcon size={16} /> },
   { kind: 'ellipse', label: 'Círculo', icon: <Circle size={16} /> },
   { kind: 'rect', label: 'Rectángulo', icon: <Square size={15} /> },
   { kind: 'pen', label: 'Lápiz', icon: <PenLine size={16} /> },
@@ -26,8 +29,9 @@ interface AnnotationToolbarProps {
 }
 
 /**
- * One row above the video: tools, color, thickness, keyframe, undo/redo and "Listo". How long each drawing
- * lasts is set on its bar in the timeline. In a narrow window it shrinks before wrapping.
+ * One row above the video: tools, color, thickness, keyframe and effects of the picked drawing,
+ * undo/redo and "Listo". How long each drawing lasts is set on its bar in the timeline. In a narrow
+ * window it shrinks before wrapping.
  */
 export function AnnotationToolbar({ canUndo, canRedo, keyframe, onUndo, onRedo, onKeyframe, onClose }: AnnotationToolbarProps) {
   const { tool, color, width, setTool, setColor, setWidth } = useAnnotationStore()
@@ -57,6 +61,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, onUndo, onRedo, 
             onClick={() => setColor(swatch)}
           />
         ))}
+        <CustomColor />
       </div>
 
       <div className={styles.group} role="radiogroup" aria-label="Grosor">
@@ -90,6 +95,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, onUndo, onRedo, 
         >
           {keyframe === 'remove' ? <DiamondMinus size={16} /> : <DiamondPlus size={16} />}
         </IconButton>
+        <EffectsMenu small={crowded} />
       </div>
 
       <div className={styles.group}>

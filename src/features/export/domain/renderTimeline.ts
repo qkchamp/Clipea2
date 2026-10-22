@@ -1,3 +1,5 @@
+import type { Effect } from '@features/annotations/domain/effects'
+
 export interface RenderSegmentInput {
   sourcePath: string
   start: number
@@ -11,6 +13,16 @@ export interface MotionKey {
   dy: number
 }
 
+/** What the encoder needs to fade, scale and slide a drawing. */
+export interface RenderEffects {
+  /** The drawing's own times (seconds of the source video): entering effects start at `start`, leaving ones end at `end`. */
+  start: number
+  end: number
+  list: Effect[]
+  /** Middle of the drawn shape, as fractions of the frame: scaling pivots on it. */
+  center: { x: number; y: number }
+}
+
 export interface RenderAnnotationInput {
   id: string
   sourcePath: string
@@ -18,6 +30,7 @@ export interface RenderAnnotationInput {
   end: number
   /** Animated drawings glide between these (two or more, sorted by time). */
   motion?: MotionKey[]
+  effects?: RenderEffects
 }
 
 export interface RenderSegment {

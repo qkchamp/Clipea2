@@ -1,6 +1,6 @@
 // End-to-end smoke test on the real app: open a ShadowPlay clip, change speed, step frames,
-// draw (each drawing gets its bar in the timeline), build a two-cut montage and export it under
-// the Discord limit. Also covers
+// draw (each drawing gets its bar in the timeline; stretch it with its grips, give it an effect, mix a
+// color), build a two-cut montage and export it under the Discord limit. Also covers
 // undo, text drawings, remembered selections, cancel without leftovers, the library watcher and
 // the session saved on close.
 // Run with `CLIPEA2_SAMPLE=<clip.mp4> npm run e2e` (builds first).
@@ -162,6 +162,42 @@ try {
   await page.keyboard.type('dos')
   await page.keyboard.press('Enter')
   await page.screenshot({ path: join(artifacts, '02-dibujo.png') })
+
+  // The cursor stretches a drawing from its grips, an effect shows on its bar, and a color can be mixed with RGB.
+  const toolbar = page.getByRole('toolbar', { name: 'Herramientas de dibujo' })
+  const alphaAt = (x, y, radius = 6) =>
+    page.evaluate(
+      ([cx, cy, r]) => {
+        const surface = document.querySelector('canvas')
+        const ratio = surface.width / surface.getBoundingClientRect().width
+        const { data } = surface.getContext('2d').getImageData(Math.round((cx - r) * ratio), Math.round((cy - r) * ratio), Math.round(2 * r * ratio) + 1, Math.round(2 * r * ratio) + 1)
+        return data.reduce((max, value, index) => (index % 4 === 3 ? Math.max(max, value) : max), 0)
+      },
+      [x, y, radius]
+    )
+  await toolbar.getByRole('button', { name: /^Mover dibujos/ }).click()
+  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.4)
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width * 0.5 + 60, box.y + box.height * 0.5 + 30, { steps: 6 })
+  await page.mouse.up()
+  await page.mouse.click(box.x + box.width * 0.95, box.y + box.height * 0.95)
+  check('el cursor estira una flecha desde su punta', (await alphaAt(box.width * 0.5 + 60, box.height * 0.5 + 30)) > 150)
+
+  await page.mouse.click(box.x + box.width * 0.4 + 30, box.y + box.height * 0.4 + 15)
+  await toolbar.getByRole('button', { name: /^Efectos del dibujo/ }).click()
+  await page.locator('#effect-fadeIn').check()
+  check('un efecto se pinta en la barra del dibujo', (await page.locator('[data-kind="fadeIn"]').count()) === 1)
+  await page.keyboard.press('Escape')
+  check('Escape cierra el panel de efectos y sigue el modo dibujo', (await page.getByRole('dialog', { name: 'Efectos del dibujo' }).count()) === 0 && (await toolbar.isVisible()))
+
+  await toolbar.getByRole('button', { name: 'Color personalizado: crear uno con RGB' }).click()
+  const mixer = page.getByRole('dialog', { name: 'Color personalizado' })
+  await mixer.getByLabel('Rojo (0 a 255)').fill('10')
+  await mixer.getByLabel('Verde (0 a 255)').fill('255')
+  await mixer.getByLabel('Azul (0 a 255)').fill('40')
+  await mixer.getByRole('button', { name: 'Usar este color' }).click()
+  check('mezcla un color propio con RGB', (await toolbar.locator('button[aria-label^="Color personalizado #"]').getAttribute('aria-checked')) === 'true')
   await page.keyboard.press('Escape')
   await page.getByText('3 en este video').waitFor({ timeout: 2000 })
   check('dibuja una flecha', true)

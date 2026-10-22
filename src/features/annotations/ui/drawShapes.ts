@@ -1,5 +1,6 @@
 import type { Point, Shape } from '../domain/annotation'
-import type { Box, TextShape } from '../domain/shapeGeometry'
+import { isPlain, type Look } from '../domain/effects'
+import { OUTLINE_PAD, type Box, type Handle, type TextShape } from '../domain/shapeGeometry'
 
 type Context2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
 
@@ -28,16 +29,64 @@ export function measureText(ctx: Context2D, shape: TextShape, frameHeight: numbe
   return { width, height: size * 1.2 }
 }
 
-/** Dashed frame around the drawing picked with the cursor; only on screen, never exported. */
-export function drawSelection(ctx: Context2D, box: Box): void {
-  const pad = 6
+/** Half the side of a grip, in pixels. */
+const HANDLE_RADIUS = 4.5
+
+/** Dashed frame and grips around the drawing picked with the cursor; only on screen, never exported. */
+export function drawSelection(ctx: Context2D, box: Box, handles: readonly Handle[] = []): void {
   ctx.save()
   ctx.lineWidth = 1.5
   ctx.setLineDash([5, 4])
   ctx.strokeStyle = '#ffffff'
   ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
   ctx.shadowBlur = 3
-  ctx.strokeRect(box.left - pad, box.top - pad, box.width + pad * 2, box.height + pad * 2)
+  ctx.strokeRect(box.left - OUTLINE_PAD, box.top - OUTLINE_PAD, box.width + OUTLINE_PAD * 2, box.height + OUTLINE_PAD * 2)
+  ctx.setLineDash([])
+  ctx.fillStyle = '#ffffff'
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'
+  ctx.lineWidth = 1.25
+  for (const handle of handles) {
+    ctx.beginPath()
+    // Squares on the box, round at the two ends of an arrow.
+    if (handle.id === 'from' || handle.id === 'to') ctx.arc(handle.x, handle.y, HANDLE_RADIUS + 0.5, 0, Math.PI * 2)
+    else ctx.rect(handle.x - HANDLE_RADIUS, handle.y - HANDLE_RADIUS, HANDLE_RADIUS * 2, HANDLE_RADIUS * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+/**
+ * Paints a shape the way its effects leave it on this frame: faded, scaled around `center` (pixels)
+ * and nudged. A faded shape is drawn whole on `scratch` first, then laid on at that opacity: its
+ * halo and its overlapping strokes fade together, exactly as the exported image does.
+ */
+export function drawWithLook(
+  ctx: Context2D,
+  shape: Shape,
+  look: Look,
+  center: Point,
+  width: number,
+  height: number,
+  scratch: () => { canvas: CanvasImageSource; context: Context2D } | null
+): void {
+  if (isPlain(look)) return drawShapes(ctx, [shape], width, height)
+  if (look.opacity <= 0 || look.scale <= 0.001) return
+  ctx.save()
+  ctx.translate(center.x + look.dx * width, center.y + look.dy * height)
+  ctx.scale(look.scale, look.scale)
+  ctx.translate(-center.x, -center.y)
+  const layer = look.opacity < 1 ? scratch() : null
+  if (layer) {
+    layer.context.save()
+    layer.context.clearRect(0, 0, width, height)
+    drawShapes(layer.context, [shape], width, height)
+    layer.context.restore()
+    ctx.globalAlpha = look.opacity
+    ctx.drawImage(layer.canvas, 0, 0, width, height)
+  } else {
+    drawShapes(ctx, [shape], width, height)
+  }
   ctx.restore()
 }
 
