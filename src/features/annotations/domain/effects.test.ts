@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  BLINK_PHASE_EPSILON,
+  BLINK_LEAD_SECONDS,
   DEFAULT_EFFECTS,
   PLAIN_LOOK,
   PULSE_AMOUNT,
@@ -71,12 +71,15 @@ describe('lookAt', () => {
     expect(opacities).toEqual([1, 1, 0, 0, 1, 1, 0])
   })
 
-  it('flips a blink on the same side of an exact boundary however the time was rounded', () => {
+  it('decides a flip that falls on a frame boundary the same way, whatever wobble the frame time has', () => {
+    // Recordings put frames a few milliseconds off the even grid: 10.25 may come as 10.2497 or 10.2503.
     const blinking = drawing([{ kind: 'blink', rate: 2 }])
-    const justBefore = 10.25 - BLINK_PHASE_EPSILON / 10
-    expect(lookAt(blinking, justBefore).opacity).toBe(0)
-    expect(lookAt(blinking, 10 + 1e-12).opacity).toBe(1)
-    expect(lookAt(blinking, 10.5 - 1e-12).opacity).toBe(1)
+    for (const wobble of [-0.003, -0.0003, 0, 0.0003, 0.003]) {
+      expect(lookAt(blinking, 10.25 + wobble).opacity).toBe(0)
+      expect(lookAt(blinking, 10.5 + wobble).opacity).toBe(1)
+    }
+    // Half a frame at 60 fps before a flip is still before it.
+    expect(lookAt(blinking, 10.25 - BLINK_LEAD_SECONDS - 0.003).opacity).toBe(1)
   })
 
   it('pulses between its size and a bit more, once per cycle', () => {

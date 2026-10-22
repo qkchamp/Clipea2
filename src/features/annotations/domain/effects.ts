@@ -67,10 +67,11 @@ export const MAX_RATE = 8
 /** How much bigger a drawing gets at the top of each pulse. */
 export const PULSE_AMOUNT = 0.15
 /**
- * A blink flips exactly on frame boundaries; this keeps the player and the encoder, which round
- * differently in the last digits, on the same side of the flip.
+ * A blink flips on frame boundaries. The frames of a recording wander a few milliseconds around
+ * the even grid the export works on, so both sample a blink this far into the frame: more than
+ * that wobble, less than half a frame at 60 fps. Then they never land on different sides of a flip.
  */
-export const BLINK_PHASE_EPSILON = 1e-4
+export const BLINK_LEAD_SECONDS = 0.005
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
 const fract = (value: number): number => value - Math.floor(value)
@@ -193,7 +194,7 @@ export function lookAt(drawing: Timed, time: number): Look {
         break
       }
       case 'blink':
-        opacity *= fract(sinceStart * effect.rate + BLINK_PHASE_EPSILON) < 0.5 ? 1 : 0
+        opacity *= fract((sinceStart + BLINK_LEAD_SECONDS) * effect.rate) < 0.5 ? 1 : 0
         break
       case 'pulse':
         scale *= 1 + PULSE_AMOUNT * (0.5 - 0.5 * Math.cos(2 * Math.PI * effect.rate * sinceStart))

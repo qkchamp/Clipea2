@@ -1,5 +1,5 @@
 import {
-  BLINK_PHASE_EPSILON,
+  BLINK_LEAD_SECONDS,
   PULSE_AMOUNT,
   fadesOrBlinks,
   isEntering,
@@ -74,7 +74,7 @@ function opacityAt(fx: RenderEffects, source: string): string {
       case 'fadeOut':
         return [progressOf(effect, fx, source)]
       case 'blink':
-        return [`lt(mod((${source}-${num(fx.start)})*${num(effect.rate)}+${num(BLINK_PHASE_EPSILON)},1),0.5)`]
+        return [`lt(mod((${source}-${num(fx.start)}+${num(BLINK_LEAD_SECONDS)})*${num(effect.rate)},1),0.5)`]
       default:
         return []
     }
