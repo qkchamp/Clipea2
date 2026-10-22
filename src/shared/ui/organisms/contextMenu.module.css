@@ -1,0 +1,49 @@
+.menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Same layer as the popovers: above the player and the panels, below dialogs, toasts and tooltips. */
+  z-index: 40;
+  display: grid;
+  min-width: 150px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--surface-3);
+  outline: none;
+}
+
+.item svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.danger,
+.danger svg {
+  color: var(--danger);
+}
+
+.danger:hover,
+.danger:focus-visible {
+  background: var(--danger-soft);
+}

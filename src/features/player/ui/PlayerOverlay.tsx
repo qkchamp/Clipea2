@@ -98,14 +98,19 @@ export function DrawingToolbar() {
   const frameTime = frameStartTime(clock, currentTime)
   const onScreen = selected !== undefined && isVisibleAt(selected, frameTime, frameDuration(clock))
   const keyframe = !onScreen ? 'none' : keyframeAt(selected, frameTime) ? 'remove' : 'add'
+  const sourcePath = usePlayerStore((state) => state.sourcePath)
+  // A drawing picked in another video stays picked, but this toolbar only deletes the ones of this one.
+  const deletable = selected !== undefined && selected.sourcePath === sourcePath
   return (
     <AnnotationToolbar
       canUndo={canUndo}
       canRedo={canRedo}
       keyframe={keyframe}
+      canDelete={deletable}
       onUndo={undo}
       onRedo={redo}
       onKeyframe={() => selected && drawings().toggleKeyframe(selected.id, frameTime)}
+      onDelete={() => deletable && drawings().remove(selected.id)}
       onClose={() => drawings().setDrawing(false)}
     />
   )

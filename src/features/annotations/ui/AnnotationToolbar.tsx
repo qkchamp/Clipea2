@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react'
-import { Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2, Square, Type, Undo2 } from 'lucide-react'
+import { Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2, Square, Trash2, Type, Undo2 } from 'lucide-react'
 import { Button, IconButton } from '@shared/ui/atoms'
 import { useCrowded } from '@shared/ui/useCrowded'
 import { DRAW_COLORS, DRAW_WIDTHS, useAnnotationStore, type DrawTool } from './annotationStore'
@@ -22,18 +22,21 @@ interface AnnotationToolbarProps {
   canRedo: boolean
   /** What the keyframe button does on the selected drawing at this frame ('none': nothing selected on screen). */
   keyframe: 'add' | 'remove' | 'none'
+  /** A drawing of this video is picked (with the cursor or on its bar). */
+  canDelete: boolean
   onUndo: () => void
   onRedo: () => void
   onKeyframe: () => void
+  onDelete: () => void
   onClose: () => void
 }
 
 /**
- * One row above the video: tools, color, thickness, keyframe and effects of the picked drawing,
+ * One row above the video: tools, color, thickness, keyframe, effects and delete for the picked drawing,
  * undo/redo and "Listo". How long each drawing lasts is set on its bar in the timeline. In a narrow
  * window it shrinks before wrapping.
  */
-export function AnnotationToolbar({ canUndo, canRedo, keyframe, onUndo, onRedo, onKeyframe, onClose }: AnnotationToolbarProps) {
+export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUndo, onRedo, onKeyframe, onDelete, onClose }: AnnotationToolbarProps) {
   const { tool, color, width, setTool, setColor, setWidth } = useAnnotationStore()
   const row = useRef<HTMLDivElement>(null)
   const crowded = useCrowded(row, 'parent')
@@ -96,6 +99,14 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, onUndo, onRedo, 
           {keyframe === 'remove' ? <DiamondMinus size={16} /> : <DiamondPlus size={16} />}
         </IconButton>
         <EffectsMenu small={crowded} />
+        <IconButton
+          small={crowded}
+          label={canDelete ? 'Borrar el dibujo elegido (Supr)' : 'Borrar: elegí antes un dibujo con el cursor o en su barra'}
+          disabled={!canDelete}
+          onClick={onDelete}
+        >
+          <Trash2 size={16} />
+        </IconButton>
       </div>
 
       <div className={styles.group}>

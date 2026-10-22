@@ -118,6 +118,18 @@ export function TrimPanel() {
           endGesture.current?.()
           endGesture.current = null
         }}
+        onDrawingEdit={(id) => {
+          const drawing = drawings.find((item) => item.id === id)
+          const store = useAnnotationStore.getState()
+          store.select(id)
+          store.setTool('select')
+          store.setDrawing(true)
+          // Off its bar the drawing isn't on screen to grab: go to its first frame.
+          const half = frameDuration(getFrameClock()) / 2
+          const now = usePlayerStore.getState().currentTime
+          if (drawing && (now < drawing.start - half || now >= drawing.end - half)) seek(drawing.start + half)
+        }}
+        onDrawingDelete={(id) => useAnnotationStore.getState().remove(id)}
         renderPlayhead={(toPercent) => <Playhead duration={duration} toPercent={toPercent} />}
       />
 

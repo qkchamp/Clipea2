@@ -201,6 +201,12 @@
   cursor: grabbing;
 }
 
+/* The bar whose right click menu is open. */
+.drawingBar[data-menu] {
+  box-shadow: 0 0 0 1px var(--text);
+  z-index: 1;
+}
+
 .drawingBar[data-selected] {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);

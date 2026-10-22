@@ -1,6 +1,6 @@
 // End-to-end smoke test on the real app: open a ShadowPlay clip, change speed, step frames,
 // draw (each drawing gets its bar in the timeline; stretch it with its grips, give it an effect, mix a
-// color), build a two-cut montage and export it under the Discord limit. Also covers
+// color, delete it with the trash or the bar's right click menu), build a two-cut montage and export it under the Discord limit. Also covers
 // undo, text drawings, remembered selections, cancel without leftovers, the library watcher and
 // the session saved on close.
 // Run with `CLIPEA2_SAMPLE=<clip.mp4> npm run e2e` (builds first).
@@ -204,6 +204,20 @@ try {
   await mixer.getByRole('button', { name: 'Usar este color' }).click()
   check('mezcla un color propio', (await toolbar.locator('button[aria-label="Color personalizado #ffc389"]').getAttribute('aria-checked')) === 'true')
   check('el color propio lleva un lápiz que lo distingue de los fijos', (await toolbar.locator('button[aria-label="Color personalizado #ffc389"] svg').count()) === 1)
+
+  // The trash deletes the picked drawing.
+  const listed = () => page.locator('[aria-label="Dibujos de este video"] li').count()
+  await toolbar.getByRole('button', { name: 'Rectángulo', exact: true }).click()
+  await page.mouse.move(box.x + box.width * 0.08, box.y + box.height * 0.55)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.7, { steps: 6 })
+  await page.mouse.up()
+  const withExtra = await listed()
+  await toolbar.getByRole('button', { name: /^Mover dibujos/ }).click()
+  await page.mouse.click(box.x + box.width * 0.08, box.y + box.height * 0.62)
+  await toolbar.getByRole('button', { name: 'Borrar el dibujo elegido (Supr)' }).click()
+  check('el tacho borra el dibujo elegido', (await listed()) === withExtra - 1, `${withExtra} → ${await listed()}`)
+  await page.getByRole('button', { name: 'Cerrar aviso' }).first().click()
   await page.keyboard.press('Escape')
   await page.getByText('3 en este video').waitFor({ timeout: 2000 })
   check('dibuja una flecha', true)
@@ -211,6 +225,22 @@ try {
   check('dos textos seguidos quedan los dos', /uno/.test(drawn) && /dos/.test(drawn), drawn.replace(/\s+/g, ' '))
   const bars = page.locator('[aria-label="Dibujos en la línea de tiempo"] > div > div')
   check('cada dibujo tiene su barra en la línea de tiempo', (await bars.count()) === 3)
+
+  // Right click on a bar: "Editar" opens the drawing with the cursor, "Borrar" deletes it (and Deshacer brings it back).
+  await bars.first().click({ button: 'right' })
+  const options = await page.getByRole('menu').getByRole('menuitem').allInnerTexts()
+  check('clic derecho en una barra ofrece Editar y Borrar', options.join(',') === 'Editar,Borrar', options.join(','))
+  await page.getByRole('menuitem', { name: 'Editar' }).click()
+  const drawingTools = page.getByRole('toolbar', { name: 'Herramientas de dibujo' })
+  await drawingTools.waitFor({ timeout: 2000 })
+  check('Editar abre el modo dibujo con el cursor', (await drawingTools.getByRole('button', { name: /^Mover dibujos/ }).getAttribute('aria-pressed')) === 'true')
+  await page.keyboard.press('Escape')
+  await bars.first().click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Borrar' }).click()
+  await page.getByText('2 en este video').waitFor({ timeout: 2000 })
+  await page.getByRole('status').getByRole('button', { name: 'Deshacer' }).click()
+  await page.getByText('3 en este video').waitFor({ timeout: 2000 })
+  check('Borrar desde el menú quita el dibujo y Deshacer lo trae de vuelta', true)
 
   // Montage: 50→60 plus 10→13.
   await page.keyboard.press('Enter')

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { clamp, formatTime } from '@shared/domain/time'
+import { ContextMenu } from '@shared/ui/organisms/ContextMenu'
 import type { EffectKind } from '@features/annotations/domain/effects'
 import { MIN_RANGE_SECONDS, rangeDuration, shiftRange, type TimeRange } from '../domain/timeRange'
 import styles from './trimming.module.css'
@@ -52,6 +54,10 @@ interface TimelineProps {
   /** Raw times under the pointer; the caller snaps them to frames. */
   onDrawingChange: (id: string, start: number, end: number, edit: DrawingEdit) => void
   onDrawingDragEnd: () => void
+  /** Right click on its bar → "Editar": open it with the cursor in drawing mode. */
+  onDrawingEdit: (id: string) => void
+  /** Right click on its bar → "Borrar". */
+  onDrawingDelete: (id: string) => void
   /**
    * Draws the playhead. It changes on every frame, so it renders on its own instead of
    * re-rendering the whole timeline; `toPercent` places a time on the zoomed track.
@@ -109,6 +115,8 @@ export function Timeline({
   onDrawingSelect,
   onDrawingChange,
   onDrawingDragEnd,
+  onDrawingEdit,
+  onDrawingDelete,
   renderPlayhead
 }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -117,6 +125,9 @@ export function Timeline({
   const drawingDragRef = useRef<DrawingDrag | null>(null)
   const [width, setWidth] = useState(800)
   const [view, setView] = useState<{ from: number; to: number } | null>(null)
+  // Right click menu of a drawing bar: which drawing, and where the pointer was.
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null)
+  const menuDrawing = menu ? drawings.find((drawing) => drawing.id === menu.id) : undefined
 
   useEffect(() => setView(null), [duration])
 
@@ -339,7 +350,13 @@ export function Timeline({
                   title={`${drawing.label} · ${formatTime(drawing.start)} → ${formatTime(drawing.end)}${
                     drawing.effects.length > 0 ? ` · ${drawing.effects.map((effect) => effect.label).join(', ')}` : ''
                   }`}
+                  data-menu={menu?.id === drawing.id || undefined}
                   onPointerDown={(event) => onDrawingPointerDown(event, drawing)}
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (!disabled) setMenu({ id: drawing.id, x: event.clientX, y: event.clientY })
+                  }}
                   onPointerMove={onDrawingPointerMove}
                   onPointerUp={endDrawingDrag}
                   onPointerCancel={endDrawingDrag}
@@ -376,6 +393,18 @@ export function Timeline({
             })}
           </div>
         </div>
+      ) : null}
+
+      {menu && menuDrawing ? (
+        <ContextMenu
+          at={menu}
+          label={`Dibujo: ${menuDrawing.label}`}
+          items={[
+            { label: 'Editar', icon: <Pencil size={14} />, onSelect: () => onDrawingEdit(menu.id) },
+            { label: 'Borrar', icon: <Trash2 size={14} />, danger: true, onSelect: () => onDrawingDelete(menu.id) }
+          ]}
+          onClose={() => setMenu(null)}
+        />
       ) : null}
     </div>
   )
