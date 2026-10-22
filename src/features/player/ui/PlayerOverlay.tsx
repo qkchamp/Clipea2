@@ -1,8 +1,8 @@
 import { memo, useMemo } from 'react'
 import {
-  DEFAULT_SHOW_FOR,
   isVisibleAt,
   keyframeAt,
+  newDrawingTimes,
   shapeOnFrame,
   visibleAnnotations,
   type Shape
@@ -19,14 +19,14 @@ import { getFrameClock, useFrameClock } from './useFrameClock'
 const Layer = memo(AnnotationLayer)
 const drawings = useAnnotationStore.getState
 
-/** A new drawing starts on the frame on screen and lasts DEFAULT_SHOW_FOR (stretch its bar in the timeline). */
+/** A new drawing lasts two seconds from the frame on screen, or the last two of the video near its end (stretch its bar in the timeline). */
 const addShape = (shape: Shape): void => {
   const path = usePlayerStore.getState().sourcePath
   if (!path) return
   const clock = getFrameClock()
-  const start = frameStartTime(clock, usePlayerStore.getState().currentTime)
+  const frameStart = frameStartTime(clock, usePlayerStore.getState().currentTime)
   const videoEnd = clock.duration > 0 ? clock.duration : Infinity
-  const end = Math.max(Math.min(start + DEFAULT_SHOW_FOR, videoEnd), start + frameDuration(clock))
+  const { start, end } = newDrawingTimes(frameStart, frameDuration(clock), videoEnd, (time) => frameStartTime(clock, time))
   drawings().add(path, start, end, shape)
 }
 

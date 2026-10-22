@@ -8,6 +8,7 @@ import {
   isVisibleAt,
   migrateAnnotations,
   moveOnFrame,
+  newDrawingTimes,
   offsetAt,
   removeKeyframe,
   reshapeOnFrame,
@@ -41,6 +42,29 @@ describe('visibility', () => {
 
   it('filters by video', () => {
     expect(visibleAnnotations([drawing], 'b.mp4', 10, frame)).toEqual([])
+  })
+})
+
+describe('newDrawingTimes', () => {
+  const frameAt = (time: number): number => Math.floor(time * 30 + 1e-9) / 30
+
+  it('starts on the frame on screen and lasts two seconds', () => {
+    expect(newDrawingTimes(5, frame, 18.5, frameAt)).toEqual({ start: 5, end: 7 })
+    expect(newDrawingTimes(5, frame, Infinity, frameAt)).toEqual({ start: 5, end: 7 })
+  })
+
+  it('near the end of the video ends with it and reaches back, keeping the frame on screen inside', () => {
+    // Last frame of an 18.47 s clip: the drawing covers its last two seconds.
+    const last = frameAt(18.45)
+    const { start, end } = newDrawingTimes(last, frame, 18.47, frameAt)
+    expect(end).toBe(18.47)
+    expect(end - start).toBeCloseTo(2, 1)
+    expect(start).toBeLessThanOrEqual(last)
+    expect(isVisibleAt({ ...drawing, start, end }, last, frame)).toBe(true)
+  })
+
+  it('covers the whole video when it is shorter than two seconds', () => {
+    expect(newDrawingTimes(frameAt(1.2), frame, 1.5, frameAt)).toEqual({ start: 0, end: 1.5 })
   })
 })
 

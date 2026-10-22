@@ -62,6 +62,23 @@ export function annotationsForSource(annotations: readonly Annotation[], sourceP
   return annotations.filter((annotation) => annotation.sourcePath === sourcePath).sort((a, b) => a.start - b.start)
 }
 
+/**
+ * When a new drawing shows: from the frame on screen, for DEFAULT_SHOW_FOR. Near the end of the
+ * video that would be cut short, so it ends with the video and reaches back instead (the frame on
+ * screen stays inside it). `frameAt` snaps a time to the start of its frame.
+ */
+export function newDrawingTimes(
+  frameStart: number,
+  frameDuration: number,
+  videoEnd: number,
+  frameAt: (time: number) => number
+): { start: number; end: number } {
+  const end = Math.min(frameStart + DEFAULT_SHOW_FOR, videoEnd)
+  const cutShort = end - frameStart < DEFAULT_SHOW_FOR - frameDuration / 2
+  const start = cutShort ? Math.min(frameStart, frameAt(Math.max(0, end - DEFAULT_SHOW_FOR + frameDuration / 2))) : frameStart
+  return { start, end: Math.max(end, start + frameDuration) }
+}
+
 /** Visible from its first frame until `end`, and always for at least one frame. */
 export function isVisibleAt(annotation: Annotation, time: number, frameDuration: number): boolean {
   const half = frameDuration / 2

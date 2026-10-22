@@ -67,6 +67,8 @@ const MIN_TICK_PX = 76
 /** Handles sit outside the selection so short ones stay grabbable, unless the track edge would clip them. */
 const HANDLE_PX = 12
 const LANE_PX = 18
+/** Same as the bars' min-width in the CSS. */
+const MIN_BAR_PX = 6
 /** Rows of drawing bars on screen; more scroll. Fixed, so a new row never shrinks the video while drawing. */
 const VISIBLE_LANES = 3
 
@@ -328,7 +330,8 @@ export function Timeline({
                   className={styles.drawingBar}
                   data-selected={drawing.id === selectedDrawingId || undefined}
                   style={{
-                    left: `${pct(drawing.start)}%`,
+                    // A bar of a frame or two keeps its minimum width inside the track instead of poking past the end.
+                    left: `min(${pct(drawing.start)}%, calc(100% - ${MIN_BAR_PX}px))`,
                     width: `${((drawing.end - drawing.start) / span) * 100}%`,
                     top: drawing.lane * LANE_PX,
                     ['--drawing-color' as string]: drawing.color
