@@ -1,4 +1,5 @@
-import { useLayoutEffect, useState, type RefObject } from 'react'
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { FRESH_MEMORY, nextCrowded } from './crowding'
 
 /** Width the row would need to hold all its children on one line. */
 function oneLineWidth(row: HTMLElement): number {
@@ -20,41 +21,52 @@ function roomFor(row: HTMLElement, within: 'self' | 'parent'): number {
 
 /**
  * True while a row can't fit its children on one line, so it can switch to a compact layout
- * before it wraps. It goes back as soon as the full layout fits again: what compacting saves is
- * measured once, so the decision follows the row's content (the clock gets wider or narrower
- * from clip to clip) without flickering between both layouts. `within: 'parent'` is for rows that
+ * before it wraps. It goes back as soon as the full layout fits again (see nextCrowded for how it
+ * decides without flickering between both layouts). `within: 'parent'` is for rows that
  * only take the width they need (a centered toolbar): the room is then what the parent offers.
+ *
+ * After switching layout it waits two frames before measuring again: the row's own styles can
+ * arrive a frame after its buttons change (seen in the app without DevTools attached), and deciding
+ * on that half-switched row made the toolbar flip forever.
  */
 export function useCrowded(ref: RefObject<HTMLElement | null>, within: 'self' | 'parent' = 'self'): boolean {
   const [crowded, setCrowded] = useState(false)
+  // Which layout is on screen, for the measurements (updated in the same commit that renders it).
+  const shown = useRef(false)
 
-  // Mirrored on the row so each measurement knows which layout is on screen.
   useLayoutEffect(() => {
-    ref.current?.toggleAttribute('data-crowded', crowded)
-  }, [ref, crowded])
+    shown.current = crowded
+  }, [crowded])
 
   useLayoutEffect(() => {
     const row = ref.current
     if (!row) return
-    let fullWidth = 0
-    let saved: number | null = null
+    let memory = FRESH_MEMORY
+    // Animation frame of the wait after a switch; 0 when measurements count.
+    let settling = 0
     const check = (): void => {
-      const needed = oneLineWidth(row)
-      const room = roomFor(row, within)
-      if (!row.hasAttribute('data-crowded')) {
-        fullWidth = needed
-        if (needed > room + 0.5) setCrowded(true)
-        return
-      }
-      saved ??= Math.max(0, fullWidth - needed)
-      if (needed + saved <= room + 0.5) setCrowded(false)
+      if (settling) return
+      const compact = shown.current
+      const next = nextCrowded(compact, oneLineWidth(row), roomFor(row, within), memory)
+      memory = next.memory
+      if (next.crowded === compact) return
+      setCrowded(next.crowded)
+      settling = requestAnimationFrame(() => {
+        settling = requestAnimationFrame(() => {
+          settling = 0
+          check()
+        })
+      })
     }
     // The children too: the clock changes width with the clip and the frame number.
     const observer = new ResizeObserver(check)
     observer.observe(row)
     for (const child of row.children) observer.observe(child)
     if (within === 'parent' && row.parentElement) observer.observe(row.parentElement)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(settling)
+    }
   }, [ref, within])
 
   return crowded

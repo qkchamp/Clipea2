@@ -138,15 +138,15 @@
   color: #fff;
 }
 
-.toolbar[data-crowded] {
+.toolbar.crowded {
   gap: 2px;
 }
 
-.toolbar[data-crowded] .group {
+.toolbar.crowded .group {
   padding: 0 4px;
 }
 
-.toolbar[data-crowded] .swatch {
+.toolbar.crowded .swatch {
   width: 16px;
   height: 16px;
 }

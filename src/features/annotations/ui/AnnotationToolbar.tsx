@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react'
 import { Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2, Square, Trash2, Type, Undo2 } from 'lucide-react'
 import { Button, IconButton } from '@shared/ui/atoms'
+import { cx } from '@shared/ui/cx'
 import { useCrowded } from '@shared/ui/useCrowded'
 import { DRAW_COLORS, DRAW_WIDTHS, useAnnotationStore, type DrawTool } from './annotationStore'
 import { CustomColor } from './CustomColor'
@@ -42,7 +43,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
   const crowded = useCrowded(row, 'parent')
 
   return (
-    <div ref={row} className={styles.toolbar} role="toolbar" aria-label="Herramientas de dibujo" onClick={(event) => event.stopPropagation()}>
+    <div ref={row} className={cx(styles.toolbar, crowded && styles.crowded)} role="toolbar" aria-label="Herramientas de dibujo" onClick={(event) => event.stopPropagation()}>
       <div className={styles.group}>
         {TOOLS.map((item) => (
           <IconButton key={item.kind} small={crowded} label={item.label} active={tool === item.kind} onClick={() => setTool(item.kind)}>
