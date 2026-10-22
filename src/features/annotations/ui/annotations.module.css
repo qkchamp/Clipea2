@@ -120,6 +120,18 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+/* Custom color already set: its swatch carries a small pencil, in ink that reads on it. */
+.swatchCustom {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.swatchCustom svg {
+  width: 56%;
+  height: 56%;
+}
+
 .swatchEmpty:hover,
 .swatchEmpty[aria-expanded='true'] {
   border-color: #fff;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampChannel, hexToRgb, parseHex, rgbToHex } from './color'
+import { clampChannel, hexToRgb, inkOn, parseHex, rgbToHex } from './color'
 
 describe('color', () => {
   it('goes from hex to channels and back', () => {
@@ -31,5 +31,14 @@ describe('color', () => {
     expect(parseHex('#fc8')).toBeNull()
     expect(parseHex('#fc8', true)).toEqual({ r: 255, g: 204, b: 136 })
     expect(parseHex('FC8', true)).toEqual({ r: 255, g: 204, b: 136 })
+  })
+
+  it('picks dark ink on light colors and white ink on dark ones', () => {
+    expect(inkOn('#ffc389')).toBe('#111111')
+    expect(inkOn('#ffffff')).toBe('#111111')
+    expect(inkOn('#ffd60a')).toBe('#111111')
+    expect(inkOn('#1a237e')).toBe('#ffffff')
+    expect(inkOn('#000000')).toBe('#ffffff')
+    expect(inkOn('#ff2daa')).toBe('#111111')
   })
 })

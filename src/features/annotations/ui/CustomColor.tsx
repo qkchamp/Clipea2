@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { Button } from '@shared/ui/atoms'
 import { Popover } from '@shared/ui/organisms/Popover'
-import { clampChannel, hexToRgb, parseHex, rgbToHex, type Rgb } from '../domain/color'
+import { clampChannel, hexToRgb, inkOn, parseHex, rgbToHex, type Rgb } from '../domain/color'
 import { useAnnotationStore } from './annotationStore'
 import styles from './annotations.module.css'
 
@@ -137,10 +137,13 @@ export function CustomColor() {
           aria-checked={inUse}
           aria-label={`Color personalizado ${customColor}`}
           title="Tu color personalizado. Clic otra vez para cambiarlo o quitarlo"
-          className={styles.swatch}
-          style={{ background: customColor }}
+          className={`${styles.swatch} ${styles.swatchCustom}`}
+          style={{ background: customColor, color: inkOn(customColor) }}
           onClick={onClick}
-        />
+        >
+          {/* The pencil tells it apart from the fixed colors: this one can be changed. */}
+          <Pencil strokeWidth={2.75} aria-hidden />
+        </button>
       )}
       {open ? (
         <Popover anchor={anchor} label="Color personalizado" onClose={() => setOpen(false)}>

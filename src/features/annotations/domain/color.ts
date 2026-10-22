@@ -30,3 +30,15 @@ export function rgbToHex({ r, g, b }: Rgb): string {
 }
 
 export const clampChannel = channel
+
+/** Ink that reads on top of a color: dark on light colors, white on dark ones (by its WCAG luminance). */
+export function inkOn(hex: string): '#ffffff' | '#111111' {
+  const linear = (value: number): number => {
+    const unit = value / 255
+    return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
+  }
+  const { r, g, b } = hexToRgb(hex)
+  const luminance = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+  // Where black and white text have the same contrast on it.
+  return luminance > 0.179 ? '#111111' : '#ffffff'
+}

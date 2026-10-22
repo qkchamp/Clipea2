@@ -203,6 +203,7 @@ try {
   check('un código hex escrito a mano ajusta R, G y B', channels.join(',') === '255,195,137', channels.join(','))
   await mixer.getByRole('button', { name: 'Usar este color' }).click()
   check('mezcla un color propio', (await toolbar.locator('button[aria-label="Color personalizado #ffc389"]').getAttribute('aria-checked')) === 'true')
+  check('el color propio lleva un lápiz que lo distingue de los fijos', (await toolbar.locator('button[aria-label="Color personalizado #ffc389"] svg').count()) === 1)
   await page.keyboard.press('Escape')
   await page.getByText('3 en este video').waitFor({ timeout: 2000 })
   check('dibuja una flecha', true)
