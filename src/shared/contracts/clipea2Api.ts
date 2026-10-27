@@ -5,6 +5,7 @@ import type { RenderAnnotationInput, RenderSegmentInput } from '@features/export
 import type { DiscordChannel, DiscordGuild, DiscordStatus, WebhookTarget } from '@features/discord/domain/discordTargets'
 import type { ExportRecordDraft, HistoryEntry } from '@features/history/domain/exportRecord'
 import type { LibraryScan } from '@features/library/domain/libraryClip'
+import type { FfmpegInstallProgress } from '@features/media/domain/ffmpegRelease'
 import type { MediaInfo } from '@features/media/domain/mediaInfo'
 import type { Segment } from '@features/montage/domain/montage'
 import type { AppSettings } from '@features/settings/domain/settings'
@@ -131,6 +132,11 @@ export interface Clipea2Api {
   system: {
     /** `waitForEncoders` false answers right away, with `encoders` null if the check is still running. */
     ffmpegStatus(waitForEncoders?: boolean): Promise<FfmpegStatus>
+    /** Latest ffmpeg release Clipea2 can install ("9.0.2"). */
+    ffmpegLatest(): Promise<string>
+    /** Downloads and installs the latest ffmpeg for Clipea2 and starts using it. */
+    installFfmpeg(): Promise<FfmpegStatus>
+    onFfmpegInstallProgress(listener: (progress: FfmpegInstallProgress) => void): () => void
     openVideos(): Promise<string[]>
     chooseFolder(current?: string): Promise<string | null>
     /** Save dialog for an export: starts in `dir` with `fileName`.mp4; null when cancelled. */

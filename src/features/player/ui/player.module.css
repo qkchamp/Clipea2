@@ -181,16 +181,26 @@
 
 .clock {
   display: flex;
-  align-items: baseline;
-  gap: 5px;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
   font-size: 14px;
   white-space: nowrap;
 }
 
+.clockTime {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.clockCurrent {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .clockTotal {
   color: var(--text-faint);
-  font-family: var(--mono);
-  font-size: 13px;
 }
 
 /* With the window at its narrowest the total goes first: the timeline already shows where the clip ends. */
@@ -200,11 +210,21 @@
   }
 }
 
+/* The frame number in a chip of the same family as the buttons on the right: "f" + number. */
 .frameCounter {
-  margin-left: 8px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.frameCounter span:first-child {
   color: var(--text-faint);
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 .controlsEnd {
@@ -270,11 +290,13 @@
   transition: opacity 0.12s;
 }
 
+/* Volume and speed share one size, peeking and pinned, so the two panels read as a pair. */
 .floatingBox {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: 64px;
   padding: 10px 6px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
@@ -299,11 +321,16 @@
   background-image: linear-gradient(to top, var(--text-faint) var(--fill), var(--border-strong) var(--fill));
 }
 
+.floating[data-open] .floatingBox {
+  width: 88px;
+}
+
+/* Each knob carries its meaning: a speaker for the volume, a runner for the speed (below). */
 .verticalSlider::-webkit-slider-thumb {
-  width: 12px;
-  height: 12px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #fff;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23fafafa'/%3E%3Cg transform='translate(4.6 4.6) scale(0.62)' fill='none' stroke='%230d0d0d' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9h3.5L11 5v14l-4.5-4H3z' fill='%230d0d0d'/%3E%3Cpath d='M15 9.2a4 4 0 0 1 0 5.6'/%3E%3Cpath d='M18 6.5a8 8 0 0 1 0 11'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
   appearance: none;
 }
 
@@ -353,6 +380,7 @@
 
 .panelSwitch {
   display: flex;
+  align-self: stretch;
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--border);
@@ -361,6 +389,7 @@
 
 .panelSwitch button,
 .panelButton {
+  flex: 1;
   height: 22px;
   padding: 0 7px;
   border: 0;
@@ -381,8 +410,13 @@
   color: var(--text);
 }
 
+/* As tall and wide as the OFF / ON switch of the volume. */
 .panelButton {
+  flex: none;
+  align-self: stretch;
+  height: 28px;
   border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .panelButton:disabled {
@@ -407,4 +441,20 @@
   gap: 4px;
   padding-left: 4px;
   border-left: 1px solid var(--border);
+}
+
+/* A small accent dot on a button: something new waits inside (an ffmpeg update in Ajustes). */
+.withDot {
+  position: relative;
+}
+
+.dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--bg);
+  border-radius: 50%;
+  background: var(--accent);
 }

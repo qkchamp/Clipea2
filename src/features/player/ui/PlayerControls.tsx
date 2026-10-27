@@ -1,9 +1,11 @@
 import { Keyboard, Pause, PenLine, Play, Settings, StepBack, StepForward } from 'lucide-react'
 import { formatTime } from '@shared/domain/time'
 import { IconButton } from '@shared/ui/atoms'
+import { cx } from '@shared/ui/cx'
 import { useHoldRepeat } from '@shared/ui/useHoldRepeat'
 import { useUiStore } from '@shared/ui/uiStore'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
+import { ffmpegOutdated, useSettingsStore } from '@features/settings/ui/settingsStore'
 import { frameNumberAt, frameStartTime } from '../domain/frameClock'
 import { usePlayerStore } from './playerStore'
 import { RateControl } from './RateControl'
@@ -16,14 +18,17 @@ function PlaybackClock({ sourcePath }: { sourcePath: string | null }) {
   const currentTime = usePlayerStore((state) => state.currentTime)
   const clock = useFrameClock()
   return (
-    <div className={styles.clock}>
-      <span className="tabular">{formatTime(frameStartTime(clock, currentTime))}</span>
-      <span className={styles.clockTotal}>/ {formatTime(clock.duration)}</span>
+    <div className={cx(styles.clock, 'tabular')}>
+      <span className={styles.clockTime}>
+        <span className={styles.clockCurrent}>{formatTime(frameStartTime(clock, currentTime))}</span>
+        <span className={styles.clockTotal}>/ {formatTime(clock.duration)}</span>
+      </span>
       <span
         className={styles.frameCounter}
         title={clock.index ? 'Número de cuadro exacto' : 'Cuadro aproximado (cargando la tabla de cuadros)'}
       >
-        #<span className="tabular">{sourcePath ? frameNumberAt(clock, currentTime) + 1 : 0}</span>
+        <span>f</span>
+        <span>{sourcePath ? frameNumberAt(clock, currentTime) + 1 : 0}</span>
       </span>
     </div>
   )
@@ -34,6 +39,7 @@ export function PlayerControls() {
   const playing = usePlayerStore((state) => state.playing)
   const controller = usePlayerStore((state) => state.controller)
   const drawing = useAnnotationStore((state) => state.drawing)
+  const outdated = useSettingsStore(ffmpegOutdated)
   const disabled = !sourcePath
   // Click: one frame. Hold: keeps stepping frame by frame until released.
   const stepBack = useHoldRepeat(() => usePlayerStore.getState().controller?.stepFrame(-1))
@@ -81,8 +87,13 @@ export function PlayerControls() {
           <IconButton label="Atajos de teclado (?)" onClick={() => useUiStore.getState().openDialog('help')}>
             <Keyboard size={17} />
           </IconButton>
-          <IconButton label="Ajustes" onClick={() => useUiStore.getState().openDialog('settings')}>
+          <IconButton
+            label={outdated ? 'Ajustes · hay una versión nueva de ffmpeg' : 'Ajustes'}
+            className={styles.withDot}
+            onClick={() => useUiStore.getState().openDialog('settings')}
+          >
             <Settings size={17} />
+            {outdated ? <span className={styles.dot} /> : null}
           </IconButton>
         </div>
       </div>

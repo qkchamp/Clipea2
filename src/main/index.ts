@@ -72,7 +72,8 @@ if (!app.requestSingleInstanceLock()) {
     // The window does not wait for ffmpeg to be found: IPC calls wait for the services instead.
     services = createServices({
       exportEvent: (event) => mainWindow?.webContents.send(IPC.exportEvent, event),
-      libraryChanged: (root) => mainWindow?.webContents.send(IPC.libraryChanged, root)
+      libraryChanged: (root) => mainWindow?.webContents.send(IPC.libraryChanged, root),
+      ffmpegInstallProgress: (progress) => mainWindow?.webContents.send(IPC.ffmpegInstallProgress, progress)
     })
     registerIpc(services, () => mainWindow)
     mainWindow = createWindow()

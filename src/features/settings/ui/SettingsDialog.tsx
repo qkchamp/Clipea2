@@ -3,9 +3,11 @@ import { api } from '@shared/ui/api'
 import { Badge, Button, IconButton } from '@shared/ui/atoms'
 import { Field, SegmentedControl } from '@shared/ui/molecules'
 import { GPU_LABEL, decodingGpu } from '@features/export/domain/encoderSupport'
+import { releaseNumber } from '@features/media/domain/ffmpegRelease'
 import { Dialog } from '@shared/ui/organisms/Dialog'
 import type { AppSettings } from '../domain/settings'
-import { useSettingsStore } from './settingsStore'
+import { InstallCallout, InstallError, InstallProgress, UpdateAction } from './FfmpegSetup'
+import { ffmpegOutdated, useSettingsStore } from './settingsStore'
 import styles from './settings.module.css'
 
 function FolderField({ label, value, hint, onPick }: { label: string; value: string; hint?: string; onPick: () => void }) {
@@ -87,6 +89,9 @@ const ENCODER_ROWS = [
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const settings = useSettingsStore((state) => state.settings)
   const ffmpeg = useSettingsStore((state) => state.ffmpeg)
+  const ffmpegTask = useSettingsStore((state) => state.ffmpegTask)
+  const latest = useSettingsStore((state) => state.ffmpegLatest)
+  const outdated = useSettingsStore(ffmpegOutdated)
   if (!settings) return null
 
   const pickFolder = async (key: keyof Pick<AppSettings, 'outputDir' | 'ffmpegDir'>): Promise<void> => {
@@ -106,6 +111,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
               <>
                 <p className={styles.ok}>
                   <CircleCheck size={15} /> ffmpeg {ffmpeg.version}
+                  {outdated && latest ? <Badge tone="warning">Versión vieja · ya salió la {releaseNumber(latest)?.join('.')}</Badge> : null}
                 </p>
                 <p className={styles.path} title={ffmpeg.ffmpegPath ?? ''}>
                   {ffmpeg.ffmpegPath}
@@ -126,9 +132,15 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
               </>
             ) : (
               <p className={styles.bad}>
-                <CircleX size={15} /> No encontrado. Instalalo con <code>winget install Gyan.FFmpeg</code> o elegí su carpeta.
+                <CircleX size={15} /> No encontrado: sin ffmpeg no se puede exportar.
               </p>
             )}
+            {ffmpegTask?.kind === 'installing' ? (
+              <InstallProgress progress={ffmpegTask.progress} />
+            ) : ffmpeg && !ffmpeg.found ? (
+              <InstallCallout />
+            ) : null}
+            {ffmpegTask?.kind === 'error' ? <InstallError message={ffmpegTask.message} retry={ffmpegTask.retry} /> : null}
             <div className={styles.row}>
               <Button size="sm" icon={<FolderOpen size={13} />} onClick={() => void pickFolder('ffmpegDir')}>
                 Elegir carpeta de ffmpeg
@@ -137,6 +149,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
                 <IconButton small label="Volver a buscarlo automáticamente" onClick={() => void useSettingsStore.getState().update({ ffmpegDir: null })}>
                   <X size={14} />
                 </IconButton>
+              ) : null}
+              {ffmpeg?.found && ffmpegTask?.kind !== 'installing' ? (
+                <span className={styles.rowEnd}>
+                  <UpdateAction installed={ffmpeg.version} />
+                </span>
               ) : null}
             </div>
           </div>

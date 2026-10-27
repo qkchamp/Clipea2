@@ -72,6 +72,8 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
   handle(IPC.sessionSave, (s, snapshot: SessionSnapshot) => s.session.save(snapshot))
 
   handle(IPC.ffmpegStatus, (s, waitForEncoders?: boolean) => s.ffmpegStatus(waitForEncoders !== false))
+  handle(IPC.ffmpegLatest, (s) => s.latestFfmpeg())
+  handle(IPC.ffmpegInstall, (s) => s.installFfmpeg())
 
   handle(IPC.openVideos, async (s) => {
     const window = getWindow()

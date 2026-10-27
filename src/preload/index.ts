@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import type { FfmpegInstallProgress } from '../features/media/domain/ffmpegRelease'
 import type { Clipea2Api, ExportEvent } from '../shared/contracts/clipea2Api'
 import { IPC } from '../shared/contracts/ipcChannels'
 
@@ -56,6 +57,13 @@ const api: Clipea2Api = {
   },
   system: {
     ffmpegStatus: (waitForEncoders) => ipcRenderer.invoke(IPC.ffmpegStatus, waitForEncoders ?? true),
+    ffmpegLatest: () => ipcRenderer.invoke(IPC.ffmpegLatest),
+    installFfmpeg: () => ipcRenderer.invoke(IPC.ffmpegInstall),
+    onFfmpegInstallProgress: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: FfmpegInstallProgress): void => listener(progress)
+      ipcRenderer.on(IPC.ffmpegInstallProgress, handler)
+      return () => ipcRenderer.removeListener(IPC.ffmpegInstallProgress, handler)
+    },
     openVideos: () => ipcRenderer.invoke(IPC.openVideos),
     chooseFolder: (current) => ipcRenderer.invoke(IPC.chooseFolder, current),
     chooseExportPath: (dir, fileName) => ipcRenderer.invoke(IPC.chooseExportPath, dir, fileName),

@@ -34,12 +34,15 @@ async function readVersion(ffmpeg: string): Promise<string | null> {
   }
 }
 
-/** Finds ffmpeg + ffprobe: user folder first, then PATH, then the usual winget/manual installs. */
-export async function locateFfmpeg(preferredDir?: string | null): Promise<FfmpegBinaries | null> {
+/**
+ * Finds ffmpeg + ffprobe: the folder the user chose first, then the one Clipea2 installed, then PATH,
+ * then the usual winget/manual installs.
+ */
+export async function locateFfmpeg(preferredDir?: string | null, installedDir?: string | null): Promise<FfmpegBinaries | null> {
   const exe = process.platform === 'win32' ? '.exe' : ''
   const candidates: Candidate[] = []
-  if (preferredDir) {
-    candidates.push({ ffmpeg: join(preferredDir, `ffmpeg${exe}`), ffprobe: join(preferredDir, `ffprobe${exe}`) })
+  for (const dir of [preferredDir, installedDir]) {
+    if (dir) candidates.push({ ffmpeg: join(dir, `ffmpeg${exe}`), ffprobe: join(dir, `ffprobe${exe}`) })
   }
   const [ffmpegOnPath, ffprobeOnPath] = await Promise.all([findOnPath('ffmpeg'), findOnPath('ffprobe')])
   if (ffmpegOnPath && ffprobeOnPath) candidates.push({ ffmpeg: ffmpegOnPath, ffprobe: ffprobeOnPath })

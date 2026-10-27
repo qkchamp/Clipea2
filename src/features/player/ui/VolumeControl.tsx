@@ -35,7 +35,9 @@ export function VolumeControl() {
                 if (next !== null) player().setVolume(next)
               }}
             />
-          ) : null}
+          ) : (
+            <span className={styles.panelEdge}>100%</span>
+          )}
           <input
             type="range"
             min={0}
@@ -57,7 +59,9 @@ export function VolumeControl() {
                 ON
               </button>
             </div>
-          ) : null}
+          ) : (
+            <span className={styles.panelEdge}>0%</span>
+          )}
           <span className={styles.wheelHint}>
             <Mouse size={12} />
             rueda

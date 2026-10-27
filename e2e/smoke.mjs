@@ -129,7 +129,7 @@ try {
   const frameNumber = async () => {
     await page.waitForFunction(() => !document.querySelector('video').seeking)
     const text = await page.getByTitle('Número de cuadro exacto').innerText()
-    return Number(/#\s*(\d+)/.exec(text)?.[1])
+    return Number(/f\s*(\d+)/.exec(text)?.[1])
   }
   const base = await frameNumber()
   await page.keyboard.press('Control+ArrowRight')

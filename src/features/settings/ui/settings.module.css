@@ -62,14 +62,6 @@
   font-weight: 500;
 }
 
-.bad code {
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  color: var(--text);
-  font-family: var(--mono);
-}
-
 .encoders {
   display: flex;
   flex-wrap: wrap;
@@ -84,4 +76,109 @@
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.55;
+}
+
+/* ---------- ffmpeg: install and update ---------- */
+.rowEnd {
+  display: flex;
+  margin-left: auto;
+}
+
+/* The missing-ffmpeg call to action: icon, two lines and the button, like a toast at rest. */
+.callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.calloutIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+.calloutText {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.calloutText span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.install {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.installHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.installTitle,
+.updateNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.installSize {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.updateNote {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.updateNote svg {
+  color: var(--success);
+}
+
+.installError {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(242, 84, 91, 0.45);
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: #ffb4b8;
+  font-size: 12px;
+}
+
+.installError span {
+  flex: 1;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

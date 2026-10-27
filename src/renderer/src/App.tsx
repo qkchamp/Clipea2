@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { TriangleAlert } from 'lucide-react'
+import { Download, TriangleAlert } from 'lucide-react'
 import { formatBytes } from '@shared/domain/time'
 import { api } from '@shared/ui/api'
 import { Button } from '@shared/ui/atoms'
@@ -71,16 +71,21 @@ function windowTitle(sourcePath: string | null): string {
 
 function FfmpegBanner() {
   const ffmpeg = useSettingsStore((state) => state.ffmpeg)
+  const installing = useSettingsStore((state) => state.ffmpegTask?.kind === 'installing')
   if (!ffmpeg || ffmpeg.found) return null
+  // One click: starts the install and opens Ajustes, where the download progress shows.
+  const install = (): void => {
+    useUiStore.getState().openDialog('settings')
+    void useSettingsStore.getState().installFfmpeg()
+  }
   return (
     <div className={styles.banner} role="alert">
       <TriangleAlert size={16} />
       <span>
-        No encontré <strong>ffmpeg</strong>: sin él no se puede exportar. Instalalo con <code>winget install Gyan.FFmpeg</code> y
-        reiniciá Clipea2, o elegí su carpeta en Ajustes.
+        No encontré <strong>ffmpeg</strong>: sin él no se puede exportar. Clipea2 lo puede instalar con un clic.
       </span>
-      <Button size="sm" onClick={() => useUiStore.getState().openDialog('settings')}>
-        Ajustes
+      <Button size="sm" variant="primary" icon={<Download size={13} />} onClick={install}>
+        {installing ? 'Ver progreso' : 'Instalar ffmpeg'}
       </Button>
     </div>
   )
