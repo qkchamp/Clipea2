@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { clamp } from '@shared/domain/time'
 import { formatPlaybackRate, PLAYBACK_RATE, stepPlaybackRate } from '../domain/playbackRate'
 
 /** Imperative handle registered by the <video> container; other features drive playback through it. */
@@ -41,9 +42,11 @@ interface PlayerState {
   setTime(time: number): void
   setDuration(duration: number): void
   setPlaying(playing: boolean): void
+  setRate(rate: number): void
   stepRate(direction: 1 | -1): void
   resetRate(): void
   setVolume(volume: number): void
+  setMuted(muted: boolean): void
   toggleMute(): void
   showOsd(text: string): void
   takePendingSeek(): PendingSeek | null
@@ -86,6 +89,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setDuration: (duration) => set({ duration }),
   setPlaying: (playing) => set({ playing }),
 
+  setRate(rate) {
+    const next = clamp(rate, PLAYBACK_RATE.min, PLAYBACK_RATE.max)
+    set({ rate: next })
+    get().showOsd(`Velocidad ${formatPlaybackRate(next)}`)
+  },
+
   stepRate(direction) {
     const rate = stepPlaybackRate(get().rate, direction)
     set({ rate })
@@ -98,6 +107,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   setVolume: (volume) => set({ volume: Math.min(1, Math.max(0, volume)), muted: false }),
+  setMuted: (muted) => set({ muted }),
   toggleMute: () => set((state) => ({ muted: !state.muted })),
   showOsd: (text) => set({ osd: { text, id: ++osdCounter } }),
 

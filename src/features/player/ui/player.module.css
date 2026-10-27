@@ -130,12 +130,19 @@
   transform: translateX(-50%);
 }
 
-/* PlayerControls compacts "Dibujar" when the row runs out of room; it only wraps if that isn't enough. */
+/*
+ * PlayerControls: time | transport | tools. Both sides take the same share of the row, so play sits
+ * in the middle of the video; a side only grows past its share when the window is too narrow.
+ */
 .controls {
-  display: flex;
-  flex-wrap: wrap;
+  /* Above the stage: the volume and speed panels float over the bottom of the video. */
+  position: relative;
+  z-index: 3;
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 6px 8px;
+  gap: 8px;
   min-height: 56px;
   padding: 6px 12px;
 }
@@ -143,7 +150,7 @@
 .transport {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .playButton {
@@ -176,9 +183,6 @@
   display: flex;
   align-items: baseline;
   gap: 5px;
-  padding: 4px 7px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
   font-size: 14px;
   white-space: nowrap;
 }
@@ -189,68 +193,218 @@
   font-size: 13px;
 }
 
+/* With the window at its narrowest the total goes first: the timeline already shows where the clip ends. */
+@container (max-width: 560px) {
+  .clockTotal {
+    display: none;
+  }
+}
+
 .frameCounter {
-  margin-left: 2px;
-  white-space: nowrap;
-  padding: 0 7px;
-  border-left: 1px solid var(--border);
+  margin-left: 8px;
   color: var(--text-faint);
   font-size: 11px;
+  white-space: nowrap;
 }
 
-.rateBox {
+.controlsEnd {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  gap: 4px;
 }
 
+/* Same box and color as the icon buttons beside it, so the speed reads as one more of them. */
 .rate {
   min-width: 54px;
-  height: 26px;
-  border: 0;
-  border-radius: 4px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
+  color: var(--text-muted);
   font-family: var(--mono);
+  font-size: 13px;
   font-weight: 500;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
 }
 
-.rate:hover {
+.rate:hover,
+.rate[aria-expanded='true'] {
+  border-color: var(--border);
   background: var(--surface-3);
+  color: var(--text);
 }
 
 .rate[data-modified] {
   color: var(--accent);
 }
 
-.volume {
+/* Volume and speed: a panel floats above the button. Its bottom padding bridges the gap, so the
+   pointer can go up to the bar without the panel closing on the way. */
+.floating {
+  position: relative;
+  display: flex;
+}
+
+.floatingPanel {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  padding-bottom: 6px;
+  transform: translateX(-50%);
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    visibility 0s linear 0.12s;
+}
+
+.floating:hover .floatingPanel,
+.floating:has(:focus-visible) .floatingPanel,
+.floating[data-open] .floatingPanel {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.12s;
+}
+
+.floatingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+/* Vertical, lowest value at the bottom. The thin track is a strip of background, the input stays wide to grab. */
+.verticalSlider {
+  width: 20px;
+  height: 92px;
+  margin: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: none;
+  background: linear-gradient(to top, var(--accent) var(--fill), var(--border-strong) var(--fill)) center / 4px 100% no-repeat;
+  outline: none;
+  cursor: pointer;
+}
+
+.verticalSlider[data-muted] {
+  background-image: linear-gradient(to top, var(--text-faint) var(--fill), var(--border-strong) var(--fill));
+}
+
+.verticalSlider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  appearance: none;
+}
+
+.verticalSlider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* The speed slider's knob is a runner, so the bar reads as speed at a glance. */
+.speedSlider::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23fafafa'/%3E%3Cg transform='translate(4.2 4.5) scale(0.66)' fill='none' stroke='%230d0d0d' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='15.2' cy='3.4' r='2.1' fill='%230d0d0d' stroke='none'/%3E%3Cpath d='M13.5 8 11 14'/%3E%3Cpath d='M13 9l3.5 2.5 2-1'/%3E%3Cpath d='M13 9l-3.5.5L7.5 12'/%3E%3Cpath d='M11 14l3.5 2.5-.5 4.5'/%3E%3Cpath d='M11 14l-2.5 4-3.5.5'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* The ends of the range, while the panel only peeks. */
+.panelEdge {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.panelField {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.panelField input {
+  width: 38px;
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  text-align: right;
+}
+
+.panelField input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.panelSwitch {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.panelSwitch button,
+.panelButton {
+  height: 22px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.panelSwitch button:hover,
+.panelButton:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.panelSwitch button[aria-pressed='true'] {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.panelButton {
+  border: 1px solid var(--border);
+}
+
+.panelButton:disabled {
+  opacity: 0.4;
+}
+
+.wheelHint {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* Drawing, then shortcuts and settings: each group set apart by a thin line. */
+.toolGroup {
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.volumeSlider {
-  width: 58px;
-  accent-color: var(--ink);
-}
-
-.controlsEnd {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.drawCompact {
-  padding: 0 7px;
-}
-
-/* Shortcuts and settings: app-wide tools, grouped apart from the playback ones. */
-.appTools {
-  display: flex;
-  gap: 2px;
-  padding-left: 6px;
+  padding-left: 4px;
   border-left: 1px solid var(--border);
 }

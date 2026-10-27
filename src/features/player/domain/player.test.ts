@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { FrameIndex } from '@features/media/domain/frameIndex'
 import { canRecover } from './mediaRecovery'
-import { formatPlaybackRate, stepPlaybackRate } from './playbackRate'
+import { formatPlaybackRate, parsePlaybackRate, playbackRateFraction, stepPlaybackRate } from './playbackRate'
+import { parseVolumePercent, stepVolume, volumePercent } from './volume'
 import { frameEndTime, frameNumberAt, frameStartTime, frameStepTarget, totalFrames, type FrameClock } from './frameClock'
 
 describe('stepPlaybackRate', () => {
@@ -22,6 +23,64 @@ describe('stepPlaybackRate', () => {
   it('always shows two decimals', () => {
     expect(formatPlaybackRate(0.75)).toBe('0.75x')
     expect(formatPlaybackRate(1)).toBe('1.00x')
+  })
+})
+
+describe('typed playback rate', () => {
+  it('reads a speed with a dot or a comma, with or without the x', () => {
+    expect(parsePlaybackRate('1.5')).toBe(1.5)
+    expect(parsePlaybackRate('1,25x')).toBe(1.25)
+    expect(parsePlaybackRate(' 2 X ')).toBe(2)
+  })
+
+  it('keeps it between 0.25x and 4x', () => {
+    expect(parsePlaybackRate('10')).toBe(4)
+    expect(parsePlaybackRate('0')).toBe(0.25)
+  })
+
+  it('ignores what is not a number', () => {
+    expect(parsePlaybackRate('')).toBeNull()
+    expect(parsePlaybackRate('rápido')).toBeNull()
+  })
+
+  it('places the slowest speed at the bottom of the slider and the fastest at the top', () => {
+    expect(playbackRateFraction(0.25)).toBe(0)
+    expect(playbackRateFraction(4)).toBe(1)
+  })
+})
+
+describe('volume percentage', () => {
+  it('shows the volume as a whole percentage', () => {
+    expect(volumePercent(0.75)).toBe(75)
+    expect(volumePercent(0.333)).toBe(33)
+  })
+
+  it('reads what the user types, with or without the % sign', () => {
+    expect(parseVolumePercent('75')).toBe(0.75)
+    expect(parseVolumePercent(' 40 % ')).toBe(0.4)
+    expect(parseVolumePercent('12,5')).toBe(0.125)
+  })
+
+  it('keeps a typed value between 0 and 100', () => {
+    expect(parseVolumePercent('250')).toBe(1)
+    expect(parseVolumePercent('0')).toBe(0)
+  })
+
+  it('moves 5% per wheel notch, from the nearest step', () => {
+    expect(stepVolume(0.5, 1)).toBe(0.55)
+    expect(stepVolume(0.5, -1)).toBe(0.45)
+    expect(stepVolume(0.33, 1)).toBe(0.4)
+  })
+
+  it('stops at silence and at full volume', () => {
+    expect(stepVolume(0, -1)).toBe(0)
+    expect(stepVolume(1, 1)).toBe(1)
+  })
+
+  it('ignores what is not a number', () => {
+    expect(parseVolumePercent('')).toBeNull()
+    expect(parseVolumePercent('mucho')).toBeNull()
+    expect(parseVolumePercent('-20')).toBeNull()
   })
 })
 
