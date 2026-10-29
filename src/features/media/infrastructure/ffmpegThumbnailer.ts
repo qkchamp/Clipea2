@@ -51,9 +51,11 @@ export class FfmpegThumbnailer implements Thumbnailer {
         // A library preview does not need an exact frame: the nearest keyframe decodes alone.
         const seek = atSec === undefined ? ['-noaccurate_seek', '-skip_frame', 'nokey'] : []
         const args = ['-hide_banner', '-loglevel', 'error', ...seek, '-ss', seconds.toFixed(3), '-i', videoPath]
+        // That keyframe may come before the seek point (a short export has only the first one): passthrough
+        // keeps it instead of dropping it as too early, which left those clips without a preview.
         const result = await runProcess(
           await this.ffmpegPath(),
-          [...args, '-frames:v', '1', '-vf', 'scale=320:-2', '-q:v', '4', '-y', output],
+          [...args, '-frames:v', '1', '-fps_mode', 'passthrough', '-vf', 'scale=320:-2', '-q:v', '4', '-y', output],
           { priority: 'background' }
         )
         if (result.code !== 0 || !(await exists(output))) throw new Error(result.stderr.trim() || 'No se pudo generar la miniatura')
