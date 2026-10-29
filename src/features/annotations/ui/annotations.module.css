@@ -69,6 +69,7 @@
   outline: none;
 }
 
+/* sm controls (28) in a 42 bar: 1 + 6 + 28 + 6 + 1, like the trim bar. */
 .toolbar {
   display: flex;
   flex: none;
@@ -76,30 +77,43 @@
   justify-content: center;
   align-items: center;
   align-self: center;
-  gap: 6px;
+  gap: 6px 0;
   max-width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   padding: 6px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-2);
 }
 
+/* As tall as the row, so every separator is too. */
 .group {
   display: flex;
+  align-self: stretch;
   align-items: center;
-  gap: 3px;
-  padding: 0 6px;
+  gap: 4px;
+}
+
+/* A thin line between groups, with the same room on both sides of it. */
+.group + .group {
+  padding-left: 8px;
+}
+
+.group:not(:last-child) {
+  padding-right: 8px;
   border-right: 1px solid var(--border);
 }
 
-.group:last-child {
-  border-right: 0;
+/* Odd width evens out the five 1px separators, so the centered bar lands on whole pixels. */
+.group:last-child > button {
+  justify-content: flex-start;
+  width: calc-size(fit-content, round(up, size + 1px, 2px) - 1px);
 }
 
 .swatch {
   width: 20px;
   height: 20px;
+  padding: 0;
   border: 2px solid rgba(0, 0, 0, 0.4);
   border-radius: 50%;
 }
@@ -128,8 +142,8 @@
 }
 
 .swatchCustom svg {
-  width: 56%;
-  height: 56%;
+  width: 10px;
+  height: 10px;
 }
 
 .swatchEmpty:hover,
@@ -138,17 +152,62 @@
   color: #fff;
 }
 
-.toolbar.crowded {
+.toolbar.crowded .group {
   gap: 2px;
 }
 
-.toolbar.crowded .group {
-  padding: 0 4px;
+/* The picked swatch's 3px ring needs the room. */
+.toolbar.crowded .group:has(> .swatch) {
+  gap: 4px;
+}
+
+.toolbar.crowded .group + .group {
+  padding-left: 4px;
+}
+
+.toolbar.crowded .group:not(:last-child) {
+  padding-right: 4px;
+}
+
+/* Two fixed rows of three groups (two separators each, so both rows are even wide). */
+.toolbar.crowded {
+  row-gap: 0;
+}
+
+.toolbar.crowded::before {
+  content: '';
+  flex-basis: 100%;
+  height: 6px;
+  order: 1;
+}
+
+.toolbar.crowded .group:nth-child(n + 4) {
+  order: 2;
+}
+
+.toolbar.crowded .group:nth-child(3) {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.toolbar.crowded .group:nth-child(4) {
+  padding-left: 0;
+}
+
+.toolbar.crowded .group:last-child > button {
+  justify-content: center;
+  width: var(--size-sm);
+  padding: 0;
 }
 
 .toolbar.crowded .swatch {
   width: 16px;
   height: 16px;
+}
+
+.toolbar.crowded .swatchCustom svg {
+  width: 8px;
+  height: 8px;
 }
 
 .swatch[aria-checked='true'] {
@@ -160,8 +219,9 @@
 .widthOption {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: var(--size-sm);
+  height: var(--size-sm);
+  padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -176,17 +236,24 @@
   background: var(--surface-3);
 }
 
+/* Shrinks down to its header when the column runs out of room. */
 .list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   border-top: 1px solid var(--border);
 }
 
+/* Rows bleed 8 left; the 10px scrollbar gutter plus the trash's bleed 6 put its glyph on the 16 line. */
 .items {
   display: grid;
   gap: 2px;
-  max-height: 150px;
+  max-height: 160px;
   margin: 0;
-  padding: 0 8px 10px;
+  padding: 0 0 8px 8px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   list-style: none;
 }
 
@@ -196,14 +263,16 @@
   gap: 4px;
 }
 
+/* The label and the mono times share a baseline; the icon stays centered in the row. */
 .itemMain {
   display: flex;
   flex: 1;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   min-width: 0;
-  height: 30px;
-  padding: 0 8px;
+  height: var(--size-md);
+  /* 6 + 20px label line + 6 = 32. */
+  padding: 6px 8px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -217,6 +286,7 @@
 }
 
 .itemMain svg {
+  align-self: center;
   color: var(--accent);
   flex: none;
 }
@@ -224,6 +294,7 @@
 .itemLabel {
   max-width: 55%;
   overflow: hidden;
+  line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -234,6 +305,7 @@
   overflow: hidden;
   color: var(--text-faint);
   font-size: 12px;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -241,19 +313,19 @@
 /* ---------- Custom color mixer ---------- */
 .mixer {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   width: 240px;
 }
 
 .mixerPreview {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mixerSample {
-  width: 34px;
-  height: 34px;
+  width: var(--size-md);
+  height: var(--size-md);
   border: 2px solid rgba(255, 255, 255, 0.25);
   border-radius: 50%;
 }
@@ -261,7 +333,7 @@
 /* Reads like a label, but it is a box: click it and type a code. */
 .mixerHex {
   width: 96px;
-  height: 28px;
+  height: var(--size-md);
   padding: 0 6px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -269,6 +341,7 @@
   color: var(--text);
   font-family: var(--mono);
   font-size: 13px;
+  line-height: 20px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -299,6 +372,7 @@
   color: var(--text-faint);
   font-size: 11px;
   font-weight: 600;
+  line-height: 16px;
 }
 
 .channel input[type='range'] {
@@ -326,7 +400,7 @@
 .channelNumber,
 .numberInput,
 .effectSide {
-  height: 26px;
+  height: var(--size-sm);
   border: 1px solid var(--field-border);
   border-radius: var(--radius-sm);
   background: var(--field);
@@ -358,7 +432,7 @@
 .mixerActions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* ---------- Effects panel ---------- */
@@ -373,6 +447,7 @@
   align-items: baseline;
   gap: 8px;
   min-width: 0;
+  line-height: 20px;
 }
 
 .effectsTarget {
@@ -380,6 +455,7 @@
   overflow: hidden;
   color: var(--text-faint);
   font-size: 12px;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -392,18 +468,20 @@
 .effectGroupTitle {
   margin: 0 0 2px;
   color: var(--text-faint);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 16px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .effectRow {
   display: grid;
-  grid-template-columns: 16px 76px 1fr auto;
+  /* The name starts 8 after the checkbox, like every other gap in the row. */
+  grid-template-columns: 14px 78px 1fr auto;
   align-items: center;
   gap: 8px;
-  min-height: 28px;
+  min-height: var(--size-sm);
 }
 
 .effectCheck {
@@ -416,6 +494,7 @@
 .effectName {
   color: var(--text-muted);
   font-size: 13px;
+  line-height: 20px;
 }
 
 .effectRow[data-on] .effectName {
@@ -430,15 +509,17 @@
 
 .effectSide {
   grid-column: 3;
-  padding: 0 6px;
+  /* +1px border: text 12 in, like the shared .select. */
+  padding: 0 11px;
   font-size: 12px;
+  line-height: 16px;
 }
 
 .number {
   display: inline-flex;
   grid-column: 4;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   justify-self: end;
 }
 
@@ -457,17 +538,21 @@
   border-color: var(--danger);
 }
 
+/* Centered, 11px text lands 1px above the 13px value's baseline: the 2px margin puts it on it. */
 .numberUnit {
   min-width: 28px;
+  margin-top: 2px;
   color: var(--text-faint);
   font-size: 11px;
+  line-height: 16px;
 }
 
+/* 8 above its line (the panel's gap) and 8 below. */
 .effectsHint {
-  margin: 2px 0 0;
+  margin: 0;
   padding-top: 8px;
   border-top: 1px solid var(--border);
   color: var(--text-faint);
-  font-size: 11.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 18px;
 }

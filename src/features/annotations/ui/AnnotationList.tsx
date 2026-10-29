@@ -44,7 +44,7 @@ export function AnnotationList() {
               </span>
             </button>
             <IconButton small label="Borrar dibujo" onClick={() => remove(annotation.id)}>
-              <Trash size={14} />
+              <Trash size={16} />
             </IconButton>
           </li>
         ))}

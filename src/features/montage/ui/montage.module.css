@@ -1,8 +1,9 @@
 .panel {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   flex: 1;
+  /* Header + one card (48 + 2 + 80), at most half so Dibujos keeps the rest. */
+  min-height: min(130px, round(50%, 1px));
 }
 
 .list {
@@ -12,8 +13,10 @@
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 2px 12px 12px;
+  /* 6 + the 10px scrollbar gutter = 16. */
+  padding: 2px 6px var(--gutter) var(--gutter);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   list-style: none;
 }
 
@@ -21,8 +24,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 6px 7px 2px;
+  gap: 4px;
+  /* Right: 1px border + 4 + the action buttons' 7px bleed = 12. */
+  padding: 11px 4px 11px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
@@ -60,6 +64,8 @@
   flex: none;
   width: 92px;
   height: 52px;
+  /* + the card gap 4 = 12 to the text. */
+  margin-right: 8px;
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -73,18 +79,19 @@
   object-fit: cover;
 }
 
+/* 3 + the thumb's 1px border: 4 from its outer edge. */
 .number {
   position: absolute;
   top: 3px;
   left: 3px;
   min-width: 18px;
-  padding: 0 5px;
+  padding: 1px 4px;
   border-radius: 4px;
   background: var(--ink);
   color: var(--ink-contrast);
   font-size: 11px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 16px;
 }
 
 .card.playing .number {
@@ -118,32 +125,35 @@
   overflow: hidden;
   color: var(--text);
   font-weight: 600;
+  line-height: 18px;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .range {
+  overflow: hidden;
   color: var(--text-faint);
   font-size: 11px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .length {
   justify-self: start;
-  margin-top: 2px;
   padding: 0 6px;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
+  border-radius: 4px;
   color: var(--text);
   font-size: 11px;
   font-weight: 500;
-  line-height: 17px;
+  line-height: 16px;
 }
 
 .actions {
   display: grid;
-  grid-template-columns: repeat(2, 26px);
-  gap: 1px;
+  grid-template-columns: repeat(2, var(--size-sm));
   opacity: 0.55;
   transition: opacity 0.12s;
 }

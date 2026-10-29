@@ -4,7 +4,7 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  padding: 12px 12px 0;
+  padding: var(--gutter) var(--gutter) 0;
 }
 
 .stage {
@@ -26,13 +26,16 @@
   object-fit: contain;
 }
 
+/* Even size, so the centered content lands on whole pixels; the stage clips the extra pixel. */
 .placeholder {
   position: absolute;
-  inset: 0;
+  inset: 0 auto auto 0;
+  width: round(up, 100%, 2px);
+  height: round(up, 100%, 2px);
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 24px;
   text-align: center;
   background: var(--surface);
@@ -48,7 +51,7 @@
   font-size: 30px;
   font-weight: 500;
   letter-spacing: -0.035em;
-  line-height: 1.15;
+  line-height: 36px;
 }
 
 .placeholderTitle span {
@@ -59,22 +62,25 @@
   margin: 0;
   max-width: 400px;
   color: var(--text-muted);
-  line-height: 1.7;
+  line-height: 20px;
 }
 
+/* 1 + 8 + 24 + 8 + 1 = 42, the lg tier; the text starts 12 in (1px border + 11). */
 .osd {
   position: absolute;
   top: 16px;
-  left: 18px;
+  left: 16px;
   z-index: 2;
-  padding: 6px 12px;
+  width: calc-size(fit-content, round(up, size, 1px));
+  padding: 8px 11px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.75);
   color: #fff;
   font-family: var(--mono);
   font-size: 18px;
   font-weight: 600;
+  line-height: 24px;
   pointer-events: none;
   animation: osd 1.4s ease-in forwards;
 }
@@ -91,43 +97,54 @@
 
 .badges {
   position: absolute;
-  right: 14px;
-  bottom: 14px;
+  right: 16px;
+  bottom: 16px;
   z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Like the trim bar: 1 + 6 + 28 + 6 + 1, and the icon starts 15 in, where the button's text ends. */
 .previewBadge {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 4px 4px 12px;
+  width: calc-size(fit-content, round(up, size, 1px));
+  padding: 6px 6px 6px 14px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.85);
   font-size: 12px;
   font-weight: 500;
+  line-height: 16px;
 }
 
 .previewBadge svg:first-child {
   color: var(--accent);
 }
 
+/* A whole-pixel badge keeps its fraction before the button, so both ends stay on whole pixels. */
+.previewBadge > button {
+  margin-left: auto;
+}
+
+/* Centered by its auto margins, at an even width, so it starts on a whole pixel (no half-pixel transform). */
 .error {
   position: absolute;
-  left: 50%;
-  bottom: 18px;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  width: calc-size(fit-content, round(up, size, 2px));
+  margin: 0 auto;
+  padding: 10px 11px;
   border: 1px solid rgba(242, 84, 91, 0.45);
   border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.9);
   color: #ffb4b8;
-  transform: translateX(-50%);
 }
 
 /*
@@ -142,22 +159,23 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   min-height: 56px;
-  padding: 6px 12px;
+  padding: 8px var(--gutter);
 }
 
 .transport {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .playButton {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--size-play);
+  height: var(--size-play);
+  padding: 0;
   border: 0;
   border-radius: 50%;
   background: var(--ink);
@@ -182,16 +200,19 @@
 .clock {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-family: var(--mono);
   font-size: 14px;
+  line-height: 20px;
   white-space: nowrap;
 }
 
+/* A whole-pixel width, so the frame chip after it starts on a whole pixel. */
 .clockTime {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  width: calc-size(fit-content, round(up, size, 1px));
 }
 
 .clockCurrent {
@@ -210,34 +231,38 @@
   }
 }
 
-/* The frame number in a chip of the same family as the buttons on the right: "f" + number. */
+/* "f" + frame number in an 18 chip (1 + 2 + 14 + 1); the top-only padding puts it on the clock's baseline. */
 .frameCounter {
   display: inline-flex;
   align-items: baseline;
   gap: 1px;
-  padding: 3px 7px;
+  width: calc-size(fit-content, round(up, size, 1px));
+  padding: 2px 6px 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   color: var(--text-muted);
   font-size: 12px;
-  line-height: 1;
+  line-height: 14px;
 }
 
 .frameCounter span:first-child {
   color: var(--text-faint);
 }
 
+/* The last glyph ends on the stage's edge, like the clock starts on it: the button's 8px inset hangs outside. */
 .controlsEnd {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 4px;
+  margin-right: -8px;
 }
 
 /* Same box and color as the icon buttons beside it, so the speed reads as one more of them. */
 .rate {
   min-width: 54px;
-  height: 32px;
+  height: var(--size-md);
+  padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -245,6 +270,7 @@
   font-family: var(--mono);
   font-size: 13px;
   font-weight: 500;
+  line-height: 20px;
   transition:
     background-color 0.12s,
     border-color 0.12s,
@@ -290,14 +316,14 @@
   transition: opacity 0.12s;
 }
 
-/* Volume and speed share one size, peeking and pinned, so the two panels read as a pair. */
+/* Volume and speed share one size, so the panels read as a pair; with the border, insets are 12 and 8. */
 .floatingBox {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   width: 64px;
-  padding: 10px 6px;
+  padding: 11px 7px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-2);
@@ -350,27 +376,32 @@
   color: var(--text-faint);
   font-family: var(--mono);
   font-size: 10px;
+  line-height: 14px;
 }
 
+/* The suffix gets its own column and the same width goes on the left, so the box sits on the panel's axis. */
 .panelField {
-  display: flex;
+  display: grid;
+  grid-template-columns: 38px 8px;
   align-items: center;
   gap: 2px;
+  padding-left: 10px;
   color: var(--text-faint);
   font-family: var(--mono);
   font-size: 12px;
+  line-height: 16px;
 }
 
 .panelField input {
   width: 38px;
-  height: 24px;
+  height: var(--size-sm);
   padding: 0 4px;
   border: 1px solid var(--border-strong);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   color: var(--text);
   font: inherit;
-  text-align: right;
+  text-align: center;
 }
 
 .panelField input:focus {
@@ -382,26 +413,25 @@
   display: flex;
   align-self: stretch;
   gap: 2px;
-  padding: 2px;
+  padding: 1px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
 
-.panelSwitch button,
-.panelButton {
+.panelSwitch button {
   flex: 1;
-  height: 22px;
-  padding: 0 7px;
+  height: var(--size-sm);
+  padding: 0 4px;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--text-faint);
   font-size: 11px;
   font-weight: 600;
+  line-height: 16px;
 }
 
-.panelSwitch button:hover,
-.panelButton:hover:not(:disabled) {
+.panelSwitch button:hover {
   color: var(--text);
 }
 
@@ -410,27 +440,18 @@
   color: var(--text);
 }
 
-/* As tall and wide as the OFF / ON switch of the volume. */
-.panelButton {
-  flex: none;
-  align-self: stretch;
-  height: 28px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.panelButton:disabled {
-  opacity: 0.4;
-}
-
+/* Its line spans the panel; 8 on both sides of the line. */
 .wheelHint {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 3px;
-  padding-top: 6px;
+  align-self: stretch;
+  gap: 4px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
   color: var(--text-faint);
   font-size: 10px;
+  line-height: 14px;
   white-space: nowrap;
 }
 
@@ -450,11 +471,40 @@
 
 .dot {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
-  border: 1.5px solid var(--bg);
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--bg);
   border-radius: 50%;
   background: var(--accent);
+}
+
+/* Narrowest windows: the sm tier (28), so both sides keep equal shares (2 × 162 + 104 + 2 × 4 = 436 at 1120). */
+@container (max-width: 560px) {
+  .transport > button:not(.playButton),
+  .floating > button:not(.rate),
+  .toolGroup > button {
+    width: var(--size-sm);
+    height: var(--size-sm);
+  }
+
+  /* The sm buttons' 12/16 type, so "1.00x" keeps an inset inside 42. */
+  .rate {
+    min-width: 42px;
+    height: var(--size-sm);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  /* 28 around a 16px glyph: a 6px inset hangs outside. */
+  .controlsEnd {
+    gap: 2px;
+    margin-right: -6px;
+  }
+
+  .toolGroup {
+    gap: 2px;
+    padding-left: 2px;
+  }
 }

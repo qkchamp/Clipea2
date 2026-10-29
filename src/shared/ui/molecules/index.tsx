@@ -101,9 +101,19 @@ export function TimeField({
   )
 }
 
-export function PanelHeader({ title, meta, actions }: { title?: string; meta?: ReactNode; actions?: ReactNode }) {
+export function PanelHeader({
+  title,
+  meta,
+  actions,
+  className
+}: {
+  title?: string
+  meta?: ReactNode
+  actions?: ReactNode
+  className?: string
+}) {
   return (
-    <header className={styles.panelHeader}>
+    <header className={cx(styles.panelHeader, className)}>
       {title ? <h2 className={styles.panelTitle}>{title}</h2> : null}
       {meta ? <span className={styles.panelMeta}>{meta}</span> : null}
       {actions ? <div className={styles.panelActions}>{actions}</div> : null}
@@ -147,9 +157,19 @@ export function Tabs<T extends string>({
   )
 }
 
-export function EmptyState({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
+export function EmptyState({
+  icon,
+  title,
+  children,
+  className
+}: {
+  icon: ReactNode
+  title: string
+  children?: ReactNode
+  className?: string
+}) {
   return (
-    <div className={styles.empty}>
+    <div className={cx(styles.empty, className)}>
       <span className={styles.emptyIcon}>{icon}</span>
       <p className={styles.emptyTitle}>{title}</p>
       {children ? <p className={styles.emptyBody}>{children}</p> : null}

@@ -106,7 +106,7 @@ export function ExportOptions({ settings, encoders, onChange, onChooseFolder }: 
           <span className={styles.folderPath} title={settings.outputDir}>
             {settings.outputDir}
           </span>
-          <Button size="sm" icon={<FolderOpen size={13} />} onClick={onChooseFolder}>
+          <Button size="sm" icon={<FolderOpen size={14} />} onClick={onChooseFolder}>
             Cambiar
           </Button>
         </div>

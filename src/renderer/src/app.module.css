@@ -7,8 +7,8 @@
 .banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 8px var(--gutter);
   border-bottom: 1px solid rgba(242, 84, 91, 0.4);
   background: #140506;
   color: #ffc9cc;
@@ -21,7 +21,7 @@
 .workspace {
   display: grid;
   flex: 1;
-  grid-template-columns: 296px minmax(0, 1fr) 356px;
+  grid-template-columns: var(--col-left) minmax(0, 1fr) var(--col-right);
   min-height: 0;
 }
 
@@ -43,7 +43,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow: hidden auto;
+  overflow: hidden;
   border-left: 1px solid var(--border);
   background: var(--surface);
 }
@@ -52,6 +52,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: 180px;
+  /* Montage header + one card; past that the Exportar body scrolls instead. */
+  min-height: 130px;
   overflow-y: auto;
 }

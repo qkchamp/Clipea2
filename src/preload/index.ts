@@ -59,7 +59,7 @@ const api: Clipea2Api = {
     },
     openVideos: () => ipcRenderer.invoke(IPC.openVideos),
     chooseFolder: (current) => ipcRenderer.invoke(IPC.chooseFolder, current),
-    chooseExportPath: (dir, fileName) => ipcRenderer.invoke(IPC.chooseExportPath, dir, fileName),
+    chooseExportPath: (dir, fileName, freeName) => ipcRenderer.invoke(IPC.chooseExportPath, dir, fileName, freeName ?? false),
     showInFolder: (path) => ipcRenderer.invoke(IPC.showInFolder, path),
     openPath: (path) => ipcRenderer.invoke(IPC.openPath, path),
     copyFileToClipboard: (path) => ipcRenderer.invoke(IPC.copyFile, path),

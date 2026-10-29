@@ -33,7 +33,7 @@ export function ClipRow({ ref, clip, thumbnail, durationSec, active, onOpen }: C
           <span className={styles.clipTitle}>{recordedAtMs !== null ? formatRecordedAt(recordedAtMs) : title}</span>
           <span className={styles.clipMeta}>
             {clip.isInstantReplay ? <Badge tone="accent">Repetición</Badge> : null}
-            {formatBytes(clip.sizeBytes)}
+            <span className={styles.clipSize}>{formatBytes(clip.sizeBytes)}</span>
           </span>
         </span>
       </button>

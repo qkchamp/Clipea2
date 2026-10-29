@@ -13,7 +13,7 @@ const TOOLS: Array<{ kind: DrawTool; label: string; icon: ReactNode }> = [
   { kind: 'select', label: 'Mover dibujos (doble clic en un texto para editarlo)', icon: <MousePointer2 size={16} /> },
   { kind: 'arrow', label: 'Flecha', icon: <ArrowToolIcon size={16} /> },
   { kind: 'ellipse', label: 'Círculo', icon: <Circle size={16} /> },
-  { kind: 'rect', label: 'Rectángulo', icon: <Square size={15} /> },
+  { kind: 'rect', label: 'Rectángulo', icon: <Square size={14} /> },
   { kind: 'pen', label: 'Lápiz', icon: <PenLine size={16} /> },
   { kind: 'text', label: 'Texto', icon: <Type size={16} /> }
 ]
@@ -46,7 +46,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
     <div ref={row} className={cx(styles.toolbar, crowded && styles.crowded)} role="toolbar" aria-label="Herramientas de dibujo" onClick={(event) => event.stopPropagation()}>
       <div className={styles.group}>
         {TOOLS.map((item) => (
-          <IconButton key={item.kind} small={crowded} label={item.label} active={tool === item.kind} onClick={() => setTool(item.kind)}>
+          <IconButton key={item.kind} small label={item.label} active={tool === item.kind} onClick={() => setTool(item.kind)}>
             {item.icon}
           </IconButton>
         ))}
@@ -65,29 +65,33 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
             onClick={() => setColor(swatch)}
           />
         ))}
-        <CustomColor />
+        <CustomColor edge={row} />
       </div>
 
       <div className={styles.group} role="radiogroup" aria-label="Grosor">
-        {DRAW_WIDTHS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={width === option.value}
-            title={option.label}
-            aria-label={`Grosor ${option.label}`}
-            className={styles.widthOption}
-            onClick={() => setWidth(option.value)}
-          >
-            <span style={{ width: 4 + option.value * 900, height: 4 + option.value * 900, background: color }} />
-          </button>
-        ))}
+        {DRAW_WIDTHS.map((option) => {
+          // An even size, so the dot sits centered on whole pixels in its even box.
+          const dot = 2 * Math.round((4 + option.value * 900) / 2)
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={width === option.value}
+              title={option.label}
+              aria-label={`Grosor ${option.label}`}
+              className={styles.widthOption}
+              onClick={() => setWidth(option.value)}
+            >
+              <span style={{ width: dot, height: dot, background: color }} />
+            </button>
+          )
+        })}
       </div>
 
       <div className={styles.group}>
         <IconButton
-          small={crowded}
+          small
           label={
             keyframe === 'remove'
               ? 'Quitar el keyframe de este cuadro'
@@ -99,9 +103,9 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
         >
           {keyframe === 'remove' ? <DiamondMinus size={16} /> : <DiamondPlus size={16} />}
         </IconButton>
-        <EffectsMenu small={crowded} />
+        <EffectsMenu small edge={row} />
         <IconButton
-          small={crowded}
+          small
           label={canDelete ? 'Borrar el dibujo elegido (Supr)' : 'Borrar: elegí antes un dibujo con el cursor o en su barra'}
           disabled={!canDelete}
           onClick={onDelete}
@@ -111,10 +115,10 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
       </div>
 
       <div className={styles.group}>
-        <IconButton small={crowded} label="Deshacer (Ctrl+Z)" onClick={onUndo} disabled={!canUndo}>
+        <IconButton small label="Deshacer (Ctrl+Z)" onClick={onUndo} disabled={!canUndo}>
           <Undo2 size={16} />
         </IconButton>
-        <IconButton small={crowded} label="Rehacer (Ctrl+Y)" onClick={onRedo} disabled={!canRedo}>
+        <IconButton small label="Rehacer (Ctrl+Y)" onClick={onRedo} disabled={!canRedo}>
           <Redo2 size={16} />
         </IconButton>
       </div>

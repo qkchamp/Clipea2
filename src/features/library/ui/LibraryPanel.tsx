@@ -59,19 +59,21 @@ export function LibraryPanel() {
   return (
     <section className={styles.panel} aria-label="Biblioteca">
       <PanelHeader
+        className={styles.header}
         title="Biblioteca"
         meta={scans ? `${totalClips} clips` : undefined}
         actions={
           <>
-            <IconButton label="Abrir un video de otra carpeta" onClick={() => void openFile()}>
+            <IconButton small label="Abrir un video de otra carpeta" onClick={() => void openFile()}>
               <FolderOpen size={16} />
             </IconButton>
             <IconButton
+              small
               label="Volver a buscar clips"
               disabled={!libraryRoots?.length || loading}
               onClick={() => libraryRoots && void useLibraryStore.getState().load(libraryRoots)}
             >
-              <RefreshCw size={15} />
+              <RefreshCw size={16} />
             </IconButton>
           </>
         }
@@ -91,7 +93,11 @@ export function LibraryPanel() {
         {loading && !scans ? <p className={styles.status}>Buscando clips…</p> : null}
         {error ? <p className={styles.status}>No pude leer las carpetas: {error}</p> : null}
         {scans && shownClips === 0 ? (
-          <EmptyState icon={<Gamepad2 size={20} />} title={query ? 'Nada coincide' : 'No hay clips en estas carpetas'}>
+          <EmptyState
+            className={styles.empty}
+            icon={<Gamepad2 size={18} />}
+            title={query ? 'Nada coincide' : 'No hay clips en estas carpetas'}
+          >
             {query ? 'Probá con otro nombre.' : 'Agregá la carpeta de ShadowPlay en Ajustes o abrí un video suelto.'}
           </EmptyState>
         ) : null}

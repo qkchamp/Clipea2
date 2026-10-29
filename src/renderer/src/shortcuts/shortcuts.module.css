@@ -1,6 +1,6 @@
 .groups {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .groupTitle {
@@ -8,36 +8,41 @@
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
+  line-height: 20px;
   letter-spacing: -0.01em;
 }
 
+/* A fixed key column (the widest combo, rounded up), so every group's descriptions start on one line. */
 .list {
   display: grid;
-  grid-template-columns: minmax(150px, auto) 1fr;
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: baseline;
   gap: 8px 16px;
   margin: 0;
+  line-height: 20px;
 }
 
+/* Keys, separators and the description's first line share one baseline. */
 .keys {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .combo {
   display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  align-items: baseline;
+  gap: 4px;
 }
 
+/* 2 + the combo's 4 = 6 to the next key, the same 6 as the gap before the separator. */
 .separator {
-  margin: 0 3px;
+  margin-right: 2px;
   color: var(--text-faint);
 }
 
 .what {
   margin: 0;
   color: var(--text-muted);
-  align-self: center;
 }

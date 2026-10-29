@@ -17,7 +17,7 @@ function FolderField({ label, value, hint, onPick }: { label: string; value: str
         <span className={styles.path} title={value}>
           {value}
         </span>
-        <Button size="sm" icon={<FolderOpen size={13} />} onClick={onPick}>
+        <Button size="sm" icon={<FolderOpen size={14} />} onClick={onPick}>
           Cambiar
         </Button>
       </div>
@@ -47,7 +47,7 @@ function LibraryFoldersField({ roots }: { roots: string[] }) {
           </div>
         ))}
         <div>
-          <Button size="sm" icon={<FolderPlus size={13} />} onClick={() => void add()}>
+          <Button size="sm" icon={<FolderPlus size={14} />} onClick={() => void add()}>
             Agregar carpeta
           </Button>
         </div>
@@ -110,7 +110,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             {ffmpeg?.found ? (
               <>
                 <p className={styles.ok}>
-                  <CircleCheck size={15} /> ffmpeg {ffmpeg.version}
+                  <CircleCheck size={14} /> ffmpeg {ffmpeg.version}
                   {outdated && latest ? <Badge tone="warning">Versión vieja · ya salió la {releaseNumber(latest)?.join('.')}</Badge> : null}
                 </p>
                 <p className={styles.path} title={ffmpeg.ffmpegPath ?? ''}>
@@ -132,7 +132,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
               </>
             ) : (
               <p className={styles.bad}>
-                <CircleX size={15} /> No encontrado: sin ffmpeg no se puede exportar.
+                <CircleX size={14} /> No encontrado: sin ffmpeg no se puede exportar.
               </p>
             )}
             {ffmpegTask?.kind === 'installing' ? (
@@ -142,7 +142,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             ) : null}
             {ffmpegTask?.kind === 'error' ? <InstallError message={ffmpegTask.message} retry={ffmpegTask.retry} /> : null}
             <div className={styles.row}>
-              <Button size="sm" icon={<FolderOpen size={13} />} onClick={() => void pickFolder('ffmpegDir')}>
+              <Button size="sm" icon={<FolderOpen size={14} />} onClick={() => void pickFolder('ffmpegDir')}>
                 Elegir carpeta de ffmpeg
               </Button>
               {settings.ffmpegDir ? (

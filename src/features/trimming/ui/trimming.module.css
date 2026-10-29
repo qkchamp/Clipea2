@@ -1,7 +1,9 @@
+/* Its content sits 16 in on every side, the column's gutter. */
 .panel {
+  container-type: inline-size;
   display: grid;
-  gap: 10px;
-  padding: 4px 16px 14px;
+  gap: 12px;
+  padding: var(--gutter);
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
@@ -9,20 +11,23 @@
 .timeline {
   display: grid;
   gap: 4px;
-  padding-top: 6px;
 }
 
 .timeline[data-disabled] {
   opacity: 0.5;
 }
 
+/* Same box as the track's inside (like the drawing rows), so a tick sits at the x of its time on the track. */
 .ruler {
   position: relative;
   height: 16px;
   overflow: hidden;
+  border: 1px solid transparent;
+  border-width: 0 1px;
   color: var(--text-faint);
   font-family: var(--mono);
   font-size: 10px;
+  line-height: 16px;
 }
 
 .tick {
@@ -44,6 +49,7 @@
   background: var(--surface-2);
   color: var(--text-muted);
   font-family: var(--font);
+  line-height: 14px;
 }
 
 .track {
@@ -82,9 +88,9 @@
 .band span {
   position: absolute;
   bottom: 6px;
-  left: 3px;
+  left: 4px;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--discord);
   color: #fff;
   font-size: 10px;
@@ -114,7 +120,7 @@
   top: 0;
   left: 50%;
   padding: 0 8px;
-  border-radius: 0 0 5px 5px;
+  border-radius: 0 0 4px 4px;
   background: var(--accent);
   color: var(--accent-contrast);
   font-family: var(--mono);
@@ -122,6 +128,8 @@
   font-weight: 600;
   line-height: 16px;
   white-space: nowrap;
+  /* An even width, so the -50% shift is a whole pixel. */
+  width: calc-size(fit-content, round(up, size, 2px));
   transform: translateX(-50%);
   pointer-events: auto;
   cursor: grab;
@@ -156,20 +164,21 @@
 .handle[data-side='in'] {
   /* Fully outside the band on each side: on a very short selection both stay grabbable. */
   left: -12px;
-  border-radius: 5px 0 0 5px;
+  border-radius: 6px 0 0 6px;
 }
 
 .handle[data-side='out'] {
   right: -12px;
-  border-radius: 0 5px 5px 0;
+  border-radius: 0 6px 6px 0;
 }
 
+/* At the track's edge it covers the selection's 2px border, so the grip mark stays centered in the orange. */
 .handle[data-side='in'][data-inside] {
-  left: 0;
+  left: -2px;
 }
 
 .handle[data-side='out'][data-inside] {
-  right: 0;
+  right: -2px;
 }
 
 .drawings {
@@ -332,12 +341,14 @@
   transform: translateX(-50%);
 }
 
+/* A bar of sm controls: 1 + 6 + 28 + 6 + 1 = 42. The first ink ("Inicio") is 15 in, so is the last box's end. */
 .rangeBar {
+  anchor-name: --trim-bar;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 6px;
+  gap: 6px 8px;
+  padding: 6px 14px 6px 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
@@ -349,32 +360,77 @@
   gap: 4px;
 }
 
-.arrow {
-  color: var(--text-faint);
+/* The fields join the bar's sm tier. */
+.rangeBar .point input {
+  height: var(--size-sm);
 }
 
+/* Whole-pixel widths for text-sized items, so every box after them starts on a whole pixel. */
+.point > button,
+.rangeBar > button,
+.rangeActions > *,
 .duration {
+  justify-content: flex-start;
+  width: calc-size(fit-content, round(up, size, 1px));
+}
+
+/* 8 + the gap on each side: centered between the field and the "Fin" text. */
+.arrow {
+  margin-left: 8px;
   color: var(--text-faint);
 }
 
+/* Starts row 2 when the bar wraps, under "Inicio"; the 2px bottom margin puts it on the labels' baseline. */
+.duration {
+  margin: 0 0 2px 8px;
+  color: var(--text-faint);
+}
+
+/* The mono's deeper descent would make a 20px line 21 tall. */
 .duration strong {
   margin-left: 6px;
   color: var(--text);
   font-weight: 600;
+  line-height: 18px;
 }
 
 .rangeActions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-left: auto;
 }
 
+/* Same tier and inset as the sm buttons beside it: +1px border, the text starts 8 in. */
 .editing {
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  height: var(--size-sm);
+  padding: 0 7px;
   border: 1px solid rgba(88, 101, 242, 0.45);
   border-radius: var(--radius-sm);
   color: #aab1ff;
   font-size: 12px;
   font-weight: 500;
+  line-height: 16px;
+}
+
+/* Too narrow for one row: always break before "Duración", never leave a lone button on row 2. */
+@container (width < 780px) {
+  .rangeBar {
+    row-gap: 0;
+  }
+
+  .rangeBar::before {
+    content: '';
+    flex-basis: 100%;
+    order: 1;
+  }
+
+  .duration,
+  .rangeBar > button,
+  .rangeActions {
+    order: 2;
+    margin-top: 6px;
+  }
 }

@@ -316,7 +316,8 @@ try {
 
   // Re-export the first one from the history.
   await page.getByRole('tab', { name: /Exportados/ }).click()
-  await page.getByRole('button', { name: 'Reexportar' }).first().click()
+  await page.getByRole('button', { name: /^Reexportar/ }).first().click()
+  await page.getByRole('dialog', { name: '¿Reexportar este clip?' }).getByRole('button', { name: 'Sí, reexportar' }).click()
   await page.waitForFunction(() => document.querySelectorAll('[aria-label="Exportados"] li').length === 2, null, { timeout: 180_000 })
   const files = mp4s()
   check('reexporta desde el historial', files.length === 2 && files.some((name) => name.endsWith(' (2).mp4')), files.join(' | '))

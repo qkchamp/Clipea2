@@ -5,11 +5,14 @@
 
 .folders {
   display: grid;
-  gap: 6px;
+  /* Without it a long nowrap path widens the track past the body. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
 }
 
+/* 1 + 6 + 28 + 6 + 1 = 42 (lg); text 12 in, like an input's. */
 .folder {
-  padding: 5px 5px 5px 11px;
+  padding: 6px 6px 6px 11px;
   border: 1px solid var(--field-border);
   border-radius: var(--radius-sm);
   background: var(--field);
@@ -28,6 +31,7 @@
   overflow: hidden;
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -35,7 +39,8 @@
 .ffmpeg {
   display: grid;
   gap: 8px;
-  padding: 12px 14px;
+  /* +1px border = 12, like an input's text. */
+  padding: 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
@@ -70,12 +75,12 @@
 
 .note {
   margin: 0;
-  padding: 10px 12px;
+  padding: 11px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   color: var(--text-muted);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 18px;
 }
 
 /* ---------- ffmpeg: install and update ---------- */
@@ -89,7 +94,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 11px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -116,12 +121,13 @@
 .calloutText span {
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 16px;
 }
 
 .install {
   display: grid;
   gap: 8px;
-  padding: 12px;
+  padding: 11px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -146,27 +152,31 @@
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 12px;
+  line-height: 16px;
 }
 
 .updateNote {
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 16px;
 }
 
 .updateNote svg {
   color: var(--success);
 }
 
+/* A field row like .folder: 42 with the 28 "Reintentar", text 12 in. */
 .installError {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 6px 6px 6px 11px;
   border: 1px solid rgba(242, 84, 91, 0.45);
   border-radius: var(--radius-sm);
   background: var(--danger-soft);
   color: #ffb4b8;
   font-size: 12px;
+  line-height: 16px;
 }
 
 .installError span {

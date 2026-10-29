@@ -62,7 +62,7 @@ export function MontagePanel() {
               <Button
                 size="sm"
                 variant="ghost"
-                icon={<Play size={13} />}
+                icon={<Play size={14} />}
                 onClick={() => usePlayerStore.getState().startPreview(segments.map(previewItem))}
               >
                 Ver
@@ -70,7 +70,7 @@ export function MontagePanel() {
               <Button
                 size="sm"
                 variant={confirmClear ? 'danger' : 'ghost'}
-                icon={<Trash size={13} />}
+                icon={<Trash size={14} />}
                 onClick={() => {
                   if (!confirmClear) return setConfirmClear(true)
                   montage().clear()
@@ -86,7 +86,7 @@ export function MontagePanel() {
       ) : null}
 
       {segments.length === 0 ? (
-        <EmptyState icon={<Clapperboard size={20} />} title="Juntá varios cortes en un clip">
+        <EmptyState icon={<Clapperboard size={18} />} title="Juntá varios cortes en un clip">
           Marcá inicio y fin, y tocá Agregar al montaje (Enter). Podés sumar trozos de distintos videos y reordenarlos
           arrastrando. Si no agregás nada, se exporta la selección actual.
         </EmptyState>

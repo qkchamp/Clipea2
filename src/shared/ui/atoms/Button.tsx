@@ -11,6 +11,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   block?: boolean
 }
 
+/** Even icon sizes per tier, so glyphs center on whole pixels. */
+const SPINNER_SIZE = { sm: 14, md: 16, lg: 18 } as const
+
 export function Button({
   variant = 'secondary',
   size = 'md',
@@ -30,7 +33,7 @@ export function Button({
       disabled={disabled || loading}
       {...rest}
     >
-      {loading ? <LoaderCircle size={size === 'sm' ? 13 : 16} className={styles.spin} /> : icon}
+      {loading ? <LoaderCircle size={SPINNER_SIZE[size]} className={styles.spin} /> : icon}
       {children}
     </button>
   )

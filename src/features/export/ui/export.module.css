@@ -1,14 +1,22 @@
 .panel {
-  flex: none;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   border-top: 1px solid var(--border);
   background: var(--surface);
 }
 
 .body {
   display: grid;
-  gap: 10px;
-  padding: 0 16px 16px;
+  gap: 12px;
+  min-height: 0;
+  /* The scroll clips at the padding edge: 4 up and 4 of padding keep the specs line (pulled up 4) whole. */
+  margin-top: -4px;
+  /* 6 + the 10px scrollbar gutter = 16. */
+  padding: 4px 6px var(--gutter) var(--gutter);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .body > * {
@@ -19,20 +27,23 @@
   margin: 0;
   color: var(--text-muted);
   font-size: 13px;
+  line-height: 20px;
 }
 
+/* Tied to the text above it: 8 instead of the body's 12. */
 .specs {
   margin: -4px 0 0;
   color: var(--text-faint);
-  font-size: 11.5px;
+  font-size: 12px;
+  line-height: 16px;
   font-variant-numeric: tabular-nums;
 }
 
 .meter {
   position: relative;
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 12px;
+  padding: 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
@@ -40,7 +51,7 @@
 
 .meterTop {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
@@ -49,6 +60,7 @@
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
+  line-height: 16px;
 }
 
 .meterValue {
@@ -62,6 +74,7 @@
   font-family: var(--font-display);
   font-size: 26px;
   font-weight: 500;
+  line-height: 32px;
   letter-spacing: -0.03em;
 }
 
@@ -82,17 +95,18 @@
   align-items: flex-start;
   gap: 8px;
   margin: 0;
-  padding: 8px 10px;
+  padding: 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 18px;
 }
 
+/* Centered on the first 18px line. */
 .note svg {
   flex: none;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .note[data-tone='danger'] {
@@ -117,13 +131,13 @@
   margin: 0;
   color: var(--text-faint);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 18px;
 }
 
 .options {
   display: grid;
-  gap: 14px;
-  padding: 14px;
+  gap: 12px;
+  padding: 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
@@ -134,9 +148,11 @@
 }
 
 .optionRow {
+  --row-gap: 12px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  /* Rounded first track keeps both selects on whole pixels in an odd width. */
+  grid-template-columns: round(down, calc((100% - var(--row-gap)) / 2), 1px) minmax(0, 1fr);
+  gap: var(--row-gap);
 }
 
 .folderRow {
@@ -151,6 +167,7 @@
   overflow: hidden;
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
   direction: rtl;
@@ -159,8 +176,9 @@
 
 .progress {
   display: grid;
-  gap: 10px;
-  padding: 12px 14px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--tile);
@@ -173,11 +191,18 @@
   font-weight: 500;
 }
 
+/* Ghost Cancelar bleeds its 8px inset. */
+.progressHead > button {
+  margin-right: -8px;
+}
+
 .progressLabel {
   display: flex;
   align-items: baseline;
   gap: 8px;
   min-width: 0;
+  /* Shares a baseline with Cancelar's 12px label. */
+  margin-bottom: 2px;
 }
 
 .progressName {

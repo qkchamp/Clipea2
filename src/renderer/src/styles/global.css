@@ -41,6 +41,18 @@
   --radius-lg: 12px;
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.7);
 
+  /* Geometry: shell columns, the 16 inset of every column and the control heights. */
+  --col-left: 296px;
+  --col-right: 356px;
+  --gutter: 16px;
+  --size-chip: 18px;
+  --size-badge: 20px;
+  --size-sm: 28px;
+  --size-md: 32px;
+  --size-band: 36px;
+  --size-play: 40px;
+  --size-lg: 42px;
+
   /* Flat by design: these stay as names so components read the same. */
   --field: #000000;
   --field-border: #262626;
@@ -81,7 +93,7 @@ body {
   font-family: var(--font);
   font-size: 13px;
   font-feature-settings: 'cv11', 'ss01';
-  line-height: 1.45;
+  line-height: 20px;
   letter-spacing: -0.006em;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;

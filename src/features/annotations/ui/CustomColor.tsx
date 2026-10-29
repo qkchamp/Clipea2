@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type RefObject } from 'react'
 import { Pencil, Plus } from 'lucide-react'
 import { Button } from '@shared/ui/atoms'
 import { Popover } from '@shared/ui/organisms/Popover'
@@ -101,7 +101,7 @@ function ColorMixer({ start, hasCustom, onUse, onReset }: { start: string; hasCu
  * The swatch after the fixed colors. Empty ("+") until the user mixes one with RGB; then it holds that
  * color, and clicking it again offers to change it or clear it. Only one custom color for now.
  */
-export function CustomColor() {
+export function CustomColor({ edge }: { edge?: RefObject<HTMLElement | null> }) {
   const color = useAnnotationStore((state) => state.color)
   const customColor = useAnnotationStore((state) => state.customColor)
   const setColor = useAnnotationStore((state) => state.setColor)
@@ -128,7 +128,7 @@ export function CustomColor() {
           aria-expanded={open}
           onClick={onClick}
         >
-          <Plus size={11} strokeWidth={2.5} />
+          <Plus size={12} strokeWidth={2.5} />
         </button>
       ) : (
         <button
@@ -146,7 +146,7 @@ export function CustomColor() {
         </button>
       )}
       {open ? (
-        <Popover anchor={anchor} label="Color personalizado" onClose={() => setOpen(false)}>
+        <Popover anchor={anchor} edge={edge} label="Color personalizado" onClose={() => setOpen(false)}>
           <ColorMixer
             start={customColor ?? color}
             hasCustom={customColor !== null}

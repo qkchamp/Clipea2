@@ -51,7 +51,7 @@ export function PlayerControls() {
 
       <div className={styles.transport}>
         <IconButton label="Cuadro anterior (Ctrl+←) · mantené apretado para seguir" disabled={disabled} {...stepBack}>
-          <StepBack size={17} />
+          <StepBack size={16} />
         </IconButton>
         <button
           type="button"
@@ -66,7 +66,7 @@ export function PlayerControls() {
           {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
         </button>
         <IconButton label="Cuadro siguiente (Ctrl+→) · mantené apretado para seguir" disabled={disabled} {...stepForward}>
-          <StepForward size={17} />
+          <StepForward size={16} />
         </IconButton>
       </div>
 
@@ -80,19 +80,19 @@ export function PlayerControls() {
             disabled={disabled}
             onClick={() => useAnnotationStore.getState().setDrawing(!drawing)}
           >
-            <PenLine size={17} />
+            <PenLine size={16} />
           </IconButton>
         </div>
         <div className={styles.toolGroup}>
           <IconButton label="Atajos de teclado (?)" onClick={() => useUiStore.getState().openDialog('help')}>
-            <Keyboard size={17} />
+            <Keyboard size={16} />
           </IconButton>
           <IconButton
             label={outdated ? 'Ajustes · hay una versión nueva de ffmpeg' : 'Ajustes'}
             className={styles.withDot}
             onClick={() => useUiStore.getState().openDialog('settings')}
           >
-            <Settings size={17} />
+            <Settings size={16} />
             {outdated ? <span className={styles.dot} /> : null}
           </IconButton>
         </div>

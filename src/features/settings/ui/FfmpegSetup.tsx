@@ -45,7 +45,7 @@ export function InstallCallout() {
         <strong>Instalalo con un clic</strong>
         <span>Clipea2 descarga la versión oficial para Windows (unos 115 MB) y la deja lista para usar.</span>
       </div>
-      <Button size="sm" variant="primary" icon={<Download size={13} />} onClick={() => void useSettingsStore.getState().installFfmpeg()}>
+      <Button size="sm" variant="primary" icon={<Download size={14} />} onClick={() => void useSettingsStore.getState().installFfmpeg()}>
         Instalar
       </Button>
     </div>
@@ -74,13 +74,13 @@ export function UpdateAction({ installed }: { installed: string | null }) {
   if (checking) {
     return (
       <span className={styles.updateNote}>
-        <LoaderCircle size={13} className={styles.spin} /> Buscando…
+        <LoaderCircle size={14} className={styles.spin} /> Buscando…
       </span>
     )
   }
   if (latest && isNewerRelease(latest, installed)) {
     return (
-      <Button size="sm" variant="primary" icon={<Download size={13} />} onClick={() => void store().installFfmpeg()}>
+      <Button size="sm" variant="primary" icon={<Download size={14} />} onClick={() => void store().installFfmpeg()}>
         Actualizar a {releaseNumber(latest)?.join('.')}
       </Button>
     )
@@ -88,12 +88,12 @@ export function UpdateAction({ installed }: { installed: string | null }) {
   if (latest) {
     return (
       <span className={styles.updateNote}>
-        <CircleCheck size={13} /> Es la última versión
+        <CircleCheck size={14} /> Es la última versión
       </span>
     )
   }
   return (
-    <Button size="sm" variant="ghost" icon={<RefreshCw size={13} />} onClick={() => void store().checkFfmpegUpdate()}>
+    <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => void store().checkFfmpegUpdate()}>
       Buscar actualización
     </Button>
   )

@@ -6,6 +6,8 @@ import styles from './popover.module.css'
 interface PopoverProps {
   /** What opens it. The popover hangs from it, and a click on it is not a click "outside". */
   anchor: RefObject<HTMLElement | null>
+  /** A bar around the anchor: the popover hangs from its edge instead, so it never covers the bar. */
+  edge?: RefObject<HTMLElement | null>
   /** Accessible name. */
   label: string
   onClose: () => void
@@ -17,7 +19,7 @@ interface PopoverProps {
  * a click anywhere else, and keeps its keys to itself: arrows on a slider or Delete on a button
  * inside it must not seek the video or delete the picked drawing.
  */
-export function Popover({ anchor, label, onClose, children }: PopoverProps) {
+export function Popover({ anchor, edge, label, onClose, children }: PopoverProps) {
   const box = useRef<HTMLDivElement>(null)
   // Read when it fires, so a new function on every render doesn't re-subscribe the listeners.
   const close = useRef(onClose)
@@ -31,7 +33,11 @@ export function Popover({ anchor, label, onClose, children }: PopoverProps) {
       const trigger = anchor.current
       if (!trigger) return
       const size = { width: content.offsetWidth, height: content.offsetHeight }
-      setPosition(placeTooltip(trigger.getBoundingClientRect(), size, { width: window.innerWidth, height: window.innerHeight }))
+      // Still centered on the button when it hangs from the bar.
+      const own = trigger.getBoundingClientRect()
+      const bar = edge?.current?.getBoundingClientRect()
+      const box = bar ? { left: own.left, width: own.width, top: bar.top, height: bar.height } : own
+      setPosition(placeTooltip(box, size, { width: window.innerWidth, height: window.innerHeight }))
     }
     place()
     // Its content changes size (an effect opens its fields) and the window can change under it.
@@ -42,7 +48,7 @@ export function Popover({ anchor, label, onClose, children }: PopoverProps) {
       observer.disconnect()
       window.removeEventListener('resize', place)
     }
-  }, [anchor])
+  }, [anchor, edge])
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent): void => {

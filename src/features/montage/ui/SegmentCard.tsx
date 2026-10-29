@@ -79,10 +79,10 @@ export function SegmentCard({
           <ChevronDown size={14} />
         </IconButton>
         <IconButton small label="Editar inicio y fin en la línea de tiempo" active={editing} onClick={onEdit}>
-          <Pencil size={13} />
+          <Pencil size={14} />
         </IconButton>
         <IconButton small label="Quitar del montaje" onClick={onRemove}>
-          <Trash size={13} />
+          <Trash size={14} />
         </IconButton>
       </div>
     </li>

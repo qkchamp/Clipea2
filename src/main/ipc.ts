@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
+import { uniqueOutputPath } from '@features/export/infrastructure/outputNaming'
 import { scanLibrary } from '@features/library/application/scanLibrary'
 import { VIDEO_EXTENSIONS } from '@features/library/domain/libraryClip'
 import type { AppSettings } from '@features/settings/domain/settings'
@@ -71,11 +72,11 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
     const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
     return result.canceled ? [] : result.filePaths
   })
-  ipcMain.handle(IPC.chooseExportPath, async (_event, dir: string, fileName: string) => {
+  ipcMain.handle(IPC.chooseExportPath, async (_event, dir: string, fileName: string, freeName: boolean) => {
     const window = getWindow()
     const options: Electron.SaveDialogOptions = {
       title: 'Guardar clip',
-      defaultPath: join(dir, `${fileName}.mp4`),
+      defaultPath: freeName ? uniqueOutputPath(dir, fileName) : join(dir, `${fileName}.mp4`),
       filters: [{ name: 'Video MP4', extensions: ['mp4'] }],
       properties: ['createDirectory', 'showOverwriteConfirmation']
     }

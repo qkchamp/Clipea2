@@ -74,8 +74,8 @@ export function ExportPanel() {
         title="Exportar"
         meta={meta}
         actions={
-          <IconButton label="Opciones de exportación" active={showOptions} onClick={() => setShowOptions(!showOptions)}>
-            <SlidersHorizontal size={15} />
+          <IconButton small label="Opciones de exportación" active={showOptions} onClick={() => setShowOptions(!showOptions)}>
+            <SlidersHorizontal size={16} />
           </IconButton>
         }
       />
@@ -130,7 +130,7 @@ export function ExportPanel() {
                   ? 'Preparando…'
                   : `${Math.round(job.fraction * 100)}%${job.speed ? ` · ${job.speed.toFixed(1).replace('.', ',')}x` : ''}`}
               </span>
-              <Button size="sm" variant="ghost" icon={<X size={13} />} disabled={job.status !== 'running'} onClick={cancelExport}>
+              <Button size="sm" variant="ghost" icon={<X size={14} />} disabled={job.status !== 'running'} onClick={cancelExport}>
                 Cancelar
               </Button>
             </div>
@@ -142,7 +142,7 @@ export function ExportPanel() {
             variant="primary"
             size="lg"
             block
-            icon={<Upload size={17} />}
+            icon={<Upload size={18} />}
             disabled={!target || !planning || (limit !== null && !planning.plan.fits) || !ffmpeg?.found}
             onClick={() => void startExport()}
           >

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Sparkles } from 'lucide-react'
 import { IconButton } from '@shared/ui/atoms'
 import { Popover } from '@shared/ui/organisms/Popover'
@@ -211,7 +211,7 @@ function EffectsPanel({ drawing }: { drawing: Annotation }) {
 }
 
 /** Button after the keyframe one; opens the effects of the picked drawing. */
-export function EffectsMenu({ small }: { small: boolean }) {
+export function EffectsMenu({ small, edge }: { small: boolean; edge?: RefObject<HTMLElement | null> }) {
   const selectedId = useAnnotationStore((state) => state.selectedId)
   const drawing = useAnnotationStore((state) => state.annotations.find((annotation) => annotation.id === selectedId))
   const [open, setOpen] = useState(false)
@@ -236,7 +236,7 @@ export function EffectsMenu({ small }: { small: boolean }) {
         <Sparkles size={16} />
       </IconButton>
       {open && drawing ? (
-        <Popover anchor={anchor} label="Efectos del dibujo" onClose={() => setOpen(false)}>
+        <Popover anchor={anchor} edge={edge} label="Efectos del dibujo" onClose={() => setOpen(false)}>
           <EffectsPanel drawing={drawing} />
         </Popover>
       ) : null}

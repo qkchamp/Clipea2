@@ -31,8 +31,8 @@ interface ExportInput {
   fileName: string
   /** Human label of each segment's recording, kept in the history. */
   labels: readonly string[]
-  /** File chosen in the save dialog; re-exports leave it out and get a free name in the export folder. */
-  outputPath?: string
+  /** File chosen in the save dialog. */
+  outputPath: string
 }
 
 /** Shared by the editor export and "Exportar otra vez" from the history; uses the current export options. */
@@ -151,15 +151,24 @@ export async function startExport(): Promise<void> {
   })
 }
 
-/** Same cuts and drawings as a previous export, with the export options chosen now. */
-export function reexport(entry: HistoryEntry): Promise<void> {
-  return runExport({
+/**
+ * Same cuts and drawings as a previous export, with the export options chosen now. First asks where
+ * to save it, starting in the export folder with a name that doesn't replace the previous one.
+ */
+export async function reexport(entry: HistoryEntry): Promise<void> {
+  const job = useExportStore.getState().job
+  const { settings } = useSettingsStore.getState()
+  if (job.status === 'running' || job.status === 'preparing' || !settings) return
+  const outputPath = await api.system.chooseExportPath(settings.outputDir, reexportName(entry), true)
+  if (!outputPath) return
+  await runExport({
     target: {
       kind: entry.segments.length > 1 ? 'montage' : 'selection',
       segments: entry.segments.map(({ sourcePath, start, end }) => ({ sourcePath, start, end }))
     },
     annotations: entry.annotations,
-    fileName: reexportName(entry),
+    fileName: baseName(outputPath).replace(/\.mp4$/i, ''),
+    outputPath,
     labels: entry.segments.map((segment) => segment.sourceLabel)
   })
 }

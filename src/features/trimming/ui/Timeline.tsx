@@ -73,6 +73,8 @@ const MIN_TICK_PX = 76
 /** Handles sit outside the selection so short ones stay grabbable, unless the track edge would clip them. */
 const HANDLE_PX = 12
 const LANE_PX = 18
+/** Space under each bar (16 tall in the CSS); the rows' box ends at the last bar, not after its gap. */
+const LANE_GAP_PX = 2
 /** Same as the bars' min-width in the CSS. */
 const MIN_BAR_PX = 6
 /** Rows of drawing bars on screen; more scroll. Fixed, so a new row never shrinks the video while drawing. */
@@ -331,8 +333,8 @@ export function Timeline({
       </div>
 
       {showDrawings && duration > 0 ? (
-        <div className={styles.drawings} style={{ height: VISIBLE_LANES * LANE_PX }} aria-label="Dibujos en la línea de tiempo">
-          <div className={styles.drawingRows} style={{ height: lanes * LANE_PX }}>
+        <div className={styles.drawings} style={{ height: VISIBLE_LANES * LANE_PX - LANE_GAP_PX }} aria-label="Dibujos en la línea de tiempo">
+          <div className={styles.drawingRows} style={{ height: Math.max(0, lanes * LANE_PX - LANE_GAP_PX) }}>
             {drawings.map((drawing) => {
               if (drawing.end < from || drawing.start > to) return null
               return (

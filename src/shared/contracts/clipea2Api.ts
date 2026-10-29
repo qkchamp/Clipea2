@@ -38,7 +38,7 @@ export interface ExportRequest {
   fileName: string
   /**
    * Exact file picked in the save dialog (it replaces an existing one: the dialog already asked).
-   * Without it the export picks a free name in `outputDir` (re-exports from the history).
+   * Without it the export picks a free name in `outputDir`.
    */
   outputPath?: string
   /** Saved in the history when the export finishes, so it can be exported again. */
@@ -128,8 +128,11 @@ export interface Clipea2Api {
     onFfmpegInstallProgress(listener: (progress: FfmpegInstallProgress) => void): () => void
     openVideos(): Promise<string[]>
     chooseFolder(current?: string): Promise<string | null>
-    /** Save dialog for an export: starts in `dir` with `fileName`.mp4; null when cancelled. */
-    chooseExportPath(dir: string, fileName: string): Promise<string | null>
+    /**
+     * Save dialog for an export: starts in `dir` with `fileName`.mp4, or with the first name not taken
+     * yet ("name (2).mp4") when `freeName`; null when cancelled.
+     */
+    chooseExportPath(dir: string, fileName: string, freeName?: boolean): Promise<string | null>
     showInFolder(path: string): Promise<void>
     openPath(path: string): Promise<void>
     /** Puts the file in the clipboard as a file, so Ctrl+V in Discord attaches it. */

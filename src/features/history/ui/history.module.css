@@ -7,10 +7,16 @@
 
 .list {
   display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 8px;
+  min-height: 0;
   margin: 0;
-  padding: 2px 12px 12px;
+  /* 6 + the 10px scrollbar gutter = 16. */
+  padding: 2px 6px var(--gutter) var(--gutter);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   list-style: none;
 }
 
@@ -40,7 +46,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-right: 6px;
+  /* 1px border + 4 + the copy button's 7px bleed = 12. */
+  padding-right: 4px;
 }
 
 .summary {
@@ -49,7 +56,7 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
-  padding: 8px;
+  padding: 11px 7px 11px 11px;
   border: 0;
   background: transparent;
   text-align: left;
@@ -72,6 +79,7 @@
   object-fit: cover;
 }
 
+/* 3 + the thumb's 1px border: 4 from its outer edge. */
 .duration {
   position: absolute;
   right: 3px;
@@ -82,16 +90,17 @@
   color: #fff;
   font-family: var(--mono);
   font-size: 10px;
-  line-height: 15px;
+  line-height: 14px;
 }
 
+/* 4 into the thumb, which sits 11 + 2 down the row. */
 .thumbTools {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 17px;
+  left: 15px;
   z-index: 1;
   display: flex;
-  gap: 3px;
+  gap: 4px;
 }
 
 .thumbTool {
@@ -101,7 +110,7 @@
   height: 20px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 5px;
+  border-radius: 4px;
   background: rgba(0, 0, 0, 0.75);
   color: #fff;
   backdrop-filter: blur(4px);
@@ -124,7 +133,7 @@
 
 .info {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -132,6 +141,7 @@
   overflow: hidden;
   color: var(--text);
   font-weight: 600;
+  line-height: 18px;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -143,25 +153,32 @@
   gap: 6px;
   color: var(--text-faint);
   font-size: 11px;
+  line-height: 16px;
 }
 
 .size {
   display: inline-flex;
   align-items: center;
   justify-self: start;
-  gap: 5px;
-  padding: 1px 7px 1px 5px;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 6px;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
+  border-radius: 4px;
   color: var(--text-muted);
   font-size: 11px;
+  line-height: 16px;
   white-space: nowrap;
 }
 
+/* 12/16 shares the 11/16 baseline. */
 .size strong {
   color: var(--text);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 16px;
 }
 
 .fits svg {
@@ -180,9 +197,9 @@
 /* Export settings of this clip, opened with the info button on the thumbnail. */
 .specs {
   display: grid;
-  gap: 3px;
-  margin: 0 8px 8px;
-  padding: 8px 10px;
+  gap: 2px;
+  margin: 0 11px 11px;
+  padding: 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
@@ -195,8 +212,9 @@
 
 .specsMain {
   color: var(--text);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
+  line-height: 16px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -204,6 +222,7 @@
 .specsExtra {
   color: var(--text-faint);
   font-size: 11px;
+  line-height: 16px;
 }
 
 @keyframes specsIn {
@@ -216,21 +235,22 @@
 .details {
   display: grid;
   gap: 8px;
-  margin: 0 8px;
-  padding: 10px 0;
+  margin: 0 11px;
+  padding: 11px 0;
   border-top: 1px solid var(--border);
 }
 
 .warning {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
-  padding: 7px 9px;
+  padding: 11px;
   border: 1px solid rgba(245, 196, 81, 0.3);
   border-radius: var(--radius-sm);
   color: #f8dc93;
   font-size: 12px;
+  line-height: 18px;
 }
 
 .warning svg {
@@ -238,13 +258,10 @@
   margin-top: 2px;
 }
 
+/* The card's small actions, one row of icons on its axis. */
 .secondary {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 2px;
-}
-
-.secondary > :nth-last-child(2) {
-  margin-left: auto;
+  gap: 8px;
 }

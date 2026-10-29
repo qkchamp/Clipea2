@@ -56,7 +56,7 @@ export function recordTitle(record: Pick<ExportRecord, 'path'>): string {
   return name.replace(/\.mp4$/i, '')
 }
 
-/** File name to reuse when exporting again: the copy suffix goes away, the export picks a free name. */
+/** File name to reuse when exporting again: the copy suffix goes away, the save dialog proposes a free name. */
 export function reexportName(record: Pick<ExportRecord, 'path'>): string {
   return recordTitle(record).replace(/ \(\d+\)$/, '')
 }

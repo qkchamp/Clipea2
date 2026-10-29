@@ -3,14 +3,17 @@
   top: 0;
   left: 0;
   z-index: 70;
+  /* Even width: centered on its element by a whole-pixel translate, both edges stay on whole pixels. */
+  width: calc-size(fit-content, round(up, size, 2px));
   max-width: 320px;
+  /* 1px border + 5 = 6 around each 16px line: one line is 28, the sm tier. */
   padding: 5px 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 16px;
   overflow-wrap: anywhere;
   pointer-events: none;
 }

@@ -84,7 +84,7 @@ function FfmpegBanner() {
       <span>
         No encontré <strong>ffmpeg</strong>: sin él no se puede exportar. Clipea2 lo puede instalar con un clic.
       </span>
-      <Button size="sm" variant="primary" icon={<Download size={13} />} onClick={install}>
+      <Button size="sm" variant="primary" icon={<Download size={14} />} onClick={install}>
         {installing ? 'Ver progreso' : 'Instalar ffmpeg'}
       </Button>
     </div>

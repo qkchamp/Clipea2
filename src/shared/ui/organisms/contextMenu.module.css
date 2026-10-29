@@ -17,13 +17,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 30px;
+  height: var(--size-md);
   padding: 0 10px;
   border: 0;
-  border-radius: var(--radius-sm);
+  /* The menu's 8 minus its 4 padding, so the hover corners run parallel to the menu's. */
+  border-radius: 4px;
   background: transparent;
   color: var(--text);
   font-size: 13px;
+  line-height: 20px;
   text-align: left;
 }
 

@@ -1,22 +1,29 @@
+/* Over the center column, 6 above the trim bar (or where it would sit); centered by layout, not transform. */
 .stack {
   position: fixed;
-  left: 50%;
-  bottom: 20px;
+  position-anchor: --trim-bar;
+  position-visibility: always;
+  left: var(--col-left);
+  right: var(--col-right);
+  bottom: calc(anchor(top, calc(var(--gutter) + var(--size-lg))) + 6px);
   z-index: 60;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  transform: translateX(-50%);
+  padding: 0 var(--gutter);
   pointer-events: none;
 }
 
 .toast {
   display: flex;
   align-items: center;
-  gap: 10px;
-  max-width: min(560px, calc(100vw - 40px));
-  padding: 8px 8px 8px 14px;
+  gap: 8px;
+  /* Even width, so a centered toast starts on a whole pixel. */
+  width: calc-size(fit-content, round(up, size, 2px));
+  max-width: 560px;
+  /* lg tier: 1 + 6 + 28 + 6 + 1 = 42. */
+  padding: 6px 6px 6px 12px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-2);
@@ -45,8 +52,11 @@
 
 .action {
   flex: none;
-  height: 28px;
-  padding: 0 10px;
+  /* Even width, like the toast's. */
+  width: calc-size(fit-content, round(up, size, 2px));
+  height: var(--size-sm);
+  /* +1px border: the label starts 8 in, like a sm Button's. */
+  padding: 0 7px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: transparent;
@@ -73,8 +83,9 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: var(--size-sm);
+  height: var(--size-sm);
+  padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;

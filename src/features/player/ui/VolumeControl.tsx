@@ -69,7 +69,7 @@ export function VolumeControl() {
         </div>
       </div>
       <IconButton label="Volumen · rueda para ajustar, M silencia" active={open} aria-expanded={open} onClick={() => setOpen(!open)}>
-        {muted || volume === 0 ? <VolumeX size={17} /> : <Volume2 size={17} />}
+        {muted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
       </IconButton>
     </div>
   )

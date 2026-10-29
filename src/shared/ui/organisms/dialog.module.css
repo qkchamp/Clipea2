@@ -3,6 +3,9 @@
   inset: 0;
   z-index: 50;
   display: grid;
+  /* Dialogs are odd-tall and 560 (or 400) wide: odd rows and even columns center them on whole pixels. */
+  grid-template-columns: round(down, 100%, 2px);
+  grid-template-rows: calc(round(down, 100% - 1px, 2px) + 1px);
   place-items: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.72);
@@ -12,7 +15,7 @@
 
 .dialog {
   width: min(560px, 100%);
-  max-height: calc(100vh - 48px);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -23,25 +26,51 @@
   animation: rise 0.16s ease-out;
 }
 
+.dialog.small {
+  width: min(400px, 100%);
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 12px 12px 20px;
+  /* 20 - 8 (button inset) - 3 (X glyph bearing): the X ink ends on the 20 guide. */
+  padding: 12px 9px 12px 20px;
   border-bottom: 1px solid var(--border);
 }
 
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 500;
+  line-height: 24px;
   letter-spacing: -0.02em;
 }
 
 .content {
-  padding: 20px;
+  /* 10 + the 10px scrollbar gutter = 20, with or without a scrollbar. */
+  padding: 20px 10px 20px 20px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* ConfirmDialog: even-tall lines and gaps keep the whole dialog odd-tall. */
+.confirm {
+  display: grid;
+  gap: 20px;
+}
+
+.question {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 20px;
+}
+
+.answers {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @keyframes fade {

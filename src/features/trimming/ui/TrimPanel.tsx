@@ -145,7 +145,7 @@ export function TrimPanel() {
             onCommit={(time) => selection && trim().setRange(withStart(selection, time, duration))}
           />
         </div>
-        <ArrowRight size={15} className={styles.arrow} />
+        <ArrowRight size={16} className={styles.arrow} />
         <div className={styles.point}>
           <Button size="sm" variant="ghost" disabled={!selection} title="Fin después del cuadro actual (O)" onClick={markOutAtPlayhead}>
             Fin <Kbd>O</Kbd>

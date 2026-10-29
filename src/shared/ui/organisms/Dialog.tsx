@@ -1,12 +1,21 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { IconButton } from '../atoms'
+import { cx } from '../cx'
 import styles from './dialog.module.css'
 
 const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
 
+interface DialogProps {
+  title: string
+  onClose: () => void
+  /** "sm" for a short question with its answers. */
+  size?: 'md' | 'sm'
+  children: ReactNode
+}
+
 /** Modal panel; Escape or a click on the backdrop closes it. Focus stays inside while it is open. */
-export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Dialog({ title, onClose, size = 'md', children }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -45,7 +54,14 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
 
   return (
     <div className={styles.backdrop} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={panelRef} className={styles.dialog} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
+      <div
+        ref={panelRef}
+        className={cx(styles.dialog, size === 'sm' && styles.small)}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+      >
         <header className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
           <IconButton label="Cerrar (Esc)" onClick={onClose}>

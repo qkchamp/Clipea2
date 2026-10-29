@@ -5,7 +5,8 @@
   /* Above the player and the panels, below dialogs (50), toasts (60) and tooltips (70). */
   z-index: 40;
   max-width: calc(100vw - 12px);
-  padding: 10px;
+  /* +1px border: content 12 in. */
+  padding: 11px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface-2);

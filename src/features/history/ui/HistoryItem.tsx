@@ -19,15 +19,15 @@ interface HistoryItemProps {
   isNew: boolean
   /** Another export is running: re-export waits. */
   exportBusy: boolean
-  /** Editing replaces the current montage, so it asks first. */
-  montageHasSegments: boolean
   onToggle: () => void
   onCopy: () => Promise<void>
-  /** Pick a server and text channel; Discord opens there with the clip ready to paste. */
+  /** Opens «Enviar a canal»: the clip goes to a saved channel through its webhook. */
   onSendToChannel: () => void
   onShowInFolder: () => void
   onWatch: () => void
+  /** Asks first, then where to save it. */
   onReexport: () => void
+  /** Asks first when it would replace the current montage. */
   onEdit: () => void
   onRemove: () => void
 }
@@ -44,7 +44,6 @@ export function HistoryItem({
   expanded,
   isNew,
   exportBusy,
-  montageHasSegments,
   onToggle,
   onCopy,
   onSendToChannel,
@@ -55,7 +54,6 @@ export function HistoryItem({
   onRemove
 }: HistoryItemProps) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
-  const [confirmEdit, setConfirmEdit] = useState(false)
   const [showSpecs, setShowSpecs] = useState(false)
   const canReexport = entry.missingSources === 0 && !exportBusy
   const fits = !exceedsLimit(entry.sizeBytes, sizeLimitBytes)
@@ -144,12 +142,12 @@ export function HistoryItem({
         <div className={styles.details}>
           {!entry.fileExists ? (
             <p className={styles.warning}>
-              <TriangleAlert size={13} /> El archivo ya no está en la carpeta. Podés exportarlo de nuevo.
+              <TriangleAlert size={14} /> El archivo ya no está en la carpeta. Podés exportarlo de nuevo.
             </p>
           ) : null}
           {entry.missingSources > 0 ? (
             <p className={styles.warning}>
-              <TriangleAlert size={13} /> Falta {plural(entry.missingSources, 'video original', 'videos originales')}: no se puede volver a
+              <TriangleAlert size={14} /> Falta {plural(entry.missingSources, 'video original', 'videos originales')}: no se puede volver a
               exportar.
             </p>
           ) : null}
@@ -157,41 +155,32 @@ export function HistoryItem({
           <Button variant="discord" block icon={<DiscordIcon size={16} />} disabled={!entry.fileExists} onClick={copy}>
             {copyState === 'copied' ? 'Copiado: Ctrl+V en Discord' : copyState === 'failed' ? 'No se pudo copiar' : 'Copiar para Discord'}
           </Button>
-          <Button variant="secondary" block icon={<Send size={15} />} disabled={!entry.fileExists} onClick={onSendToChannel}>
+          <Button variant="secondary" block icon={<Send size={16} />} disabled={!entry.fileExists} onClick={onSendToChannel}>
             Enviar a canal
           </Button>
 
           <div className={styles.secondary}>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<RotateCw size={13} />}
+            <IconButton
+              small
+              label="Reexportar: los mismos cortes y dibujos, con las opciones de exportación actuales"
               disabled={!canReexport}
-              title="Exportar de nuevo los mismos cortes y dibujos, con las opciones de exportación actuales"
               onClick={onReexport}
             >
-              Reexportar
-            </Button>
-            <Button
-              size="sm"
-              variant={confirmEdit ? 'danger' : 'ghost'}
-              icon={<Pencil size={13} />}
+              <RotateCw size={14} />
+            </IconButton>
+            <IconButton
+              small
+              label="Editar: carga los cortes y dibujos en el montaje para cambiarlos"
               disabled={entry.missingSources > 0}
-              title="Cargar los cortes y dibujos en el montaje para cambiarlos"
-              onClick={() => {
-                if (montageHasSegments && !confirmEdit) return setConfirmEdit(true)
-                setConfirmEdit(false)
-                onEdit()
-              }}
-              onBlur={() => setConfirmEdit(false)}
+              onClick={onEdit}
             >
-              {confirmEdit ? '¿Reemplazar montaje?' : 'Editar'}
-            </Button>
+              <Pencil size={14} />
+            </IconButton>
             <IconButton small label="Mostrar en la carpeta" disabled={!entry.fileExists} onClick={onShowInFolder}>
-              <FolderOpen size={13} />
+              <FolderOpen size={14} />
             </IconButton>
             <IconButton small label="Quitar del historial (el archivo no se borra)" onClick={onRemove}>
-              <Trash size={13} />
+              <Trash size={14} />
             </IconButton>
           </div>
         </div>

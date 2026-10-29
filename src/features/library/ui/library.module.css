@@ -5,13 +5,20 @@
   min-height: 0;
 }
 
+/* The top band (16..52), the same box as the right column's tabs. */
+.panel > .header {
+  min-height: var(--size-band);
+  margin-top: var(--gutter);
+}
+
 .search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 12px 12px;
+  gap: 4px;
+  margin: 8px var(--gutter);
+  /* +1px border = 12. */
   padding: 0 11px;
-  height: 34px;
+  height: var(--size-md);
   border: 1px solid var(--field-border);
   border-radius: var(--radius-sm);
   background: var(--field);
@@ -34,6 +41,7 @@
 .search input {
   flex: 1;
   min-width: 0;
+  padding: 0;
   border: 0;
   outline: none;
   background: transparent;
@@ -47,17 +55,23 @@
 .scroll {
   flex: 1;
   min-height: 0;
-  padding: 0 8px 12px;
+  /* 6 + the 10px scrollbar gutter = 16, with or without a scrollbar. */
+  padding: 0 6px var(--gutter) var(--gutter);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .status {
-  margin: 12px;
+  margin: 0;
   color: var(--text-faint);
 }
 
+.scroll > .empty {
+  margin: 0;
+}
+
 .root + .root {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .rootHeader {
@@ -66,10 +80,11 @@
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   width: 100%;
-  height: 36px;
-  padding: 0 8px;
+  height: var(--size-band);
+  /* +1px border = 12. */
+  padding: 0 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -94,14 +109,20 @@
   white-space: nowrap;
 }
 
+/* The guide hangs under the root chevron (x 34); 18 + 1 + 5 = 24, so rows start on x 40. */
 .rootBody {
-  margin: 4px 0 0 14px;
-  padding-left: 6px;
+  margin: 4px 0 0 18px;
+  padding-left: 5px;
   border-left: 1px solid var(--border);
 }
 
 .group + .group {
-  margin-top: 1px;
+  margin-top: 2px;
+}
+
+/* 8 after an open game; the last one ends on the scroll's 16 bottom padding. */
+.group:has(> .clips) + .group {
+  margin-top: 8px;
 }
 
 .groupHeader {
@@ -110,10 +131,11 @@
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
-  height: 32px;
-  padding: 0 8px;
+  height: var(--size-md);
+  /* Chevron on the folder icon's line (46), count on the root count's (268). */
+  padding: 0 12px 0 6px;
   border: 0;
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -153,21 +175,22 @@
 }
 
 .groupCount {
-  min-width: 22px;
-  padding: 0 6px;
+  min-width: var(--size-chip);
+  /* +1px border = 6. */
+  padding: 0 5px;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
+  border-radius: 4px;
   color: var(--text-faint);
   font-size: 11px;
-  line-height: 17px;
+  line-height: 16px;
   text-align: center;
 }
 
 .clips {
   display: grid;
   gap: 2px;
-  margin: 2px 0 8px;
-  padding: 0 0 0 6px;
+  margin: 2px 0 0;
+  padding: 0;
   list-style: none;
 }
 
@@ -175,8 +198,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   width: 100%;
+  /* +1px border = 6: the thumbnail on x 46, the text column 140..274. */
   padding: 5px;
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -228,6 +252,7 @@
 
 .duration {
   position: absolute;
+  /* + the thumbnail's 1px border = 4. */
   right: 3px;
   bottom: 3px;
   padding: 0 4px;
@@ -236,18 +261,21 @@
   color: #fff;
   font-family: var(--mono);
   font-size: 10px;
-  line-height: 15px;
+  line-height: 14px;
 }
 
+/* 18 + 4 + 20 = 42; the 4 below centers it optically. */
 .clipInfo {
   display: grid;
   gap: 4px;
   min-width: 0;
+  margin-bottom: 4px;
 }
 
 .clipTitle {
   overflow: hidden;
   font-weight: 500;
+  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -256,19 +284,31 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   color: var(--text-faint);
   font-size: 11px;
+  line-height: 16px;
+}
+
+/* A long size cuts with an ellipsis instead of widening or wrapping the row. */
+.clipSize {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .more {
-  width: calc(100% - 6px);
-  margin: 0 0 8px 6px;
-  height: 30px;
+  width: 100%;
+  height: var(--size-sm);
+  margin: 6px 0 0;
+  padding: 0;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 16px;
   transition:
     border-color 0.12s,
     color 0.12s;

@@ -18,7 +18,7 @@ export function RootFolder({ root, clipCount, open, onToggle, children }: RootFo
     <div className={styles.root}>
       <button type="button" className={styles.rootHeader} aria-expanded={open} title={root} onClick={onToggle}>
         <ChevronRight size={14} className={cx(styles.chevron, open && styles.open)} />
-        {open ? <FolderOpen size={15} className={styles.rootIcon} /> : <Folder size={15} className={styles.rootIcon} />}
+        {open ? <FolderOpen size={14} className={styles.rootIcon} /> : <Folder size={14} className={styles.rootIcon} />}
         <span className={styles.rootName}>{baseName(root) || root}</span>
         <span className={styles.groupCount}>{clipCount}</span>
       </button>
