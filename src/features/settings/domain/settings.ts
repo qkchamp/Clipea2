@@ -8,6 +8,8 @@ export interface AppSettings {
   ffmpegDir: string | null
   /** Encode and decode on the GPU (dedicated or integrated) when there is one. */
   hardwareAcceleration: boolean
+  /** Ajustes › Timeline: in and out as the orange tabs of before, instead of the green and red lines. */
+  classicTimeline: boolean
   codec: VideoCodec
   quality: QualityLevel
   maxHeight: number | null
@@ -48,6 +50,7 @@ export function mergeSettings(current: AppSettings, patch: Record<string, unknow
         : null
       : current.ffmpegDir,
     hardwareAcceleration: typeof patch.hardwareAcceleration === 'boolean' ? patch.hardwareAcceleration : current.hardwareAcceleration,
+    classicTimeline: typeof patch.classicTimeline === 'boolean' ? patch.classicTimeline : current.classicTimeline,
     codec: CODECS.includes(patch.codec as VideoCodec) ? (patch.codec as VideoCodec) : current.codec,
     quality: QUALITIES.includes(patch.quality as QualityLevel) ? (patch.quality as QualityLevel) : current.quality,
     maxHeight: has('maxHeight') ? positiveOrNull(patch.maxHeight, current.maxHeight) : current.maxHeight,

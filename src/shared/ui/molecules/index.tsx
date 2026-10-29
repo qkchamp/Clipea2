@@ -15,15 +15,18 @@ export function SegmentedControl<T extends string>({
   value,
   options,
   onChange,
+  onHoverChange,
   label
 }: {
   value: T
   options: readonly SegmentOption<T>[]
   onChange: (value: T) => void
+  /** The option under the pointer; null once it leaves the control. */
+  onHoverChange?: (value: T | null) => void
   label: string
 }) {
   return (
-    <div className={styles.segmented} role="radiogroup" aria-label={label}>
+    <div className={styles.segmented} role="radiogroup" aria-label={label} onPointerLeave={() => onHoverChange?.(null)}>
       {options.map((option) => (
         <button
           key={option.value}
@@ -34,6 +37,7 @@ export function SegmentedControl<T extends string>({
           disabled={option.disabled}
           className={cx(styles.segment, option.value === value && styles.selected)}
           onClick={() => onChange(option.value)}
+          onPointerEnter={() => onHoverChange?.(option.value)}
         >
           {option.label}
         </button>
@@ -127,26 +131,36 @@ interface TabOption<T extends string> {
   count?: number
 }
 
+/** "strip": the full-width band of the sidebar. "segmented": compact, like a SegmentedControl with the open tab in orange. */
 export function Tabs<T extends string>({
   value,
   options,
   onChange,
-  label
+  label,
+  variant = 'strip',
+  className
 }: {
   value: T
   options: readonly TabOption<T>[]
   onChange: (value: T) => void
   label: string
+  variant?: 'strip' | 'segmented'
+  className?: string
 }) {
+  const segmented = variant === 'segmented'
   return (
-    <div className={styles.tabs} role="tablist" aria-label={label}>
+    <div className={cx(segmented ? cx(styles.segmented, styles.tabsSegmented) : styles.tabs, className)} role="tablist" aria-label={label}>
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           role="tab"
           aria-selected={option.value === value}
-          className={cx(styles.tab, option.value === value && styles.tabSelected)}
+          className={
+            segmented
+              ? cx(styles.segment, option.value === value && cx(styles.selected, styles.tabOpen))
+              : cx(styles.tab, option.value === value && styles.tabSelected)
+          }
           onClick={() => onChange(option.value)}
         >
           {option.label}

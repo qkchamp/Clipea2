@@ -25,10 +25,16 @@
   min-height: 0;
 }
 
+/*
+ * The side columns sit on layers of their own: while the playhead and the clock change on every
+ * frame, the browser updates the center without going over their lists again. Opacity, not
+ * transform: a transform hint would turn their text grayscale.
+ */
 .left {
   min-height: 0;
   border-right: 1px solid var(--border);
   background: var(--surface);
+  will-change: opacity;
 }
 
 .center {
@@ -46,6 +52,7 @@
   overflow: hidden;
   border-left: 1px solid var(--border);
   background: var(--surface);
+  will-change: opacity;
 }
 
 .sidebarBody {

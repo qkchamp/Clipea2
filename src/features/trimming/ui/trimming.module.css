@@ -1,4 +1,5 @@
 /* Its content sits 16 in on every side, the column's gutter. */
+/* On a layer of its own: with the playhead's canvas changing on every frame, the browser does less work over the rest of the window. */
 .panel {
   container-type: inline-size;
   display: grid;
@@ -6,6 +7,7 @@
   padding: var(--gutter);
   border-top: 1px solid var(--border);
   background: var(--surface);
+  will-change: opacity;
 }
 
 .timeline {
@@ -37,6 +39,11 @@
   border-left: 1px solid var(--border-strong);
   line-height: 16px;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.timeline[data-disabled] .tick {
+  cursor: default;
 }
 
 .zoomHint {
@@ -106,12 +113,12 @@
   pointer-events: none;
 }
 
+/* Its sides are the in and out lines. */
 .selection {
   position: absolute;
   top: 0;
   bottom: 0;
-  border: 2px solid var(--accent);
-  border-radius: 6px;
+  border-block: 2px solid var(--accent);
   pointer-events: none;
 }
 
@@ -139,21 +146,109 @@
   cursor: grabbing;
 }
 
+/*
+ * In (green) and out (red): a line with a knob on top, like the playhead's and over it, so dragging
+ * one shows its color. The grab area is 12 wide, mostly outside the selection: on a very short one
+ * both stay grabbable.
+ */
 .handle {
   position: absolute;
   top: -2px;
   bottom: -2px;
   width: 12px;
-  background: var(--accent);
   pointer-events: auto;
   cursor: ew-resize;
+  z-index: 4;
+}
+
+.handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--marker);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
 }
 
 .handle::after {
   content: '';
   position: absolute;
+  top: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 0 0 50% 50%;
+  background: var(--marker);
+}
+
+/* The line centered on its time, like the playhead: 1 each side of the edge. */
+.handle[data-side='in'] {
+  --marker: var(--success);
+  left: -11px;
+}
+
+.handle[data-side='in']::before {
+  right: 0;
+}
+
+.handle[data-side='in']::after {
+  right: -4px;
+}
+
+.handle[data-side='out'] {
+  --marker: var(--danger);
+  right: -11px;
+}
+
+.handle[data-side='out']::before {
+  left: 0;
+}
+
+.handle[data-side='out']::after {
+  left: -4px;
+}
+
+/* At the track's edge the grab area goes inside, and the line and knob with it, so neither is clipped. */
+.handle[data-side='in'][data-inside] {
+  left: 0;
+}
+
+.handle[data-side='in'][data-inside]::before,
+.handle[data-side='in'][data-inside]::after {
+  left: 0;
+  right: auto;
+}
+
+.handle[data-side='out'][data-inside] {
+  right: 0;
+}
+
+.handle[data-side='out'][data-inside]::before,
+.handle[data-side='out'][data-inside]::after {
+  left: auto;
+  right: 0;
+}
+
+/* Ajustes › Timeline anterior: the orange box with a tab outside each side, under the playhead. */
+.timeline[data-classic] .selection {
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+}
+
+.timeline[data-classic] .handle {
+  background: var(--accent);
+  z-index: auto;
+}
+
+.timeline[data-classic] .handle::before {
+  content: none;
+}
+
+/* The grip mark, centered in the tab. */
+.timeline[data-classic] .handle::after {
   top: 50%;
   left: 50%;
+  right: auto;
   width: 2px;
   height: 18px;
   border-radius: 2px;
@@ -161,23 +256,23 @@
   transform: translate(-50%, -50%);
 }
 
-.handle[data-side='in'] {
-  /* Fully outside the band on each side: on a very short selection both stay grabbable. */
+/* Fully outside the band on each side: on a very short selection both stay grabbable. */
+.timeline[data-classic] .handle[data-side='in'] {
   left: -12px;
   border-radius: 6px 0 0 6px;
 }
 
-.handle[data-side='out'] {
+.timeline[data-classic] .handle[data-side='out'] {
   right: -12px;
   border-radius: 0 6px 6px 0;
 }
 
 /* At the track's edge it covers the selection's 2px border, so the grip mark stays centered in the orange. */
-.handle[data-side='in'][data-inside] {
+.timeline[data-classic] .handle[data-side='in'][data-inside] {
   left: -2px;
 }
 
-.handle[data-side='out'][data-inside] {
+.timeline[data-classic] .handle[data-side='out'][data-inside] {
   right: -2px;
 }
 
@@ -318,27 +413,23 @@
   background: color-mix(in srgb, var(--drawing-color) 70%, transparent);
 }
 
+/* Over the whole track; the line and its knob are painted on the canvas inside. */
 .playhead {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  margin-left: -1px;
-  background: #fff;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  inset: 0;
   pointer-events: none;
   z-index: 3;
 }
 
-.playheadKnob {
-  position: absolute;
-  top: -1px;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  border-radius: 0 0 50% 50%;
-  background: #fff;
-  transform: translateX(-50%);
+/* The track clips anything outside it, so the keyboard's focus ring goes inside. */
+.playhead:focus-visible {
+  outline-offset: -1px;
+}
+
+.playheadCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* A bar of sm controls: 1 + 6 + 28 + 6 + 1 = 42. The first ink ("Inicio") is 15 in, so is the last box's end. */
@@ -415,7 +506,10 @@
   line-height: 16px;
 }
 
-/* Too narrow for one row: always break before "Duración", never leave a lone button on row 2. */
+/*
+ * Too narrow for one row: always break before "Duración", never leave a lone button on row 2.
+ * Each row fills the bar: the fields share row 1, the main button takes what row 2 leaves.
+ */
 @container (width < 780px) {
   .rangeBar {
     row-gap: 0;
@@ -427,10 +521,31 @@
     order: 1;
   }
 
+  .point {
+    flex: 1 1 0;
+  }
+
+  .point > :last-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .rangeBar .point input {
+    width: 100%;
+  }
+
   .duration,
   .rangeBar > button,
   .rangeActions {
     order: 2;
     margin-top: 6px;
+  }
+
+  .rangeActions {
+    flex: 1 1 auto;
+  }
+
+  .rangeActions > :last-child {
+    flex: 1;
   }
 }

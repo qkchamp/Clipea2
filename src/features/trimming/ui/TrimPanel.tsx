@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { ArrowRight, Check, Plus, X } from 'lucide-react'
 import { formatDuration } from '@shared/domain/time'
 import { Button, Kbd } from '@shared/ui/atoms'
@@ -10,17 +10,28 @@ import { useMontageStore } from '@features/montage/ui/montageStore'
 import { frameDuration, frameStartTime } from '@features/player/domain/frameClock'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { getFrameClock } from '@features/player/ui/useFrameClock'
+import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { beginGesture } from '@features/undo/ui/undoStore'
 import { fullRange, isValidRange, rangeDuration, withEnd, withStart } from '../domain/timeRange'
-import { Timeline, TimelinePlayhead, type DrawingEdit } from './Timeline'
+import { placePlayhead, Timeline, TimelinePlayhead, type DrawingEdit } from './Timeline'
 import { commitSelection, markInAtPlayhead, markOutAtPlayhead } from './trimActions'
 import { useFilmstrip } from './useFilmstrip'
 import { useTrimStore } from './trimStore'
 import styles from './trimming.module.css'
 
+/** Follows every frame by drawing itself again straight away, without rendering anything (zustand's transient updates). */
 function Playhead({ duration, toPercent }: { duration: number; toPercent: (time: number) => number }) {
-  const currentTime = usePlayerStore((state) => state.currentTime)
-  return <TimelinePlayhead time={currentTime} duration={duration} toPercent={toPercent} />
+  const playhead = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const place = (time: number): void => {
+      if (playhead.current) placePlayhead(playhead.current, toPercent(time), time)
+    }
+    place(usePlayerStore.getState().currentTime)
+    return usePlayerStore.subscribe((state, previous) => {
+      if (state.currentTime !== previous.currentTime) place(state.currentTime)
+    })
+  }, [toPercent])
+  return <TimelinePlayhead ref={playhead} time={usePlayerStore.getState().currentTime} duration={duration} toPercent={toPercent} />
 }
 
 /** Nearest frame boundary; the end of the video counts as one, so a drawing can last until the last frame. */
@@ -53,6 +64,7 @@ export function TrimPanel() {
   const annotations = useAnnotationStore((state) => state.annotations)
   const selectedDrawingId = useAnnotationStore((state) => state.selectedId)
   const drawingMode = useAnnotationStore((state) => state.drawing)
+  const classicTimeline = useSettingsStore((state) => state.settings?.classicTimeline ?? false)
   const frames = useFilmstrip(sourcePath, duration)
   // One undo step per drag of a drawing bar, however many frames it went through.
   const endGesture = useRef<(() => void) | null>(null)
@@ -102,7 +114,9 @@ export function TrimPanel() {
         showDrawings={drawingMode || drawings.length > 0}
         selectedDrawingId={selectedDrawingId}
         disabled={!sourcePath}
+        classic={classicTimeline}
         onSeek={seek}
+        onStepFrame={(delta) => usePlayerStore.getState().controller?.stepFrame(delta)}
         onRangeChange={(next) => trim().setRange(next)}
         onDrawingSelect={(id, time) => {
           useAnnotationStore.getState().select(id)

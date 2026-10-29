@@ -355,6 +355,23 @@
   opacity: 0.35;
 }
 
+/* Tabs variant="segmented": a SegmentedControl as wide as its longest tab, orange on the open one. */
+.tabsSegmented {
+  display: inline-grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+}
+
+.tabsSegmented .segment {
+  padding: 0 16px;
+}
+
+.tabsSegmented .segment.tabOpen {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
 /* ---------- Field ---------- */
 .field {
   display: grid;

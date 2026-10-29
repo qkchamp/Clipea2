@@ -32,7 +32,8 @@ export function Dialog({ title, onClose, size = 'md', children }: DialogProps) {
         return
       }
       if (event.key !== 'Tab' || !panelRef.current) return
-      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
+      // An inert part (a hidden tab's content) can't take focus.
+      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((element) => !element.closest('[inert]'))
       if (focusable.length === 0) return
       const first = focusable[0]
       const last = focusable[focusable.length - 1]

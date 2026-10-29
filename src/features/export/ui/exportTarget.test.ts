@@ -45,6 +45,7 @@ describe('preferencesFrom', () => {
     const base = {
       libraryRoots: [],
       hardwareAcceleration: true,
+      classicTimeline: false,
       outputDir: '',
       ffmpegDir: null,
       codec: 'hevc' as const,

@@ -1,4 +1,16 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+  type Ref,
+  type RefObject
+} from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { clamp, formatTime } from '@shared/domain/time'
 import { ContextMenu } from '@shared/ui/organisms/ContextMenu'
@@ -47,7 +59,11 @@ interface TimelineProps {
   showDrawings: boolean
   selectedDrawingId: string | null
   disabled?: boolean
+  /** Ajustes › Timeline anterior: in and out as orange tabs instead of the green and red lines. */
+  classic?: boolean
   onSeek: (time: number) => void
+  /** Wheel over the ruler or the track: one frame forward (+1, up) or back (-1, down). */
+  onStepFrame: (delta: number) => void
   onRangeChange: (range: TimeRange) => void
   /** Clicked on its bar; `time` when the click landed on a keyframe. */
   onDrawingSelect: (id: string, time?: number) => void
@@ -80,28 +96,260 @@ const MIN_BAR_PX = 6
 /** Rows of drawing bars on screen; more scroll. Fixed, so a new row never shrinks the video while drawing. */
 const VISIBLE_LANES = 3
 
+const sliderValue = (time: number): number => Math.round(time * 100) / 100
+
+/** Where each playhead canvas was last drawn, to draw it again when the track changes size. */
+const drawnAt = new WeakMap<HTMLCanvasElement, number>()
+
+/**
+ * The playhead's look: a 2px white line with a dark glow, and a 10px knob on top, flat above and
+ * round below, whose top pixel hides behind the track's edge. In whole device pixels, like the
+ * page snaps a box, so the line stays sharp.
+ */
+function drawPlayhead(canvas: HTMLCanvasElement, percent: number): void {
+  drawnAt.set(canvas, percent)
+  const context = canvas.getContext('2d')
+  if (!context) return
+  const ratio = window.devicePixelRatio || 1
+  const x = (percent / 100) * canvas.width
+  const knobLeft = Math.round(x - 5 * ratio)
+  const knobWidth = Math.round(10 * ratio)
+  const radius = knobWidth / 2
+  const knobBottom = Math.round(-ratio) + Math.round(10 * ratio)
+  context.clearRect(0, 0, canvas.width, canvas.height)
+  context.fillStyle = '#fff'
+  context.shadowColor = 'rgba(0, 0, 0, 0.9)'
+  context.shadowBlur = 4 * ratio
+  context.fillRect(Math.round(x - ratio), 0, Math.round(2 * ratio), canvas.height)
+  context.shadowColor = 'transparent'
+  context.beginPath()
+  context.moveTo(knobLeft, 0)
+  context.lineTo(knobLeft + knobWidth, 0)
+  context.arc(knobLeft + radius, knobBottom - radius, radius, 0, Math.PI)
+  context.closePath()
+  context.fill()
+}
+
 /**
  * Scrubbable timeline with in/out handles. Ctrl+wheel zooms around the pointer, wheel pans
  * while zoomed, double click resets the zoom.
  */
-/** Playhead line; the keyboard drives it with the player shortcuts (←/→, Ctrl+←/→, Inicio/Fin). */
-export function TimelinePlayhead({ time, duration, toPercent }: { time: number; duration: number; toPercent: (time: number) => number }) {
+/**
+ * Playhead; the keyboard drives it with the player shortcuts (←/→, Ctrl+←/→, Inicio/Fin). It is
+ * painted on a canvas over the track: a line moving in the page made the browser rebuild the
+ * layers of the whole window on every frame, while a canvas only swaps its own pixels.
+ */
+export function TimelinePlayhead({
+  ref,
+  time,
+  duration,
+  toPercent
+}: {
+  ref?: Ref<HTMLDivElement>
+  time: number
+  duration: number
+  toPercent: (time: number) => number
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const percent = toPercent(time)
+
+  // As many pixels as the screen has under the track, drawn again whenever that changes.
+  useLayoutEffect(() => {
+    const element = canvas.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) => {
+      const box = entry.devicePixelContentBoxSize?.[0]
+      element.width = box?.inlineSize ?? Math.round(entry.contentRect.width * (window.devicePixelRatio || 1))
+      element.height = box?.blockSize ?? Math.round(entry.contentRect.height * (window.devicePixelRatio || 1))
+      drawPlayhead(element, drawnAt.get(element) ?? 0)
+    })
+    observer.observe(element, { box: 'device-pixel-content-box' })
+    return () => observer.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    if (canvas.current) drawPlayhead(canvas.current, percent)
+  }, [percent])
+
   return (
     <div
+      ref={ref}
       className={styles.playhead}
-      style={{ left: `${toPercent(time)}%` }}
       role="slider"
       tabIndex={0}
       aria-label="Posición en el video"
       aria-valuemin={0}
-      aria-valuemax={Math.round(duration * 100) / 100}
-      aria-valuenow={Math.round(time * 100) / 100}
+      aria-valuemax={sliderValue(duration)}
+      aria-valuenow={sliderValue(time)}
       aria-valuetext={formatTime(time)}
     >
-      <span className={styles.playheadKnob} />
+      <canvas ref={canvas} className={styles.playheadCanvas} />
     </div>
   )
 }
+
+/** Moves a TimelinePlayhead without rendering it, for the one that follows every frame. */
+export function placePlayhead(playhead: HTMLDivElement, percent: number, time: number): void {
+  const canvas = playhead.firstElementChild
+  if (canvas instanceof HTMLCanvasElement) drawPlayhead(canvas, percent)
+  playhead.setAttribute('aria-valuenow', String(sliderValue(time)))
+  playhead.setAttribute('aria-valuetext', formatTime(time))
+}
+
+/*
+ * The parts below change only with zoom, size or their own data: dragging the selection or a
+ * handle re-renders the timeline on every move, and they skip it.
+ */
+
+/** Times along the top. A click on a time goes there; between times it does nothing. */
+const Ruler = memo(function Ruler({
+  duration,
+  from,
+  to,
+  width,
+  zoomed,
+  disabled,
+  onSeek
+}: {
+  duration: number
+  from: number
+  to: number
+  width: number
+  zoomed: boolean
+  disabled: boolean
+  onSeek: (time: number) => void
+}) {
+  const span = Math.max(to - from, 0.001)
+  const step = TICK_STEPS.find((candidate) => candidate * (width / span) >= MIN_TICK_PX) ?? 7200
+  const ticks: number[] = []
+  if (duration > 0) {
+    for (let tick = Math.ceil(from / step) * step; tick <= to + 1e-9; tick += step) ticks.push(tick)
+  }
+  return (
+    <div className={styles.ruler} aria-hidden>
+      {ticks.map((tick) => (
+        <span
+          key={tick}
+          className={styles.tick}
+          style={{ left: `${((tick - from) / span) * 100}%` }}
+          onClick={() => !disabled && onSeek(tick)}
+        >
+          {formatTime(tick, step < 1 ? 1 : 0)}
+        </span>
+      ))}
+      {zoomed ? <span className={styles.zoomHint}>Zoom · doble clic para ver todo</span> : null}
+    </div>
+  )
+})
+
+const Filmstrip = memo(function Filmstrip({ frames, duration, from, to }: { frames: readonly string[]; duration: number; from: number; to: number }) {
+  const span = Math.max(to - from, 0.001)
+  const frameSpan = frames.length > 0 ? duration / frames.length : 0
+  return (
+    <div className={styles.filmstrip}>
+      {frames.map((url, index) => {
+        const start = index * frameSpan
+        if (start + frameSpan < from || start > to) return null
+        return (
+          <img
+            key={url}
+            src={url}
+            alt=""
+            draggable={false}
+            decoding="async"
+            className={styles.frame}
+            style={{ left: `${((start - from) / span) * 100}%`, width: `${(frameSpan / span) * 100}%` }}
+          />
+        )
+      })}
+    </div>
+  )
+})
+
+/** What the bars do with the pointer; a ref, so the rows keep their props while the handlers change. */
+interface DrawingBarHandlers {
+  pointerDown: (event: PointerEvent<HTMLDivElement>, drawing: TimelineDrawing) => void
+  pointerMove: (event: PointerEvent<HTMLDivElement>) => void
+  pointerEnd: () => void
+  contextMenu: (event: MouseEvent<HTMLDivElement>, drawing: TimelineDrawing) => void
+}
+
+const DrawingRows = memo(function DrawingRows({
+  drawings,
+  from,
+  to,
+  selectedId,
+  menuId,
+  handlers
+}: {
+  drawings: readonly TimelineDrawing[]
+  from: number
+  to: number
+  selectedId: string | null
+  menuId: string | null
+  handlers: RefObject<DrawingBarHandlers>
+}) {
+  const span = Math.max(to - from, 0.001)
+  const lanes = drawings.reduce((count, drawing) => Math.max(count, drawing.lane + 1), 0)
+  return (
+    <div className={styles.drawingRows} style={{ height: Math.max(0, lanes * LANE_PX - LANE_GAP_PX) }}>
+      {drawings.map((drawing) => {
+        if (drawing.end < from || drawing.start > to) return null
+        return (
+          <div
+            key={drawing.id}
+            className={styles.drawingBar}
+            data-selected={drawing.id === selectedId || undefined}
+            style={{
+              // A bar of a frame or two keeps its minimum width inside the track instead of poking past the end.
+              left: `min(${((drawing.start - from) / span) * 100}%, calc(100% - ${MIN_BAR_PX}px))`,
+              width: `${((drawing.end - drawing.start) / span) * 100}%`,
+              top: drawing.lane * LANE_PX,
+              ['--drawing-color' as string]: drawing.color
+            }}
+            title={`${drawing.label} · ${formatTime(drawing.start)} → ${formatTime(drawing.end)}${
+              drawing.effects.length > 0 ? ` · ${drawing.effects.map((effect) => effect.label).join(', ')}` : ''
+            }`}
+            data-menu={menuId === drawing.id || undefined}
+            onPointerDown={(event) => handlers.current.pointerDown(event, drawing)}
+            onContextMenu={(event) => handlers.current.contextMenu(event, drawing)}
+            onPointerMove={(event) => handlers.current.pointerMove(event)}
+            onPointerUp={() => handlers.current.pointerEnd()}
+            onPointerCancel={() => handlers.current.pointerEnd()}
+          >
+            <span className={styles.drawingEdge} data-role="start" data-side="start" />
+            {drawing.effects.map((effect) => {
+              const length = Math.max(drawing.end - drawing.start, 1e-6)
+              return (
+                <span
+                  key={effect.kind}
+                  className={styles.effectSpan}
+                  data-kind={effect.kind}
+                  style={{
+                    left: `${((effect.from - drawing.start) / length) * 100}%`,
+                    width: `${((effect.to - effect.from) / length) * 100}%`
+                  }}
+                />
+              )
+            })}
+            <span className={styles.drawingLabel}>{drawing.label}</span>
+            {drawing.keyframes.map((time) => (
+              <span
+                key={time}
+                className={styles.keyframe}
+                data-role="keyframe"
+                data-time={time}
+                style={{ left: `${((time - drawing.start) / Math.max(drawing.end - drawing.start, 1e-6)) * 100}%` }}
+                title={`Keyframe en ${formatTime(time)}`}
+              />
+            ))}
+            <span className={styles.drawingEdge} data-role="end" data-side="end" />
+          </div>
+        )
+      })}
+    </div>
+  )
+})
 
 export function Timeline({
   duration,
@@ -112,7 +360,9 @@ export function Timeline({
   showDrawings,
   selectedDrawingId,
   disabled = false,
+  classic = false,
   onSeek,
+  onStepFrame,
   onRangeChange,
   onDrawingSelect,
   onDrawingChange,
@@ -123,8 +373,19 @@ export function Timeline({
 }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const drawingsRef = useRef<HTMLDivElement>(null)
+  // Read when the wheel fires, so a new function on every render doesn't re-subscribe the listener.
+  const stepFrame = useRef(onStepFrame)
+  stepFrame.current = onStepFrame
+  // The ruler is memoized: it gets one function for good, which calls the latest onSeek.
+  const latestSeek = useRef(onSeek)
+  latestSeek.current = onSeek
+  const [seekTick] = useState(() => (time: number) => latestSeek.current(time))
   const dragRef = useRef<Drag | null>(null)
   const drawingDragRef = useRef<DrawingDrag | null>(null)
+  // The track's box, read once when a drag starts: reading it on every move would make the browser
+  // lay out the page again right after each move changed it.
+  const dragBox = useRef<DOMRect | null>(null)
   const [width, setWidth] = useState(800)
   const [view, setView] = useState<{ from: number; to: number } | null>(null)
   // Right click menu of a drawing bar: which drawing, and where the pointer was.
@@ -144,10 +405,13 @@ export function Timeline({
   const from = view?.from ?? 0
   const to = view?.to ?? duration
   const span = Math.max(to - from, 0.001)
-  const pct = (time: number): number => ((time - from) / span) * 100
+  // Stable while the zoom stays: the playhead re-subscribes to the player only when it changes.
+  const pct = useCallback((time: number): number => ((time - from) / span) * 100, [from, span])
 
   // Native listener: React's wheel handler is passive and cannot stop the page from scrolling.
-  // It covers the drawing bars too, so zooming in to place one frame by frame works from there.
+  // Ctrl zooms and Shift (or a sideways wheel) pans, also over the drawing bars, so zooming in to
+  // place one frame by frame works from there. The plain wheel steps frames over the ruler and the
+  // track, like on the play button; over the bars it scrolls their rows.
   useEffect(() => {
     const track = trackRef.current
     const timeline = timelineRef.current
@@ -161,19 +425,23 @@ export function Timeline({
         if (nextSpan >= duration - 1e-6) return setView(null)
         const nextFrom = clamp(anchor - ((anchor - from) * nextSpan) / span, 0, duration - nextSpan)
         setView({ from: nextFrom, to: nextFrom + nextSpan })
-      } else if (view) {
+      } else if (event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        if (!view) return
         event.preventDefault()
         const delta = ((event.deltaX || event.deltaY) / box.width) * span
         const nextFrom = clamp(from + delta, 0, duration - span)
         setView({ from: nextFrom, to: nextFrom + span })
+      } else if (!disabled && event.deltaY !== 0 && !(event.target instanceof Node && drawingsRef.current?.contains(event.target))) {
+        event.preventDefault()
+        stepFrame.current(event.deltaY < 0 ? 1 : -1)
       }
     }
     timeline.addEventListener('wheel', onWheel, { passive: false })
     return () => timeline.removeEventListener('wheel', onWheel)
-  }, [duration, from, span, view])
+  }, [duration, from, span, view, disabled])
 
   const timeAt = (clientX: number): number => {
-    const box = trackRef.current?.getBoundingClientRect()
+    const box = dragBox.current ?? trackRef.current?.getBoundingClientRect()
     if (!box) return 0
     return clamp(from + ((clientX - box.left) / box.width) * span, 0, duration)
   }
@@ -181,6 +449,7 @@ export function Timeline({
   const onPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     if (disabled || duration <= 0 || event.button !== 0) return
     const role = (event.target as HTMLElement).dataset.role
+    dragBox.current = trackRef.current?.getBoundingClientRect() ?? null
     const time = timeAt(event.clientX)
     event.currentTarget.setPointerCapture(event.pointerId)
     if ((role === 'in' || role === 'out') && range) dragRef.current = { mode: role }
@@ -210,6 +479,7 @@ export function Timeline({
 
   const endDrag = (): void => {
     dragRef.current = null
+    dragBox.current = null
   }
 
   const onDrawingPointerDown = (event: PointerEvent<HTMLDivElement>, drawing: TimelineDrawing): void => {
@@ -219,6 +489,7 @@ export function Timeline({
     if (role === 'keyframe') return onDrawingSelect(drawing.id, Number(time))
     const edit: DrawingEdit = role === 'start' || role === 'end' ? role : 'move'
     event.currentTarget.setPointerCapture(event.pointerId)
+    dragBox.current = trackRef.current?.getBoundingClientRect() ?? null
     drawingDragRef.current = { id: drawing.id, edit, origin: timeAt(event.clientX), initial: { start: drawing.start, end: drawing.end } }
     onDrawingSelect(drawing.id)
   }
@@ -239,28 +510,25 @@ export function Timeline({
   const endDrawingDrag = (): void => {
     if (!drawingDragRef.current) return
     drawingDragRef.current = null
+    dragBox.current = null
     onDrawingDragEnd()
   }
 
-  const pxPerSecond = width / span
-  const step = TICK_STEPS.find((candidate) => candidate * pxPerSecond >= MIN_TICK_PX) ?? 7200
-  const ticks: number[] = []
-  if (duration > 0) {
-    for (let tick = Math.ceil(from / step) * step; tick <= to + 1e-9; tick += step) ticks.push(tick)
+  const drawingHandlers = useRef<DrawingBarHandlers>(null!)
+  drawingHandlers.current = {
+    pointerDown: onDrawingPointerDown,
+    pointerMove: onDrawingPointerMove,
+    pointerEnd: endDrawingDrag,
+    contextMenu: (event, drawing) => {
+      event.preventDefault()
+      event.stopPropagation()
+      if (!disabled) setMenu({ id: drawing.id, x: event.clientX, y: event.clientY })
+    }
   }
-  const frameSpan = frames.length > 0 ? duration / frames.length : 0
-  const lanes = drawings.reduce((count, drawing) => Math.max(count, drawing.lane + 1), 0)
 
   return (
-    <div ref={timelineRef} className={styles.timeline} data-disabled={disabled || undefined}>
-      <div className={styles.ruler} aria-hidden>
-        {ticks.map((tick) => (
-          <span key={tick} className={styles.tick} style={{ left: `${pct(tick)}%` }}>
-            {formatTime(tick, step < 1 ? 1 : 0)}
-          </span>
-        ))}
-        {view ? <span className={styles.zoomHint}>Zoom · doble clic para ver todo</span> : null}
-      </div>
+    <div ref={timelineRef} className={styles.timeline} data-disabled={disabled || undefined} data-classic={classic || undefined}>
+      <Ruler duration={duration} from={from} to={to} width={width} zoomed={view !== null} disabled={disabled} onSeek={seekTick} />
 
       <div
         ref={trackRef}
@@ -271,23 +539,7 @@ export function Timeline({
         onPointerCancel={endDrag}
         onDoubleClick={() => setView(null)}
       >
-        <div className={styles.filmstrip}>
-          {frames.map((url, index) => {
-            const start = index * frameSpan
-            if (start + frameSpan < from || start > to) return null
-            return (
-              <img
-                key={url}
-                src={url}
-                alt=""
-                draggable={false}
-                decoding="async"
-                className={styles.frame}
-                style={{ left: `${pct(start)}%`, width: `${(frameSpan / span) * 100}%` }}
-              />
-            )
-          })}
-        </div>
+        <Filmstrip frames={frames} duration={duration} from={from} to={to} />
 
         {bands.map((band) => (
           <div
@@ -333,67 +585,20 @@ export function Timeline({
       </div>
 
       {showDrawings && duration > 0 ? (
-        <div className={styles.drawings} style={{ height: VISIBLE_LANES * LANE_PX - LANE_GAP_PX }} aria-label="Dibujos en la línea de tiempo">
-          <div className={styles.drawingRows} style={{ height: Math.max(0, lanes * LANE_PX - LANE_GAP_PX) }}>
-            {drawings.map((drawing) => {
-              if (drawing.end < from || drawing.start > to) return null
-              return (
-                <div
-                  key={drawing.id}
-                  className={styles.drawingBar}
-                  data-selected={drawing.id === selectedDrawingId || undefined}
-                  style={{
-                    // A bar of a frame or two keeps its minimum width inside the track instead of poking past the end.
-                    left: `min(${pct(drawing.start)}%, calc(100% - ${MIN_BAR_PX}px))`,
-                    width: `${((drawing.end - drawing.start) / span) * 100}%`,
-                    top: drawing.lane * LANE_PX,
-                    ['--drawing-color' as string]: drawing.color
-                  }}
-                  title={`${drawing.label} · ${formatTime(drawing.start)} → ${formatTime(drawing.end)}${
-                    drawing.effects.length > 0 ? ` · ${drawing.effects.map((effect) => effect.label).join(', ')}` : ''
-                  }`}
-                  data-menu={menu?.id === drawing.id || undefined}
-                  onPointerDown={(event) => onDrawingPointerDown(event, drawing)}
-                  onContextMenu={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    if (!disabled) setMenu({ id: drawing.id, x: event.clientX, y: event.clientY })
-                  }}
-                  onPointerMove={onDrawingPointerMove}
-                  onPointerUp={endDrawingDrag}
-                  onPointerCancel={endDrawingDrag}
-                >
-                  <span className={styles.drawingEdge} data-role="start" data-side="start" />
-                  {drawing.effects.map((effect) => {
-                    const length = Math.max(drawing.end - drawing.start, 1e-6)
-                    return (
-                      <span
-                        key={effect.kind}
-                        className={styles.effectSpan}
-                        data-kind={effect.kind}
-                        style={{
-                          left: `${((effect.from - drawing.start) / length) * 100}%`,
-                          width: `${((effect.to - effect.from) / length) * 100}%`
-                        }}
-                      />
-                    )
-                  })}
-                  <span className={styles.drawingLabel}>{drawing.label}</span>
-                  {drawing.keyframes.map((time) => (
-                    <span
-                      key={time}
-                      className={styles.keyframe}
-                      data-role="keyframe"
-                      data-time={time}
-                      style={{ left: `${((time - drawing.start) / Math.max(drawing.end - drawing.start, 1e-6)) * 100}%` }}
-                      title={`Keyframe en ${formatTime(time)}`}
-                    />
-                  ))}
-                  <span className={styles.drawingEdge} data-role="end" data-side="end" />
-                </div>
-              )
-            })}
-          </div>
+        <div
+          ref={drawingsRef}
+          className={styles.drawings}
+          style={{ height: VISIBLE_LANES * LANE_PX - LANE_GAP_PX }}
+          aria-label="Dibujos en la línea de tiempo"
+        >
+          <DrawingRows
+            drawings={drawings}
+            from={from}
+            to={to}
+            selectedId={selectedDrawingId}
+            menuId={menu?.id ?? null}
+            handlers={drawingHandlers}
+          />
         </div>
       ) : null}
 

@@ -15,6 +15,13 @@
   pointer-events: none;
 }
 
+/* Without notices it stays (a live region has to be there before its first one), but stops
+   following the trim bar: that costs a layout pass on every frame of the playing video. */
+.stack:empty {
+  position-anchor: none;
+  bottom: 0;
+}
+
 .toast {
   display: flex;
   align-items: center;

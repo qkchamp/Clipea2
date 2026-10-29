@@ -10,6 +10,7 @@ export function defaultSettings(videosDir: string): AppSettings {
     outputDir: join(nvidia, 'PARA_DISCORD'),
     ffmpegDir: null,
     hardwareAcceleration: true,
+    classicTimeline: false,
     codec: 'hevc',
     quality: 'high',
     maxHeight: 720,

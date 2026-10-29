@@ -3,6 +3,29 @@
   gap: 20px;
 }
 
+/* As wide as its tabs, on the labels' left edge. */
+.body > .tabs {
+  justify-self: start;
+}
+
+/* Both sections in one cell: the dialog keeps the taller one's height. */
+.sections {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.section {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 20px;
+}
+
+.section[inert] {
+  visibility: hidden;
+}
+
 .folders {
   display: grid;
   /* Without it a long nowrap path widens the track past the body. */
@@ -191,4 +214,74 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Wraps the Activada/Desactivada control only to anchor its preview; the control keeps the full width. */
+.lookControl {
+  display: grid;
+}
+
+/*
+ * Hover preview of both timelines, as wide as the control. 1 + 8 in and 16 between: each column is
+ * centered over its button (1 + 1 in and 2 between).
+ */
+.lookPreview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.look {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+/* The option under the pointer: a 2px orange ring, no tint over the frames. */
+.look[data-hovered] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.lookCaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+/* "Con el cambio": what the other option would show. */
+.lookTag {
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* "Ahora": white like the picked option under it; orange is only for the one pointed at. */
+.lookTag[data-current] {
+  border-color: transparent;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  font-weight: 600;
 }

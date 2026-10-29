@@ -6,6 +6,7 @@ const base: AppSettings = {
   outputDir: 'C:/Videos/NVIDIA/PARA_DISCORD',
   ffmpegDir: null,
   hardwareAcceleration: true,
+  classicTimeline: false,
   codec: 'hevc',
   quality: 'high',
   maxHeight: 720,
@@ -40,6 +41,12 @@ describe('mergeSettings', () => {
   it('turns GPU acceleration off and on', () => {
     expect(mergeSettings(base, { hardwareAcceleration: false }).hardwareAcceleration).toBe(false)
     expect(mergeSettings({ ...base, hardwareAcceleration: false }, { hardwareAcceleration: 'yes' }).hardwareAcceleration).toBe(false)
+  })
+
+  it('turns the old timeline on and off', () => {
+    expect(mergeSettings(base, { classicTimeline: true }).classicTimeline).toBe(true)
+    expect(mergeSettings({ ...base, classicTimeline: true }, { classicTimeline: 'no' }).classicTimeline).toBe(true)
+    expect(mergeSettings(base, {}).classicTimeline).toBe(false)
   })
 
   it('clears the ffmpeg folder with an empty value', () => {
