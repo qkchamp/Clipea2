@@ -140,5 +140,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     get().open(next.sourcePath, { time: next.start, play: true })
   },
 
-  stopPreview: () => set({ preview: null })
+  // Every seek of the timeline calls it: without a montage playing, it doesn't wake up the store.
+  stopPreview: () => get().preview && set({ preview: null })
 }))

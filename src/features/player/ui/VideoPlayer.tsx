@@ -175,9 +175,11 @@ export function VideoPlayer() {
       pause: () => video.pause(),
       togglePlay: () => (video.paused ? controller.play() : controller.pause()),
       seek: (time) => {
-        pendingTarget = null
         const end = Number.isFinite(video.duration) ? video.duration : getFrameClock().duration
         const target = clamp(time, 0, end)
+        // Until it lands, the frames still showing up are from earlier targets: dragging along the
+        // timeline, they would pull the playhead back on every move.
+        pendingTarget = target
         seekTo(target)
         player().setTime(target)
       },
@@ -226,6 +228,10 @@ export function VideoPlayer() {
         ref={stageRef}
         className={styles.stage}
         onClick={() => !drawing && sourcePath && usePlayerStore.getState().controller?.togglePlay()}
+        // Like the timeline and the play button: wheel up steps one frame forward, down one back.
+        onWheel={(event) => {
+          if (sourcePath && !event.ctrlKey && event.deltaY !== 0) usePlayerStore.getState().controller?.stepFrame(event.deltaY < 0 ? 1 : -1)
+        }}
       >
         <video ref={videoRef} className={styles.video} src={sourcePath ? toMediaUrl(sourcePath) : undefined} preload="auto" hidden={!sourcePath} />
 

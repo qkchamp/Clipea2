@@ -21,7 +21,7 @@ const GROUPS: Array<{ title: string; items: Array<{ keys: string[][]; what: stri
       { keys: [['I'], ['O']], what: 'Marcar inicio / fin en el cuadro actual' },
       { keys: [['Inicio'], ['Fin']], what: 'Ir al inicio / fin de la selección' },
       { keys: [['Enter']], what: 'Agregar la selección al montaje (o guardar el corte editado)' },
-      { keys: [['Rueda']], what: 'Cuadro siguiente / anterior con el mouse sobre la línea de tiempo' },
+      { keys: [['Rueda']], what: 'Cuadro siguiente / anterior con el mouse sobre el video o la línea de tiempo' },
       { keys: [['Ctrl', 'Rueda']], what: 'Zoom en la línea de tiempo (doble clic: ver todo)' },
       { keys: [['Shift', 'Rueda']], what: 'Moverse por la línea de tiempo con zoom' },
       { keys: [['Ctrl', 'O']], what: 'Abrir un video de otra carpeta' }

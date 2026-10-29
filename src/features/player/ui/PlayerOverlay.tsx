@@ -37,12 +37,10 @@ const resize = (id: string, shape: Shape): void => drawings().reshape(id, shape,
 const editText = (id: string, text: string): void => drawings().setText(id, text)
 
 /**
- * Drawings over the video. It follows the playhead on every frame, so it lives apart from the
- * player: only this small piece re-renders while the video plays, and the canvas repaints only
- * when the set of visible drawings changes, or on every frame while one of them has keyframes or effects.
+ * Drawings over the video. It lives apart from the player and renders only when the set of visible
+ * drawings changes, or on every frame while one of them has keyframes or effects.
  */
 export function PlayerOverlay({ rect, sourcePath }: { rect: VideoRect; sourcePath: string }) {
-  const currentTime = usePlayerStore((state) => state.currentTime)
   const annotations = useAnnotationStore((state) => state.annotations)
   const drawing = useAnnotationStore((state) => state.drawing)
   const tool = useAnnotationStore((state) => state.tool)
@@ -51,21 +49,29 @@ export function PlayerOverlay({ rect, sourcePath }: { rect: VideoRect; sourcePat
   const selectedId = useAnnotationStore((state) => state.selectedId)
   const clock = useFrameClock()
 
-  const visible = visibleAnnotations(annotations, sourcePath, currentTime, frameDuration(clock))
-  const visibleKey = visible.map((annotation) => annotation.id).join('|')
+  // Not the time itself but what it shows: the frames go by without rendering this, unless a
+  // drawing comes or goes, or one on screen moves or fades with them.
+  const visibleKey = usePlayerStore((state) =>
+    visibleAnnotations(annotations, sourcePath, state.currentTime, frameDuration(clock))
+      .map((annotation) => annotation.id)
+      .join('|')
+  )
+  const visible = useMemo(() => {
+    const ids = new Set(visibleKey.split('|'))
+    return annotations.filter((annotation) => ids.has(annotation.id))
+  }, [annotations, visibleKey])
   // Only a drawing with keyframes or effects looks different from frame to frame.
   const changes = visible.some((annotation) => annotation.keyframes?.length || hasEffects(annotation))
-  const placedAt = changes ? frameStartTime(clock, currentTime) : null
-  const items = useMemo<PlacedDrawing[]>(() => {
-    const ids = new Set(visibleKey.split('|'))
-    return annotations
-      .filter((annotation) => ids.has(annotation.id))
-      .map((annotation) => ({
+  const placedAt = usePlayerStore((state) => (changes ? frameStartTime(clock, state.currentTime) : null))
+  const items = useMemo<PlacedDrawing[]>(
+    () =>
+      visible.map((annotation) => ({
         id: annotation.id,
         shape: placedAt !== null && annotation.keyframes?.length ? shapeOnFrame(annotation, placedAt) : annotation.shape,
         look: placedAt !== null ? lookAt(annotation, placedAt) : PLAIN_LOOK
-      }))
-  }, [annotations, visibleKey, placedAt])
+      })),
+    [visible, placedAt]
+  )
 
   return (
     <Layer
