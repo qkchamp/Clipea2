@@ -1,13 +1,9 @@
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, net, safeStorage } from 'electron'
-import { DiscordSession } from '@features/discord/application/discordSession'
 import { DiscordWebhooks } from '@features/discord/application/discordWebhooks'
 import { HttpWebhookApi } from '@features/discord/infrastructure/discordWebhookApi'
-import { JsonWebhookStore } from '@features/discord/infrastructure/jsonWebhookStore'
-import { exchangeCode, refreshTokens } from '@features/discord/infrastructure/discordOAuth'
-import { DiscordRpcClient } from '@features/discord/infrastructure/discordRpcClient'
-import { JsonDiscordAccountStore, type SecretVault } from '@features/discord/infrastructure/jsonDiscordAccountStore'
+import { JsonWebhookStore, type SecretVault } from '@features/discord/infrastructure/jsonWebhookStore'
 import { NO_ENCODERS, type EncoderSupport } from '@features/export/domain/encoderSupport'
 import { detectEncoders } from '@features/export/infrastructure/encoderDetection'
 import { ExportJobRunner } from '@features/export/infrastructure/exportJobRunner'
@@ -38,7 +34,6 @@ export interface Services {
   thumbnailer: FfmpegThumbnailer
   exports: ExportJobRunner
   history: JsonHistoryStore
-  discord: DiscordSession
   discordWebhooks: DiscordWebhooks
   ffmpegStatus(waitForEncoders?: boolean): Promise<FfmpegStatus>
   reloadFfmpeg(): Promise<FfmpegStatus>
@@ -143,7 +138,7 @@ export async function createServices(emit: Emitters): Promise<Services> {
   })
   const libraryWatcher = new FsLibraryWatcher(emit.libraryChanged)
 
-  // DPAPI: the Discord secret and tokens can only be read back by this Windows user.
+  // DPAPI: the webhook URLs can only be read back by this Windows user.
   const vault: SecretVault = {
     seal: (text) => {
       if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows no permite guardar la clave de Discord cifrada.')
@@ -151,13 +146,6 @@ export async function createServices(emit: Emitters): Promise<Services> {
     },
     open: (sealed) => safeStorage.decryptString(Buffer.from(sealed, 'base64'))
   }
-  const discord = new DiscordSession({
-    accounts: new JsonDiscordAccountStore(join(userData, 'discord.json'), vault),
-    openRpc: (clientId) => DiscordRpcClient.open(clientId),
-    exchangeCode: (account, code) => exchangeCode(account, code),
-    refreshTokens: (account, refreshToken) => refreshTokens(account, refreshToken),
-    now: () => Date.now()
-  })
   const discordWebhooks = new DiscordWebhooks(
     new JsonWebhookStore(join(userData, 'discord-webhooks.json'), vault),
     new HttpWebhookApi(),
@@ -173,7 +161,6 @@ export async function createServices(emit: Emitters): Promise<Services> {
     thumbnailer,
     exports,
     history,
-    discord,
     discordWebhooks,
     ffmpegStatus: status,
     reloadFfmpeg,
@@ -181,7 +168,6 @@ export async function createServices(emit: Emitters): Promise<Services> {
     installFfmpeg: installFfmpegNow,
     async shutdown() {
       libraryWatcher.stop()
-      discord.disconnect()
       await exports.cancelAll()
       await Promise.all([session.flush(), settings.flush(), history.flush()])
     }

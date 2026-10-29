@@ -34,16 +34,9 @@ const api: Clipea2Api = {
     clear: () => ipcRenderer.invoke(IPC.historyClear)
   },
   discord: {
-    status: () => ipcRenderer.invoke(IPC.discordStatus),
-    configure: (clientId, clientSecret) => ipcRenderer.invoke(IPC.discordConfigure, clientId, clientSecret),
-    connect: () => ipcRenderer.invoke(IPC.discordConnect),
-    guilds: () => ipcRenderer.invoke(IPC.discordGuilds),
-    textChannels: (guildId) => ipcRenderer.invoke(IPC.discordChannels, guildId),
-    openChannel: (guildId, channelId, clipPath) => ipcRenderer.invoke(IPC.discordOpenChannel, guildId, channelId, clipPath),
-    forget: () => ipcRenderer.invoke(IPC.discordForget),
     webhooks: () => ipcRenderer.invoke(IPC.discordWebhooks),
-    addWebhook: (target, url) => ipcRenderer.invoke(IPC.discordAddWebhook, target, url),
     addWebhookUrl: (url, label) => ipcRenderer.invoke(IPC.discordAddWebhookUrl, url, label),
+    editWebhook: (channelId, url, label) => ipcRenderer.invoke(IPC.discordEditWebhook, channelId, url, label),
     removeWebhook: (channelId) => ipcRenderer.invoke(IPC.discordRemoveWebhook, channelId),
     sendClip: (channelId, clipPath) => ipcRenderer.invoke(IPC.discordSendClip, channelId, clipPath)
   },

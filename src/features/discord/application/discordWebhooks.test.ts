@@ -12,6 +12,9 @@ function memoryStore(initial: SavedWebhook[] = []) {
     save: async (webhook: SavedWebhook) => {
       saved = [...saved.filter((item) => item.channelId !== webhook.channelId), webhook]
     },
+    replace: async (channelId: string, webhook: SavedWebhook) => {
+      saved = saved.filter((item) => item.channelId === channelId || item.channelId !== webhook.channelId).map((item) => (item.channelId === channelId ? webhook : item))
+    },
     remove: async (channelId: string) => {
       saved = saved.filter((item) => item.channelId !== channelId)
     }
@@ -19,11 +22,11 @@ function memoryStore(initial: SavedWebhook[] = []) {
 }
 
 function fakeApi(overrides: Partial<WebhookApi> = {}) {
-  const posts: Array<{ url: string; filePath: string; identity: unknown }> = []
+  const posts: Array<{ url: string; filePath: string }> = []
   const api: WebhookApi = {
     inspect: async () => ({ guildId: target.guildId, channelId: target.channelId, name: 'Clipea2' }),
-    post: async (url, filePath, identity) => {
-      posts.push({ url, filePath, identity })
+    post: async (url, filePath) => {
+      posts.push({ url, filePath })
       return { messageId: '999' }
     },
     ...overrides
@@ -32,43 +35,58 @@ function fakeApi(overrides: Partial<WebhookApi> = {}) {
 }
 
 describe('DiscordWebhooks', () => {
-  it('saves a webhook only for the channel it really posts in, and never hands out the URL', async () => {
-    const store = memoryStore()
-    const hooks = new DiscordWebhooks(store, fakeApi().api, async () => 1000)
-    expect(await hooks.add(target, ` ${URL_CLIPS} `)).toEqual([target])
-    expect((await store.list())[0].url).toBe(URL_CLIPS)
-
-    const wrong = new DiscordWebhooks(memoryStore(), fakeApi({ inspect: async () => ({ guildId: null, channelId: '333333333333333333', name: '' }) }).api, async () => 1)
-    await expect(wrong.add(target, URL_CLIPS)).rejects.toThrow('otro canal')
-    await expect(hooks.add(target, 'https://example.com/hook')).rejects.toThrow('webhook')
-  })
-
-  it('adds a channel from the URL alone, named by the user or after the webhook', async () => {
+  it('adds a channel from the URL alone, named by the user or after the webhook, and never hands out the URL', async () => {
     const store = memoryStore()
     const hooks = new DiscordWebhooks(store, fakeApi().api, async () => 1)
-    expect(await hooks.addByUrl(URL_CLIPS, '  Amigos #clips ')).toEqual([
+    expect(await hooks.addByUrl(` ${URL_CLIPS} `, '  Amigos #clips ')).toEqual([
       { guildId: target.guildId, guildName: 'Amigos #clips', channelId: target.channelId, channelName: '' }
     ])
+    expect((await store.list())[0].url).toBe(URL_CLIPS)
     expect((await hooks.addByUrl(URL_CLIPS, ''))[0].guildName).toBe('Clipea2')
     expect(await store.list()).toHaveLength(1)
+    await expect(hooks.addByUrl('https://example.com/hook', '')).rejects.toThrow('webhook')
   })
 
-  it('posts the clip with the user name and avatar', async () => {
+  it('posts the clip through the saved webhook', async () => {
     const { api, posts } = fakeApi()
     const hooks = new DiscordWebhooks(memoryStore([{ ...target, url: URL_CLIPS }]), api, async () => 5_000_000)
-    const identity = { name: 'QKCHAMP', avatarUrl: 'https://cdn.discordapp.com/avatars/1/a.png' }
-    expect(await hooks.send(target.channelId, 'C:/clips/gol.mp4', identity)).toEqual({ guildId: target.guildId, channelId: target.channelId, messageId: '999' })
-    expect(posts).toEqual([{ url: URL_CLIPS, filePath: 'C:/clips/gol.mp4', identity }])
+    expect(await hooks.send(target.channelId, 'C:/clips/gol.mp4')).toEqual({ guildId: target.guildId, channelId: target.channelId, messageId: '999' })
+    expect(posts).toEqual([{ url: URL_CLIPS, filePath: 'C:/clips/gol.mp4' }])
   })
 
-  it('refuses clips Discord would reject and forgets deleted webhooks', async () => {
+  it('refuses clips Discord would reject and keeps deleted webhooks listed to fix them with Editar', async () => {
     const big = new DiscordWebhooks(memoryStore([{ ...target, url: URL_CLIPS }]), fakeApi().api, async () => MAX_POST_BYTES + 1)
-    await expect(big.send(target.channelId, 'x.mp4', null)).rejects.toThrow('25 MB')
+    await expect(big.send(target.channelId, 'x.mp4')).rejects.toThrow('25 MB')
 
     const store = memoryStore([{ ...target, url: URL_CLIPS }])
     const gone = new DiscordWebhooks(store, fakeApi({ post: async () => Promise.reject(new WebhookGoneError('borrado')) }).api, async () => 1)
-    await expect(gone.send(target.channelId, 'x.mp4', null)).rejects.toThrow('borrado')
-    expect(await store.list()).toEqual([])
+    await expect(gone.send(target.channelId, 'x.mp4')).rejects.toThrow('tocá Editar')
+    expect(await store.list()).toEqual([{ ...target, url: URL_CLIPS }])
+  })
+
+  it('edits a channel in its place: a new URL, a new name or both', async () => {
+    const URL_NEW = 'https://discord.com/api/webhooks/000000000000000000/token-de-prueba-nuevo-no-es-real'
+    const other = { guildId: target.guildId, guildName: 'Otro', channelId: '444444444444444444', channelName: '', url: URL_CLIPS }
+    const store = memoryStore([{ ...target, url: URL_CLIPS }, other])
+    const hooks = new DiscordWebhooks(store, fakeApi().api, async () => 1)
+
+    // Same channel, new webhook: the name typed stays, the entry keeps its place.
+    expect(await hooks.edit(target.channelId, ` ${URL_NEW} `, 'Amigos #clips')).toEqual([
+      { guildId: target.guildId, guildName: 'Amigos #clips', channelId: target.channelId, channelName: '' },
+      { guildId: other.guildId, guildName: 'Otro', channelId: other.channelId, channelName: '' }
+    ])
+    expect((await store.list())[0].url).toBe(URL_NEW)
+
+    // Only the name: the URL is not touched and Discord is not asked.
+    const offline = new DiscordWebhooks(store, fakeApi({ inspect: async () => Promise.reject(new Error('sin red')) }).api, async () => 1)
+    expect((await offline.edit(target.channelId, '', ' Clips '))[0].guildName).toBe('Clips')
+    expect((await store.list())[0].url).toBe(URL_NEW)
+
+    // A new URL and no name: the webhook's own name.
+    expect((await hooks.edit(target.channelId, URL_CLIPS, ''))[0].guildName).toBe('Clipea2')
+
+    await expect(hooks.edit(target.channelId, 'https://example.com/hook', '')).rejects.toThrow('webhook')
+    await expect(hooks.edit('555555555555555555', URL_CLIPS, '')).rejects.toThrow('ya no está')
   })
 
   it('recognises webhook URLs', () => {
@@ -86,12 +104,12 @@ describe('HttpWebhookApi', () => {
       return new Response(JSON.stringify({ id: '777' }), { status: 200 })
     }) as unknown as typeof fetch
     const api = new HttpWebhookApi(fakeFetch, async () => new Blob(['video'], { type: 'video/mp4' }))
-    const result = await api.post(URL_CLIPS, 'C:\\clips\\gol final.mp4', { name: 'QKCHAMP', avatarUrl: null })
+    const result = await api.post(URL_CLIPS, 'C:\\clips\\gol final.mp4')
 
     expect(result).toEqual({ messageId: '777' })
     expect(request!.url).toBe(`${URL_CLIPS}?wait=true`)
+    // No username or avatar: it posts with the webhook's own, set in Discord.
     expect(JSON.parse(request!.body.get('payload_json') as string)).toEqual({
-      username: 'QKCHAMP',
       allowed_mentions: { parse: [] },
       attachments: [{ id: 0, filename: 'gol final.mp4' }]
     })

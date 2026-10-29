@@ -1,212 +1,46 @@
 .body {
   display: grid;
-  gap: 14px;
-}
-
-.lead,
-.account,
-.waiting {
-  margin: 0;
-  color: var(--text-muted);
-  line-height: 1.55;
-}
-
-.account strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.waiting {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.spin {
-  flex: none;
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.setup {
-  display: grid;
-  gap: 14px;
+  gap: 20px;
 }
 
 .steps {
   display: grid;
   gap: 6px;
   margin: 0;
-  padding: 12px 14px 12px 32px;
+  /* 11 + 1px border = 12 around the text; the left 32 is the numbers' column. */
+  padding: 11px 11px 11px 32px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 20px;
 }
 
-.steps a {
-  color: var(--text);
-}
-
-.steps code {
-  padding: 1px 5px;
-  border: 1px solid var(--border-strong);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 12px;
-}
-
+/* Top-aligned: a hint under one field must not push the other one's input down. */
 .fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.fine {
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 11.5px;
-  line-height: 1.5;
+  align-items: start;
+  gap: 12px;
 }
 
 .error {
   margin: 0;
-  padding: 8px 10px;
+  padding: 11px;
   border: 1px solid rgba(242, 84, 91, 0.4);
   border-radius: var(--radius-sm);
   color: #ffb4b8;
   font-size: 12px;
-}
-
-.row {
-  display: flex;
-  gap: 8px;
-}
-
-.link {
-  margin-left: 8px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-faint);
-  font-size: 12px;
-  text-decoration: underline;
-}
-
-.link:hover {
-  color: var(--text);
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.column {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 6px;
-  min-width: 0;
-}
-
-.column:last-child {
-  grid-template-rows: auto 1fr;
-}
-
-/* Same bottom edge as the server list, which also has the search box above it. */
-.column:last-child .list {
-  height: 296px;
+  line-height: 16px;
 }
 
 .columnTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text);
   font-size: 12px;
   font-weight: 500;
-}
-
-.search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 9px;
-  border: 1px solid var(--field-border);
-  border-radius: var(--radius-sm);
-  color: var(--text-faint);
-}
-
-.search:focus-within {
-  border-color: #525252;
-}
-
-.search input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-}
-
-.list {
-  display: grid;
-  align-content: start;
-  gap: 1px;
-  height: 260px;
-  margin: 0;
-  padding: 4px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  list-style: none;
-}
-
-.item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 32px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  text-align: left;
-}
-
-.item:hover {
-  background: var(--surface-3);
-  color: var(--text);
-}
-
-.item.selected {
-  background: var(--ink);
-  color: var(--ink-contrast);
-}
-
-.avatar {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: var(--surface-3);
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.item.selected .avatar {
-  background: rgba(0, 0, 0, 0.12);
-  color: var(--ink-contrast);
+  line-height: 16px;
 }
 
 .name {
@@ -215,44 +49,28 @@
   white-space: nowrap;
 }
 
-.empty {
-  padding: 8px;
-  color: var(--text-faint);
-  font-size: 12px;
-}
-
 .columnTitle svg,
 .directMark {
   color: var(--accent);
 }
 
-.columnTitle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .directMark {
   flex: none;
-  margin-left: auto;
 }
 
-.item.selected .directMark {
-  color: var(--accent-contrast);
-}
-
-.direct,
-.webhookForm {
+/* The add section, and a channel being edited in its row's place. */
+.direct {
   display: grid;
   gap: 8px;
-  padding: 12px;
+  /* 11 + 1px border: the content sits 12 in, like an input's text. Same for .error. */
+  padding: 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
 .directList {
   display: grid;
-  gap: 4px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -269,55 +87,14 @@
   flex: 1;
 }
 
-.dim {
-  color: var(--text-faint);
-}
-
-.grow {
-  flex: 1;
-}
-
-.actions {
+.form {
   display: grid;
-  justify-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.addForm {
-  display: grid;
-  gap: 10px;
-}
-
+/* A field row like Ajustes' folders: 1px border + 6 + 28 + 6 + 1 = 42, text 12 in. */
 .directList .directItem {
-  padding: 6px 6px 6px 10px;
+  padding: 6px 6px 6px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-}
-
-.directList .directMark {
-  margin-left: 0;
-}
-
-.disclosure {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-faint);
-  font-size: 12px;
-  text-align: left;
-}
-
-.disclosure:hover {
-  color: var(--text);
-}
-
-.disclosure svg {
-  transition: transform 0.12s;
-}
-
-.disclosure[aria-expanded='false'] svg {
-  transform: rotate(-90deg);
 }

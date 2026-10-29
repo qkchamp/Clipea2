@@ -2,7 +2,7 @@ import type { Annotation } from '@features/annotations/domain/annotation'
 import type { EncoderSupport } from '@features/export/domain/encoderSupport'
 import type { VideoCodec } from '@features/export/domain/encodingPlan'
 import type { RenderAnnotationInput, RenderSegmentInput } from '@features/export/domain/renderTimeline'
-import type { DiscordChannel, DiscordGuild, DiscordStatus, WebhookTarget } from '@features/discord/domain/discordTargets'
+import type { WebhookTarget } from '@features/discord/domain/discordTargets'
 import type { ExportRecordDraft, HistoryEntry } from '@features/history/domain/exportRecord'
 import type { LibraryScan } from '@features/library/domain/libraryClip'
 import type { FfmpegInstallProgress } from '@features/media/domain/ffmpegRelease'
@@ -98,27 +98,16 @@ export interface Clipea2Api {
     /** Forgets every entry; the files stay on disk. */
     clear(): Promise<HistoryEntry[]>
   }
-  /** The Discord app on this PC, through its local RPC (lists servers and channels; it cannot post). */
+  /** Sending to Discord channels through their webhooks (the URLs stay encrypted in the main process). */
   discord: {
-    status(): Promise<DiscordStatus>
-    /** Saves the Client ID and Client Secret of the user's Discord application. */
-    configure(clientId: string, clientSecret: string): Promise<DiscordStatus>
-    /** The first time Discord asks the user to approve Clipea2. */
-    connect(): Promise<DiscordStatus>
-    guilds(): Promise<DiscordGuild[]>
-    textChannels(guildId: string): Promise<DiscordChannel[]>
-    /** Copies the clip as a file and opens the channel in Discord: the user pastes it with Ctrl+V. */
-    openChannel(guildId: string, channelId: string, clipPath: string): Promise<void>
-    /** Forgets the credentials and the authorization (saved webhooks stay). */
-    forget(): Promise<void>
     /** Channels with direct sending (a webhook saved for them). */
     webhooks(): Promise<WebhookTarget[]>
-    /** Checks the webhook belongs to that channel and keeps it, encrypted. */
-    addWebhook(target: WebhookTarget, url: string): Promise<WebhookTarget[]>
-    /** Just the webhook URL (no Discord app linked); `label` is how it shows in the list. */
+    /** Checks the webhook URL with Discord and keeps it, encrypted; `label` is how it shows in the list. */
     addWebhookUrl(url: string, label: string): Promise<WebhookTarget[]>
+    /** A new URL for that channel (empty keeps the current one) and/or a new name in the list. */
+    editWebhook(channelId: string, url: string, label: string): Promise<WebhookTarget[]>
     removeWebhook(channelId: string): Promise<WebhookTarget[]>
-    /** Posts the clip through the channel's webhook with the user's name and avatar. Works with Discord closed. */
+    /** Posts the clip through the channel's webhook, with its name and picture. Works with Discord closed. */
     sendClip(channelId: string, clipPath: string): Promise<void>
   }
   settings: {

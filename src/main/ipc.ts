@@ -1,6 +1,5 @@
 import { join } from 'node:path'
 import { BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
-import { channelLink, isSnowflake, type WebhookTarget } from '@features/discord/domain/discordTargets'
 import { scanLibrary } from '@features/library/application/scanLibrary'
 import { VIDEO_EXTENSIONS } from '@features/library/domain/libraryClip'
 import type { AppSettings } from '@features/settings/domain/settings'
@@ -38,27 +37,12 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
   handle(IPC.historyRemove, (s, id: string) => s.history.remove(id))
   handle(IPC.historyClear, (s) => s.history.clear())
 
-  handle(IPC.discordStatus, (s) => s.discord.status())
-  handle(IPC.discordConfigure, (s, clientId: string, clientSecret: string) => s.discord.configure(clientId, clientSecret))
-  handle(IPC.discordConnect, (s) => s.discord.connect())
-  handle(IPC.discordGuilds, (s) => s.discord.guilds())
-  handle(IPC.discordChannels, (s, guildId: string) => s.discord.textChannels(guildId))
-  handle(IPC.discordForget, (s) => s.discord.forget())
   handle(IPC.discordWebhooks, (s) => s.discordWebhooks.targets())
-  handle(IPC.discordAddWebhook, (s, target: WebhookTarget, url: string) => {
-    if (!isSnowflake(target.guildId) || !isSnowflake(target.channelId)) throw new Error('Canal de Discord inválido')
-    return s.discordWebhooks.add(target, url)
-  })
   handle(IPC.discordAddWebhookUrl, (s, url: string, label: string) => s.discordWebhooks.addByUrl(url, label))
+  handle(IPC.discordEditWebhook, (s, channelId: string, url: string, label: string) => s.discordWebhooks.edit(channelId, url, label))
   handle(IPC.discordRemoveWebhook, (s, channelId: string) => s.discordWebhooks.remove(channelId))
   handle(IPC.discordSendClip, async (s, channelId: string, clipPath: string) => {
-    await s.discordWebhooks.send(channelId, clipPath, await s.discord.identity())
-  })
-  // Nothing is posted: the clip goes to the clipboard and Discord opens on that channel.
-  ipcMain.handle(IPC.discordOpenChannel, async (_event, guildId: string, channelId: string, clipPath: string) => {
-    if (!isSnowflake(guildId) || !isSnowflake(channelId)) throw new Error('Canal de Discord inválido')
-    await copyFileToClipboard(clipPath)
-    await shell.openExternal(channelLink(guildId, channelId))
+    await s.discordWebhooks.send(channelId, clipPath)
   })
 
   handle(IPC.settingsGet, (s) => s.settings.get())

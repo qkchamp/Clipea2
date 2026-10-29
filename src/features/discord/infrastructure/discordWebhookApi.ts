@@ -1,6 +1,6 @@
 import { openAsBlob } from 'node:fs'
 import { basename } from 'node:path'
-import { WebhookGoneError, type PostIdentity, type WebhookApi } from '../application/discordWebhooks'
+import { WebhookGoneError, type WebhookApi } from '../application/discordWebhooks'
 
 interface DiscordError {
   message?: string
@@ -30,18 +30,10 @@ export class HttpWebhookApi implements WebhookApi {
     return { guildId: webhook.guild_id ?? null, channelId: webhook.channel_id, name: webhook.name ?? '' }
   }
 
-  async post(url: string, filePath: string, identity: PostIdentity | null): Promise<{ messageId: string }> {
+  async post(url: string, filePath: string): Promise<{ messageId: string }> {
     const fileName = basename(filePath)
     const form = new FormData()
-    form.append(
-      'payload_json',
-      JSON.stringify({
-        ...(identity ? { username: identity.name.slice(0, 80) } : {}),
-        ...(identity?.avatarUrl ? { avatar_url: identity.avatarUrl } : {}),
-        allowed_mentions: { parse: [] },
-        attachments: [{ id: 0, filename: fileName }]
-      })
-    )
+    form.append('payload_json', JSON.stringify({ allowed_mentions: { parse: [] }, attachments: [{ id: 0, filename: fileName }] }))
     form.append('files[0]', await this.readFile(filePath), fileName)
     // wait=true: Discord answers with the message, so the post can be confirmed.
     const response = await this.fetchImpl(`${url.trim().replace(/\/$/, '')}?wait=true`, { method: 'POST', body: form })

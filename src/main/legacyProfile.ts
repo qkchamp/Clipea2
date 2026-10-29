@@ -8,7 +8,7 @@ const LEGACY_NAME = 'Clipardo'
  * The app's own files plus Chromium's "Local State", which holds the key that decrypts the Discord
  * secrets. Caches are left behind: they rebuild themselves.
  */
-const CARRIED = ['settings.json', 'history.json', 'session.json', 'discord.json', 'discord-webhooks.json', 'Local State']
+const CARRIED = ['settings.json', 'history.json', 'session.json', 'discord-webhooks.json', 'Local State']
 
 /**
  * First start after the rename: copies settings, history, session and Discord webhooks from the

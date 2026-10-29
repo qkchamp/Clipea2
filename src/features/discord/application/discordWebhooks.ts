@@ -1,6 +1,6 @@
-import type { PostIdentity, WebhookTarget } from '../domain/discordTargets'
+import type { WebhookTarget } from '../domain/discordTargets'
 
-export type { PostIdentity, WebhookTarget }
+export type { WebhookTarget }
 
 export interface SavedWebhook extends WebhookTarget {
   url: string
@@ -10,6 +10,8 @@ export interface SavedWebhook extends WebhookTarget {
 export interface WebhookStore {
   list(): Promise<SavedWebhook[]>
   save(webhook: SavedWebhook): Promise<void>
+  /** Puts `webhook` where the one saved for `channelId` was, keeping its place in the list. */
+  replace(channelId: string, webhook: SavedWebhook): Promise<void>
   remove(channelId: string): Promise<void>
 }
 
@@ -17,7 +19,8 @@ export interface WebhookStore {
 export interface WebhookApi {
   /** The channel the webhook posts in and its name in Discord (fails if the webhook was deleted). */
   inspect(url: string): Promise<{ guildId: string | null; channelId: string; name: string }>
-  post(url: string, filePath: string, identity: PostIdentity | null): Promise<{ messageId: string }>
+  /** Posts as the webhook: the name and picture set for it in Discord. */
+  post(url: string, filePath: string): Promise<{ messageId: string }>
 }
 
 export class WebhookGoneError extends Error {}
@@ -43,26 +46,21 @@ export class DiscordWebhooks {
     return (await this.store.list()).map(({ url: _url, ...target }) => target)
   }
 
-  /** Checks the webhook really belongs to the channel picked, then keeps it. */
-  async add(target: WebhookTarget, url: string): Promise<WebhookTarget[]> {
-    const clean = url.trim()
-    if (!isWebhookUrl(clean)) throw new Error('Eso no es la URL de un webhook (empieza con https://discord.com/api/webhooks/…).')
-    const real = await this.api.inspect(clean)
-    if (real.channelId !== target.channelId) throw new Error(`Ese webhook publica en otro canal, no en #${target.channelName}.`)
-    await this.store.save({ ...target, url: clean })
+  async addByUrl(url: string, label: string): Promise<WebhookTarget[]> {
+    await this.store.save(await this.fromUrl(url, label))
     return this.targets()
   }
 
   /**
-   * Just the URL, no Discord app linked: Discord does not say the server or channel names, so the
-   * user's label (or the webhook's own name) is what shows up in the list.
+   * Fixes a saved channel in its place: a new URL (the old webhook broke) is checked like a new one,
+   * an empty one keeps the current URL. With no name, a new URL brings the webhook's own.
    */
-  async addByUrl(url: string, label: string): Promise<WebhookTarget[]> {
-    const clean = url.trim()
-    if (!isWebhookUrl(clean)) throw new Error('Eso no es la URL de un webhook (empieza con https://discord.com/api/webhooks/…).')
-    const real = await this.api.inspect(clean)
-    const name = label.trim() || real.name || 'Canal de Discord'
-    await this.store.save({ guildId: real.guildId ?? '', guildName: name, channelId: real.channelId, channelName: '', url: clean })
+  async edit(channelId: string, url: string, label: string): Promise<WebhookTarget[]> {
+    const current = (await this.store.list()).find((saved) => saved.channelId === channelId)
+    if (!current) throw new Error('Ese canal ya no está en la lista.')
+    const name = label.trim()
+    const next = url.trim() ? await this.fromUrl(url, name) : name ? { ...current, guildName: name, channelName: '' } : current
+    await this.store.replace(channelId, next)
     return this.targets()
   }
 
@@ -71,17 +69,29 @@ export class DiscordWebhooks {
     return this.targets()
   }
 
-  async send(channelId: string, filePath: string, identity: PostIdentity | null): Promise<{ guildId: string; channelId: string; messageId: string }> {
+  async send(channelId: string, filePath: string): Promise<{ guildId: string; channelId: string; messageId: string }> {
     const webhook = (await this.store.list()).find((saved) => saved.channelId === channelId)
     if (!webhook) throw new Error('Ese canal todavía no tiene envío directo.')
     if ((await this.sizeOf(filePath)) > MAX_POST_BYTES) throw new Error('El clip pasa los 25 MB: Discord no lo acepta por webhook.')
     try {
-      const { messageId } = await this.api.post(webhook.url, filePath, identity)
+      const { messageId } = await this.api.post(webhook.url, filePath)
       return { guildId: webhook.guildId, channelId, messageId }
     } catch (error) {
-      // Deleted in Discord: forget it so the channel asks for a new one.
-      if (error instanceof WebhookGoneError) await this.store.remove(channelId)
+      // Deleted in Discord: the channel stays listed, so Editar takes the new URL and keeps its name.
+      if (error instanceof WebhookGoneError) throw new WebhookGoneError('Ese webhook ya no existe en Discord: tocá Editar y pegá la URL de uno nuevo.')
       throw error
     }
+  }
+
+  /**
+   * From the URL alone: Discord does not say the server or channel names, so the user's label (or
+   * the webhook's own name) is what shows up in the list.
+   */
+  private async fromUrl(url: string, label: string): Promise<SavedWebhook> {
+    const clean = url.trim()
+    if (!isWebhookUrl(clean)) throw new Error('Eso no es la URL de un webhook (empieza con https://discord.com/api/webhooks/…).')
+    const real = await this.api.inspect(clean)
+    const name = label.trim() || real.name || 'Canal de Discord'
+    return { guildId: real.guildId ?? '', guildName: name, channelId: real.channelId, channelName: '', url: clean }
   }
 }

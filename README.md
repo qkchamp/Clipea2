@@ -58,7 +58,7 @@ src/
     annotations/  dibujos, sus tiempos, render a PNG
     export/       plan de codificación para Discord, timeline de render, comando ffmpeg, reintentos
     history/      exportados: copiar, reexportar, editar
-    discord/      envío a canales (webhooks; app de Discord por RPC local, opcional)
+    discord/      envío a canales por webhook
     settings/ session/
   shared/
     domain/       tiempo, ids
