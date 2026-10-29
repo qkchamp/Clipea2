@@ -30,7 +30,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
-  transition: border-color 0.12s;
+  transition: border-color 0.12s var(--fade);
 }
 
 .card:hover {

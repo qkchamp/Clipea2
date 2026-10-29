@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Activity, useEffect } from 'react'
 import { Download, TriangleAlert } from 'lucide-react'
 import { formatBytes } from '@shared/domain/time'
 import { api } from '@shared/ui/api'
@@ -109,29 +109,50 @@ function Sidebar() {
         ]}
       />
       <div className={styles.sidebarBody}>
-        {tab === 'montage' ? (
-          <>
-            <MontagePanel />
-            <AnnotationList />
-          </>
-        ) : (
+        {/* Both stay mounted and the other one is only hidden: switching tabs doesn't build a panel again. */}
+        <Activity mode={tab === 'montage' ? 'visible' : 'hidden'}>
+          <MontagePanel />
+          <AnnotationList />
+        </Activity>
+        <Activity mode={tab === 'history' ? 'visible' : 'hidden'}>
           <HistoryPanel />
-        )}
+        </Activity>
       </div>
       <ExportPanel />
     </aside>
   )
 }
 
-/** Template: library | player + timeline | montage/history + export. */
-export function App() {
+/** The window title follows the open recording without re-rendering the whole app. */
+function useWindowTitle(): void {
+  useEffect(() => {
+    document.title = windowTitle(usePlayerStore.getState().sourcePath)
+    return usePlayerStore.subscribe((state, previous) => {
+      if (state.sourcePath !== previous.sourcePath) document.title = windowTitle(state.sourcePath)
+    })
+  }, [])
+}
+
+/** Opening or closing a dialog only touches the dialogs, not the panels behind them. */
+function Dialogs() {
   const dialog = useUiStore((state) => state.dialog)
   const discordClipPath = useUiStore((state) => state.discordClipPath)
-  const sourcePath = usePlayerStore((state) => state.sourcePath)
+  const closeDialog = (): void => useUiStore.getState().closeDialog()
+  return (
+    <>
+      {dialog === 'help' ? <ShortcutsHelp onClose={closeDialog} /> : null}
+      {dialog === 'settings' ? <SettingsDialog onClose={closeDialog} /> : null}
+      {dialog === 'discord' && discordClipPath ? <SendToChannelDialog clipPath={discordClipPath} onClose={closeDialog} /> : null}
+    </>
+  )
+}
 
+/** Template: library | player + timeline | montage/history + export. */
+export function App() {
   useSessionPersistence()
   useEditorShortcuts()
   useFileDrop(openDropped)
+  useWindowTitle()
 
   useEffect(() => {
     void useSettingsStore.getState().load()
@@ -145,12 +166,6 @@ export function App() {
       announceExport(event.path, event.sizeBytes, event.fits)
     })
   }, [])
-
-  useEffect(() => {
-    document.title = windowTitle(sourcePath)
-  }, [sourcePath])
-
-  const closeDialog = (): void => useUiStore.getState().closeDialog()
 
   return (
     <div className={styles.app}>
@@ -166,9 +181,7 @@ export function App() {
         </section>
         <Sidebar />
       </main>
-      {dialog === 'help' ? <ShortcutsHelp onClose={closeDialog} /> : null}
-      {dialog === 'settings' ? <SettingsDialog onClose={closeDialog} /> : null}
-      {dialog === 'discord' && discordClipPath ? <SendToChannelDialog clipPath={discordClipPath} onClose={closeDialog} /> : null}
+      <Dialogs />
       <Toasts />
       <InstantTooltip />
     </div>

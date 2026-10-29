@@ -77,3 +77,15 @@ export function formatExportDate(ms: number, now: Date = new Date()): string {
 export function totalSize(entries: readonly HistoryEntry[]): number {
   return entries.filter((entry) => entry.fileExists).reduce((total, entry) => total + entry.sizeBytes, 0)
 }
+
+/**
+ * The list is read again from disk on every refresh (each time «Exportados» opens): entries that
+ * did not change keep their object, so the screen only redraws the cards that did.
+ */
+export function keepUnchanged(previous: readonly HistoryEntry[], next: HistoryEntry[]): HistoryEntry[] {
+  const known = new Map(previous.map((entry) => [entry.id, entry]))
+  return next.map((entry) => {
+    const old = known.get(entry.id)
+    return old && JSON.stringify(old) === JSON.stringify(entry) ? old : entry
+  })
+}

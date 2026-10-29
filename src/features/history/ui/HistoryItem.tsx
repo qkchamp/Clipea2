@@ -2,6 +2,7 @@ import { useEffect, useState, type Ref } from 'react'
 import { CircleCheck, FolderOpen, Info, Pencil, Play, RotateCw, Send, Trash, TriangleAlert } from 'lucide-react'
 import { formatBytes, formatDuration, formatTime } from '@shared/domain/time'
 import { cx } from '@shared/ui/cx'
+import { useResetOnShow } from '@shared/ui/useResetOnShow'
 import { Badge, Button, DiscordIcon, IconButton } from '@shared/ui/atoms'
 import { exceedsLimit } from '@features/export/domain/discordLimits'
 import { GPU_LABEL } from '@features/export/domain/encoderSupport'
@@ -55,6 +56,10 @@ export function HistoryItem({
 }: HistoryItemProps) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [showSpecs, setShowSpecs] = useState(false)
+  useResetOnShow(() => {
+    setCopyState('idle')
+    setShowSpecs(false)
+  })
   const canReexport = entry.missingSources === 0 && !exportBusy
   const fits = !exceedsLimit(entry.sizeBytes, sizeLimitBytes)
   const gpu = entry.video.gpu

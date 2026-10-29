@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { cx } from '@shared/ui/cx'
 import { useInView } from '@shared/ui/useInView'
@@ -10,9 +10,13 @@ import styles from './library.module.css'
 
 const PAGE = 40
 
-/** Loads the preview of a row only once it scrolls into view: some folders have hundreds of clips. */
-function LazyClipRow({ clip, active, onOpen }: { clip: LibraryClip; active: boolean; onOpen: () => void }) {
+/**
+ * Loads the preview of a row only once it scrolls into view: some folders have hundreds of clips.
+ * Memo: opening a recording only re-renders the row that lights up and the one that goes dark.
+ */
+const LazyClipRow = memo(function LazyClipRow({ clip, active, onOpen }: { clip: LibraryClip; active: boolean; onOpen: (path: string) => void }) {
   const [ref, visible] = useInView<HTMLLIElement>()
+  const open = useCallback(() => onOpen(clip.path), [onOpen, clip.path])
   const thumbnail = useThumbnail(clip.path, undefined, visible)
   const durationSec = useMediaStore((state) => state.infos[clip.path]?.durationSec ?? null)
 
@@ -20,8 +24,8 @@ function LazyClipRow({ clip, active, onOpen }: { clip: LibraryClip; active: bool
     if (visible) void useMediaStore.getState().ensureInfo(clip.path).catch(() => undefined)
   }, [visible, clip.path])
 
-  return <ClipRow ref={ref} clip={clip} thumbnail={thumbnail} durationSec={durationSec} active={active} onOpen={onOpen} />
-}
+  return <ClipRow ref={ref} clip={clip} thumbnail={thumbnail} durationSec={durationSec} active={active} onOpen={open} />
+})
 
 interface GameGroupProps {
   game: GameFolder
@@ -45,7 +49,7 @@ export function GameGroup({ game, expanded, activePath, onToggle, onOpen }: Game
       {expanded ? (
         <ul className={styles.clips}>
           {game.clips.slice(0, limit).map((clip) => (
-            <LazyClipRow key={clip.path} clip={clip} active={clip.path === activePath} onOpen={() => onOpen(clip.path)} />
+            <LazyClipRow key={clip.path} clip={clip} active={clip.path === activePath} onOpen={onOpen} />
           ))}
         </ul>
       ) : null}

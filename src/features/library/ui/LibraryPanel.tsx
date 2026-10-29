@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef } from 'react'
 import { FolderOpen, Gamepad2, RefreshCw, Search } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { IconButton } from '@shared/ui/atoms'
 import { EmptyState, PanelHeader } from '@shared/ui/molecules'
+import { useScrollingFlag } from '@shared/ui/useScrollingFlag'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
@@ -27,10 +28,14 @@ export function LibraryPanel() {
   const scans = useLibraryStore((state) => state.scans)
   const loading = useLibraryStore((state) => state.loading)
   const error = useLibraryStore((state) => state.error)
-  const query = useLibraryStore((state) => state.query)
+  const typed = useLibraryStore((state) => state.query)
+  // The field shows each key at once; the list of thousands of clips follows right behind.
+  const query = useDeferredValue(typed)
   const expanded = useLibraryStore((state) => state.expanded)
   const collapsedRoots = useLibraryStore((state) => state.collapsedRoots)
   const activePath = usePlayerStore((state) => state.sourcePath)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useScrollingFlag(scrollRef)
   const folders = useMemo(
     () =>
       (scans ?? [])
@@ -83,13 +88,13 @@ export function LibraryPanel() {
         <input
           type="search"
           placeholder="Buscar juego o clip"
-          value={query}
+          value={typed}
           onChange={(event) => useLibraryStore.getState().setQuery(event.target.value)}
           onKeyDown={(event) => event.key === 'Escape' && useLibraryStore.getState().setQuery('')}
         />
       </label>
 
-      <div className={styles.scroll}>
+      <div ref={scrollRef} className={styles.scroll}>
         {loading && !scans ? <p className={styles.status}>Buscando clips…</p> : null}
         {error ? <p className={styles.status}>No pude leer las carpetas: {error}</p> : null}
         {scans && shownClips === 0 ? (

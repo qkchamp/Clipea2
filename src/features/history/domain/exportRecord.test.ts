@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addRecord,
   formatExportDate,
+  keepUnchanged,
   MAX_HISTORY,
   recordTitle,
   reexportName,
@@ -73,5 +74,26 @@ describe('formatExportDate', () => {
 
   it('uses the date for older exports', () => {
     expect(formatExportDate(new Date(2026, 8, 16, 2, 47).getTime(), now)).toBe('16 sep · 02:47')
+  })
+})
+
+describe('refreshing the list', () => {
+  const entry = (id: string, fileExists = true): HistoryEntry => ({ ...record(id), fileExists, missingSources: 0 })
+
+  it('keeps the same object for entries that did not change', () => {
+    const previous = [entry('a'), entry('b')]
+    const next = keepUnchanged(previous, [entry('a'), entry('b')])
+    expect(next[0]).toBe(previous[0])
+    expect(next[1]).toBe(previous[1])
+  })
+
+  it('takes the new object when something changed, and new entries as they come', () => {
+    const previous = [entry('a'), entry('b')]
+    const fresh = [entry('c'), entry('a', false), entry('b')]
+    const next = keepUnchanged(previous, fresh)
+    expect(next).toEqual(fresh)
+    expect(next[0]).toBe(fresh[0])
+    expect(next[1]).toBe(fresh[1])
+    expect(next[2]).toBe(previous[1])
   })
 })

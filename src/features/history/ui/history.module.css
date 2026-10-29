@@ -25,7 +25,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
-  transition: border-color 0.12s;
+  transition: border-color 0.12s var(--fade);
 }
 
 .item:hover {
@@ -115,8 +115,8 @@
   color: #fff;
   backdrop-filter: blur(4px);
   transition:
-    background-color 0.12s,
-    color 0.12s;
+    background-color 0.12s var(--fade),
+    color 0.12s var(--fade);
 }
 
 .thumbTool:hover:not(:disabled),

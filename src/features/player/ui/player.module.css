@@ -181,7 +181,7 @@
   background: var(--ink);
   color: var(--ink-contrast);
   transition:
-    background-color 0.12s,
+    background-color 0.12s var(--fade),
     transform 0.08s;
 }
 
@@ -272,9 +272,9 @@
   font-weight: 500;
   line-height: 20px;
   transition:
-    background-color 0.12s,
-    border-color 0.12s,
-    color 0.12s;
+    background-color 0.12s var(--fade),
+    border-color 0.12s var(--fade),
+    color 0.12s var(--fade);
 }
 
 .rate:hover,

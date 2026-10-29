@@ -61,9 +61,9 @@ const isTyping = (target: EventTarget | null): boolean => {
 export function useEditorShortcuts(): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.altKey || isTyping(event.target)) return
       // A panel can also ask something in a dialog of its own (ConfirmDialog), outside the store.
-      const modalOpen = useUiStore.getState().dialog !== null || document.querySelector('[aria-modal="true"]') !== null
-      if (event.defaultPrevented || event.altKey || modalOpen || isTyping(event.target)) return
+      if (useUiStore.getState().dialog !== null || document.querySelector('[aria-modal="true"]') !== null) return
       const key = event.key.toLowerCase()
       // A focused button already reacts to Enter, and to Space on key up.
       if (event.target instanceof HTMLButtonElement && (key === 'enter' || key === ' ')) {

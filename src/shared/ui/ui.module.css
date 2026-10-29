@@ -13,9 +13,9 @@
   line-height: 20px;
   white-space: nowrap;
   transition:
-    background-color 0.12s,
-    border-color 0.12s,
-    color 0.12s,
+    background-color 0.12s var(--fade),
+    border-color 0.12s var(--fade),
+    color 0.12s var(--fade),
     transform 0.08s;
 }
 
@@ -132,9 +132,9 @@
   background: transparent;
   color: var(--text-muted);
   transition:
-    background-color 0.12s,
-    border-color 0.12s,
-    color 0.12s;
+    background-color 0.12s var(--fade),
+    border-color 0.12s var(--fade),
+    color 0.12s var(--fade);
 }
 
 .iconButton:hover:not(:disabled) {
@@ -270,8 +270,8 @@
   background-color: var(--field);
   min-width: 0;
   transition:
-    border-color 0.12s,
-    box-shadow 0.15s;
+    border-color 0.12s var(--fade),
+    box-shadow 0.15s var(--fade);
 }
 
 .select {
@@ -337,8 +337,8 @@
   line-height: 16px;
   white-space: nowrap;
   transition:
-    background-color 0.12s,
-    color 0.12s;
+    background-color 0.12s var(--fade),
+    color 0.12s var(--fade);
 }
 
 .segment:hover:not(:disabled):not(.selected) {
@@ -528,8 +528,8 @@
   font-weight: 500;
   line-height: 20px;
   transition:
-    background-color 0.12s,
-    color 0.12s;
+    background-color 0.12s var(--fade),
+    color 0.12s var(--fade);
 }
 
 .tab + .tab {

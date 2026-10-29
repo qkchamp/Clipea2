@@ -3,6 +3,7 @@ import { Clapperboard, Play, Trash } from 'lucide-react'
 import { formatDuration } from '@shared/domain/time'
 import { Button } from '@shared/ui/atoms'
 import { EmptyState, PanelHeader } from '@shared/ui/molecules'
+import { useResetOnShow } from '@shared/ui/useResetOnShow'
 import { useThumbnail } from '@features/media/ui/useThumbnail'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
@@ -31,6 +32,11 @@ export function MontagePanel() {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  useResetOnShow(() => {
+    setDragIndex(null)
+    setDropIndex(null)
+    setConfirmClear(false)
+  })
   const playingId = preview?.items[preview.index]?.id
 
   useEffect(() => {

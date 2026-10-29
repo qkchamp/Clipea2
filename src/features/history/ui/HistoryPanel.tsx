@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { FolderOpen, History, RefreshCw, Trash } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { useInView } from '@shared/ui/useInView'
+import { useResetOnShow } from '@shared/ui/useResetOnShow'
 import { useUiStore } from '@shared/ui/uiStore'
 import { Button, IconButton } from '@shared/ui/atoms'
 import { EmptyState, PanelHeader } from '@shared/ui/molecules'
@@ -21,6 +22,9 @@ import { useHistoryStore } from './historyStore'
 import styles from './history.module.css'
 
 type ItemProps = Omit<Parameters<typeof HistoryItem>[0], 'thumbnail' | 'ref'>
+type Handlers = Omit<ItemProps, 'entry' | 'sizeLimitBytes' | 'expanded' | 'isNew' | 'exportBusy'>
+/** What a card can do, for any card: one object for the whole list, so cards can skip re-renders. */
+type Actions = { [K in keyof Handlers]: (entry: HistoryEntry) => ReturnType<Handlers[K]> }
 
 /** Every card closed (null means "open the new or the latest one"). */
 const ALL_COLLAPSED = ''
@@ -28,11 +32,26 @@ const ALL_COLLAPSED = ''
 /** A card action waiting for a yes. */
 type Pending = { action: 'reexport' | 'edit'; entry: HistoryEntry }
 
-function LazyHistoryItem(props: ItemProps) {
+/** Memo: opening a card or copying one only re-renders the cards that change. */
+const LazyHistoryItem = memo(function LazyHistoryItem({ actions, ...props }: Omit<ItemProps, keyof Handlers> & { actions: Actions }) {
   const [ref, visible] = useInView<HTMLLIElement>()
   const thumbnail = useThumbnail(props.entry.path, undefined, visible && props.entry.fileExists)
-  return <HistoryItem {...props} ref={ref} thumbnail={thumbnail} />
-}
+  const { entry } = props
+  const handlers = useMemo<Handlers>(
+    () => ({
+      onToggle: () => actions.onToggle(entry),
+      onCopy: () => actions.onCopy(entry),
+      onSendToChannel: () => actions.onSendToChannel(entry),
+      onShowInFolder: () => actions.onShowInFolder(entry),
+      onWatch: () => actions.onWatch(entry),
+      onReexport: () => actions.onReexport(entry),
+      onEdit: () => actions.onEdit(entry),
+      onRemove: () => actions.onRemove(entry)
+    }),
+    [actions, entry]
+  )
+  return <HistoryItem {...props} {...handlers} ref={ref} thumbnail={thumbnail} />
+})
 
 /** Finished exports: copy them to Discord again, watch them, or export them again. */
 export function HistoryPanel() {
@@ -57,23 +76,35 @@ export function HistoryPanel() {
     void useHistoryStore.getState().refresh()
   }, [])
 
-  useEffect(() => {
+  // Layout effect: a finished export shows its card already open, without a frame of the old one.
+  useLayoutEffect(() => {
     if (highlighted) setExpandedId(highlighted)
   }, [highlighted])
+
+  useResetOnShow(() => {
+    setExpandedId(useUiStore.getState().highlightedExportId)
+    setConfirmClear(false)
+    setPending(null)
+  })
 
   const openId = expandedId ?? entries[0]?.id ?? null
   const limitFor = (entry: HistoryEntry): number | null =>
     sizeLimitMb === undefined ? entry.sizeLimitBytes : sizeLimitMb === null ? null : megabytesToBytes(sizeLimitMb)
-  const handlers = (entry: HistoryEntry): Omit<ItemProps, 'entry' | 'sizeLimitBytes' | 'expanded' | 'isNew' | 'exportBusy'> => ({
-    onToggle: () => setExpandedId(openId === entry.id ? ALL_COLLAPSED : entry.id),
-    onCopy: () => api.system.copyFileToClipboard(entry.path),
-    onSendToChannel: () => useUiStore.getState().openDiscordSend(entry.path),
-    onShowInFolder: () => void api.system.showInFolder(entry.path),
-    onWatch: () => openRecording(entry.path),
-    onReexport: () => setPending({ action: 'reexport', entry }),
-    onEdit: () => (montageSegments > 0 ? setPending({ action: 'edit', entry }) : editInMontage(entry)),
-    onRemove: () => void useHistoryStore.getState().remove(entry.id)
-  })
+  // Read the stores when clicked, not when rendered: the object never changes.
+  const actions = useMemo<Actions>(
+    () => ({
+      onToggle: (entry) =>
+        setExpandedId((current) => ((current ?? useHistoryStore.getState().entries[0]?.id) === entry.id ? ALL_COLLAPSED : entry.id)),
+      onCopy: (entry) => api.system.copyFileToClipboard(entry.path),
+      onSendToChannel: (entry) => useUiStore.getState().openDiscordSend(entry.path),
+      onShowInFolder: (entry) => void api.system.showInFolder(entry.path),
+      onWatch: (entry) => openRecording(entry.path),
+      onReexport: (entry) => setPending({ action: 'reexport', entry }),
+      onEdit: (entry) => (useMontageStore.getState().segments.length > 0 ? setPending({ action: 'edit', entry }) : editInMontage(entry)),
+      onRemove: (entry) => void useHistoryStore.getState().remove(entry.id)
+    }),
+    []
+  )
 
   return (
     <section className={styles.panel} aria-label="Exportados">
@@ -120,7 +151,7 @@ export function HistoryPanel() {
               expanded={openId === entry.id}
               isNew={highlighted === entry.id}
               exportBusy={exportBusy}
-              {...handlers(entry)}
+              actions={actions}
             />
           ))}
         </ol>

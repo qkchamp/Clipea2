@@ -8,7 +8,7 @@ import type { ExportRequest, SessionSnapshot } from '@shared/contracts/clipea2Ap
 import { IPC } from '@shared/contracts/ipcChannels'
 import { toMediaUrl } from '@shared/contracts/mediaUrl'
 import type { Services } from './services'
-import { copyFileToClipboard } from './windowsClipboard'
+import { copyFileToClipboard, prepareFileCopy } from './windowsClipboard'
 
 /**
  * Driving adapter: exposes the use cases to the renderer. Handlers are registered before the
@@ -34,7 +34,11 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
   handle(IPC.exportStart, (s, request: ExportRequest) => ({ jobId: s.exports.start(request) }))
   handle(IPC.exportCancel, (s, jobId: string) => s.exports.cancel(jobId))
 
-  handle(IPC.historyList, (s) => s.history.list())
+  handle(IPC.historyList, (s) => {
+    // The exports are on screen: «Copiar para Discord» answers right away.
+    prepareFileCopy()
+    return s.history.list()
+  })
   handle(IPC.historyRemove, (s, id: string) => s.history.remove(id))
   handle(IPC.historyClear, (s) => s.history.clear())
 
