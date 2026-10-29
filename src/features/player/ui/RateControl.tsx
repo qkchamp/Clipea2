@@ -1,4 +1,5 @@
-import type { CSSProperties } from 'react'
+import { useRef, type CSSProperties } from 'react'
+import { flushSync } from 'react-dom'
 import { Mouse } from 'lucide-react'
 import { cx } from '@shared/ui/cx'
 import { formatPlaybackRate, parsePlaybackRate, PLAYBACK_RATE, playbackRateFraction } from '../domain/playbackRate'
@@ -8,12 +9,14 @@ import styles from './player.module.css'
 
 /**
  * The speed, built like the volume: hovering shows a bar with the whole range (0.25x to 4x), a click
- * pins it with the value to type, and a double click on the bar goes back to normal. The wheel
- * moves it anywhere over the button or the panel, and the hint in the panel says so.
+ * pins it and turns the button's own text into the value to type (Enter applies it and closes), and
+ * a double click on the bar goes back to normal. The wheel moves it anywhere over the button or the
+ * panel, and the hint in the panel says so.
  */
 export function RateControl() {
   const rate = usePlayerStore((state) => state.rate)
   const { open, setOpen, root } = usePinnedPanel()
+  const button = useRef<HTMLButtonElement>(null)
   const player = usePlayerStore.getState
 
   return (
@@ -25,19 +28,7 @@ export function RateControl() {
     >
       <div className={styles.floatingPanel}>
         <div className={styles.floatingBox} role="group" aria-label="Velocidad de reproducción">
-          {open ? (
-            <PanelField
-              value={rate.toFixed(2)}
-              suffix="x"
-              label="Velocidad"
-              onApply={(text) => {
-                const next = parsePlaybackRate(text)
-                if (next !== null) player().setRate(next)
-              }}
-            />
-          ) : (
-            <span className={styles.panelEdge}>{formatPlaybackRate(PLAYBACK_RATE.max)}</span>
-          )}
+          <span className={styles.panelEdge}>{formatPlaybackRate(PLAYBACK_RATE.max)}</span>
           <input
             type="range"
             min={PLAYBACK_RATE.min}
@@ -57,16 +48,36 @@ export function RateControl() {
           </span>
         </div>
       </div>
-      <button
-        type="button"
-        className={styles.rate}
-        data-modified={rate !== PLAYBACK_RATE.normal || undefined}
-        aria-expanded={open}
-        title="Velocidad · rueda del mouse o Ctrl+↑/↓; doble clic en la barra o Ctrl+R vuelve a 1.00x"
-        onClick={() => setOpen(!open)}
-      >
-        {formatPlaybackRate(rate)}
-      </button>
+      {open ? (
+        <PanelField
+          value={rate.toFixed(2)}
+          suffix="x"
+          label="Escribir la velocidad"
+          className={cx(styles.rate, styles.rateField)}
+          autoFocus
+          onApply={(text) => {
+            const next = parsePlaybackRate(text)
+            if (next !== null) player().setRate(next)
+          }}
+          onEnter={() => {
+            // Back to the button, focused, so the keyboard keeps its place.
+            flushSync(() => setOpen(false))
+            button.current?.focus()
+          }}
+        />
+      ) : (
+        <button
+          ref={button}
+          type="button"
+          className={styles.rate}
+          data-modified={rate !== PLAYBACK_RATE.normal || undefined}
+          aria-expanded={false}
+          title="Velocidad · clic para escribirla, rueda del mouse o Ctrl+↑/↓; doble clic en la barra o Ctrl+R vuelve a 1.00x"
+          onClick={() => setOpen(true)}
+        >
+          {formatPlaybackRate(rate)}
+        </button>
+      )}
     </div>
   )
 }

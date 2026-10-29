@@ -40,10 +40,15 @@ interface PanelFieldProps {
   label: string
   /** Gets the typed text; it decides what it means and ignores it when it isn't valid. */
   onApply: (text: string) => void
+  /** For a field that stands in for something else, like the speed button: its look, focused on mount. */
+  className?: string
+  autoFocus?: boolean
+  /** After Enter applied the value. */
+  onEnter?: () => void
 }
 
 /** The value of a pinned panel, editable: Enter or leaving the field applies it. */
-export function PanelField({ value, suffix, label, onApply }: PanelFieldProps) {
+export function PanelField({ value, suffix, label, onApply, className, autoFocus, onEnter }: PanelFieldProps) {
   const [draft, setDraft] = useState<string | null>(null)
   const apply = (): void => {
     if (draft === null) return
@@ -51,15 +56,22 @@ export function PanelField({ value, suffix, label, onApply }: PanelFieldProps) {
     setDraft(null)
   }
   return (
-    <label className={styles.panelField}>
+    <label className={className ?? styles.panelField}>
       <input
         value={draft ?? value}
         inputMode="decimal"
         aria-label={label}
+        autoFocus={autoFocus}
         onFocus={(event) => event.currentTarget.select()}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={apply}
-        onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter') return
+          // Or the Enter goes on to click whatever takes the focus next, like the button it gives way to.
+          event.preventDefault()
+          event.currentTarget.blur()
+          onEnter?.()
+        }}
       />
       {suffix}
     </label>

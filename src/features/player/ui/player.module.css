@@ -288,6 +288,34 @@
   color: var(--accent);
 }
 
+/* Pinned, the button's text is the value to type: same box, an orange edge while typing. */
+.rateField {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+  cursor: text;
+}
+
+.rateField:focus-within {
+  border-color: var(--accent);
+}
+
+.rateField input {
+  field-sizing: content;
+  min-width: 1ch;
+  max-width: 5ch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  outline: none;
+}
+
 /* Volume and speed: a panel floats above the button. Its bottom padding bridges the gap, so the
    pointer can go up to the bar without the panel closing on the way. */
 .floating {
