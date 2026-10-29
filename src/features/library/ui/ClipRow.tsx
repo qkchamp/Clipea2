@@ -1,7 +1,6 @@
 import type { Ref } from 'react'
 import { formatBytes, formatTime } from '@shared/domain/time'
 import { cx } from '@shared/ui/cx'
-import { Badge } from '@shared/ui/atoms'
 import { describeRecording, formatRecordedAt, type LibraryClip } from '../domain/libraryClip'
 import styles from './library.module.css'
 
@@ -32,7 +31,6 @@ export function ClipRow({ ref, clip, thumbnail, durationSec, active, onOpen }: C
         <span className={styles.clipInfo}>
           <span className={styles.clipTitle}>{recordedAtMs !== null ? formatRecordedAt(recordedAtMs) : title}</span>
           <span className={styles.clipMeta}>
-            {clip.isInstantReplay ? <Badge tone="accent">Repetición</Badge> : null}
             <span className={styles.clipSize}>{formatBytes(clip.sizeBytes)}</span>
           </span>
         </span>

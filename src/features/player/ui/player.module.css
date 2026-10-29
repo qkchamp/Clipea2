@@ -347,7 +347,8 @@
   background-image: linear-gradient(to top, var(--text-faint) var(--fill), var(--border-strong) var(--fill));
 }
 
-.floating[data-open] .floatingBox {
+/* Pinned, the volume's OFF / ON needs more room; the speed keeps its size. */
+.floating[data-open] .floatingBox:has(.panelSwitch) {
   width: 88px;
 }
 
@@ -379,33 +380,43 @@
   line-height: 14px;
 }
 
-/* The suffix gets its own column and the same width goes on the left, so the box sits on the panel's axis. */
+/*
+ * The value to type, in the place of the top end: one box across the panel with the suffix inside.
+ * 22 tall over the end's 14-line, it spills 4 into the padding and the gap, so pinning the panel
+ * doesn't resize it; its top lands 8 in, like its sides.
+ */
 .panelField {
-  display: grid;
-  grid-template-columns: 38px 8px;
+  display: flex;
+  align-self: stretch;
+  justify-content: center;
   align-items: center;
-  gap: 2px;
-  padding-left: 10px;
+  height: 22px;
+  margin: -4px 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
   color: var(--text-faint);
   font-family: var(--mono);
   font-size: 12px;
   line-height: 16px;
+  cursor: text;
 }
 
+.panelField:focus-within {
+  border-color: var(--accent);
+}
+
+/* As wide as what's typed, so the number and its suffix stay centered together. */
 .panelField input {
-  width: 38px;
-  height: var(--size-sm);
-  padding: 0 4px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-3);
+  field-sizing: content;
+  min-width: 1ch;
+  max-width: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text);
   font: inherit;
-  text-align: center;
-}
-
-.panelField input:focus {
-  border-color: var(--accent);
+  text-align: right;
   outline: none;
 }
 
