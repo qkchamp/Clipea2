@@ -19,6 +19,8 @@ interface SettingsState {
   ffmpegTask: FfmpegTask | null
   load(): Promise<void>
   update(patch: Partial<AppSettings>): Promise<void>
+  /** Asks for a folder and adds it to the library. The one picked (new or already there), or null if cancelled. */
+  addLibraryRoot(): Promise<string | null>
   refreshFfmpeg(): Promise<void>
   /** ffmpeg status with the NVENC check finished (waits for it if needed). */
   ensureEncoders(): Promise<FfmpegStatus>
@@ -54,6 +56,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set({ ffmpeg: await api.system.ffmpegStatus(false) })
       set({ ffmpeg: await api.system.ffmpegStatus(true) })
     }
+  },
+  async addLibraryRoot() {
+    const before = get().settings?.libraryRoots ?? []
+    const folder = await api.system.chooseFolder(before[before.length - 1])
+    // Read again: the list may have changed while the dialog was open.
+    const roots = get().settings?.libraryRoots ?? []
+    if (folder && !roots.includes(folder)) await get().update({ libraryRoots: [...roots, folder] })
+    return folder
   },
   async refreshFfmpeg() {
     set({ ffmpeg: await api.system.ffmpegStatus(true) })

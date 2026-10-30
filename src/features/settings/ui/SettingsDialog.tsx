@@ -30,10 +30,6 @@ function FolderField({ label, value, hint, onPick }: { label: string; value: str
 /** Every folder the library shows; each one keeps ShadowPlay's one-subfolder-per-game layout. */
 function LibraryFoldersField({ roots }: { roots: string[] }) {
   const save = (libraryRoots: string[]): void => void useSettingsStore.getState().update({ libraryRoots })
-  const add = async (): Promise<void> => {
-    const folder = await api.system.chooseFolder(roots[roots.length - 1])
-    if (folder && !roots.includes(folder)) save([...roots, folder])
-  }
 
   return (
     <Field label="Carpetas de clips" hint="Donde ShadowPlay / NVIDIA App guarda las grabaciones (una carpeta por juego). La biblioteca las muestra juntas.">
@@ -49,7 +45,7 @@ function LibraryFoldersField({ roots }: { roots: string[] }) {
           </div>
         ))}
         <div>
-          <Button size="sm" icon={<FolderPlus size={14} />} onClick={() => void add()}>
+          <Button size="sm" icon={<FolderPlus size={14} />} onClick={() => void useSettingsStore.getState().addLibraryRoot()}>
             Agregar carpeta
           </Button>
         </div>

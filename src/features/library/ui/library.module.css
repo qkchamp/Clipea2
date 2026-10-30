@@ -52,6 +52,13 @@
   color: var(--text-faint);
 }
 
+/* 24 square, its icon 12 in from the right border like the magnifier from the left. */
+.search .dayButton {
+  width: 24px;
+  height: 24px;
+  margin-right: -5px;
+}
+
 .scroll {
   flex: 1;
   min-height: 0;

@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   baseName,
+  dayInSearch,
   describeRecording,
   filterGames,
   formatRecordedAt,
   groupByGame,
   isInstantReplay,
   isVideoFile,
+  parseLibrarySearch,
   parseRecordedAt,
   recordingLabel,
+  searchOnDay,
   stripExtension,
   type LibraryClip
 } from './libraryClip'
@@ -101,5 +104,66 @@ describe('filterGames', () => {
 
   it('returns everything for an empty query', () => {
     expect(filterGames(games, '  ')).toHaveLength(2)
+  })
+})
+
+describe('searching by date and time', () => {
+  const games = groupByGame([
+    clip('Rematch', 'Rematch 2026.10.28 - 04.28.12.01.DVR.mp4'),
+    clip('Rematch', 'Rematch 2026.10.28 - 23.05.00.02.DVR.mp4'),
+    clip('Rematch', 'Rematch 2025.10.28 - 04.10.00.03.DVR.mp4'),
+    clip('Fortnite', 'Fortnite 2026.04.03 - 20.28.08.04.DVR.mp4'),
+    clip('PARA_DISCORD', 'golazo.mp4', new Date(2026, 9, 28, 12, 0).getTime())
+  ])
+  const found = (query: string): string[] => filterGames(games, query).flatMap((game) => game.clips.map((c) => c.fileName))
+
+  it('reads the day as DD/MM, and as MM/DD when that is the only date', () => {
+    expect(parseLibrarySearch('28/10/26').day).toEqual({ day: 28, month: 10, year: 2026 })
+    expect(parseLibrarySearch('10/28/2026').day).toEqual({ day: 28, month: 10, year: 2026 })
+    expect(parseLibrarySearch('03/04/26').day).toEqual({ day: 3, month: 4, year: 2026 })
+    expect(parseLibrarySearch('28/10').day).toEqual({ day: 28, month: 10, year: null })
+    expect(parseLibrarySearch('28/10/2').day).toEqual({ day: 28, month: 10, year: null })
+  })
+
+  it('keeps the names apart from the day and the time', () => {
+    expect(parseLibrarySearch('  Rematch 28/10/26 04:2 ')).toEqual({
+      text: 'rematch',
+      day: { day: 28, month: 10, year: 2026 },
+      time: { hour: 4, minutes: '2' }
+    })
+  })
+
+  it('finds the clips of a day, with the year or in any year', () => {
+    expect(found('28/10/26')).toEqual([
+      'Rematch 2026.10.28 - 23.05.00.02.DVR.mp4',
+      'Rematch 2026.10.28 - 04.28.12.01.DVR.mp4',
+      'golazo.mp4'
+    ])
+    expect(found('10/28/2025')).toEqual(['Rematch 2025.10.28 - 04.10.00.03.DVR.mp4'])
+    expect(found('28/10')).toHaveLength(4)
+    expect(found('3/4/26')).toEqual(['Fortnite 2026.04.03 - 20.28.08.04.DVR.mp4'])
+  })
+
+  it('narrows by hour and minutes, and by name', () => {
+    expect(found('04:')).toEqual(['Rematch 2026.10.28 - 04.28.12.01.DVR.mp4', 'Rematch 2025.10.28 - 04.10.00.03.DVR.mp4'])
+    expect(found('28/10/26 4:28')).toEqual(['Rematch 2026.10.28 - 04.28.12.01.DVR.mp4'])
+    expect(found('discord 28/10')).toEqual(['golazo.mp4'])
+  })
+
+  it('finds nothing for a date that does not exist', () => {
+    expect(found('31/13/26')).toEqual([])
+    expect(found('25:00')).toEqual([])
+  })
+
+  it('puts the picked day in the search, in place of the one typed', () => {
+    expect(searchOnDay('Rematch 03/04', new Date(2026, 9, 28))).toBe('Rematch 28/10/26')
+    expect(searchOnDay('', new Date(2026, 3, 3))).toBe('03/04/26')
+  })
+
+  it('gives the calendar the day searched', () => {
+    expect(dayInSearch('rematch 28/10/25', 2026)).toEqual(new Date(2025, 9, 28))
+    expect(dayInSearch('28/10', 2026)).toEqual(new Date(2026, 9, 28))
+    expect(dayInSearch('31/02/26', 2026)).toBeNull()
+    expect(dayInSearch('rematch', 2026)).toBeNull()
   })
 })

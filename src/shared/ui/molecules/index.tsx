@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatTime, parseTime } from '@shared/domain/time'
-import { TextInput } from '../atoms'
+import { IconButton, TextInput } from '../atoms'
 import { cx } from '../cx'
 import styles from '../ui.module.css'
 
@@ -167,6 +168,64 @@ export function Tabs<T extends string>({
           {option.count ? <span className={styles.tabCount}>{option.count}</span> : null}
         </button>
       ))}
+    </div>
+  )
+}
+
+const MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+const WEEKDAYS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do']
+
+const sameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+
+/** A month to pick a day from, Monday first, like the date pickers of Windows. Opens on `value`'s month, or today's. */
+export function Calendar({ value, onPick }: { value: Date | null; onPick: (day: Date) => void }) {
+  const [month, setMonth] = useState(() => {
+    const start = value ?? new Date()
+    return new Date(start.getFullYear(), start.getMonth(), 1)
+  })
+  const today = new Date()
+  // Six weeks from the Monday on or before the 1st: every month fits and the grid never changes size.
+  const first = new Date(month.getFullYear(), month.getMonth(), 1 - ((month.getDay() + 6) % 7))
+  const days = Array.from({ length: 42 }, (_, index) => new Date(first.getFullYear(), first.getMonth(), first.getDate() + index))
+  const move = (months: number): void => setMonth(new Date(month.getFullYear(), month.getMonth() + months, 1))
+
+  return (
+    <div className={styles.calendar}>
+      <div className={styles.calendarHeader}>
+        <IconButton small label="Mes anterior" onClick={() => move(-1)}>
+          <ChevronLeft size={16} />
+        </IconButton>
+        <span className={styles.calendarTitle} aria-live="polite">
+          {MONTH_NAMES[month.getMonth()]} {month.getFullYear()}
+        </span>
+        <IconButton small label="Mes siguiente" onClick={() => move(1)}>
+          <ChevronRight size={16} />
+        </IconButton>
+      </div>
+      <div className={styles.calendarGrid}>
+        {WEEKDAYS.map((name) => (
+          <span key={name} className={styles.calendarWeekday} aria-hidden>
+            {name}
+          </span>
+        ))}
+        {days.map((day) => (
+          <button
+            key={day.getTime()}
+            type="button"
+            className={cx(
+              styles.calendarDay,
+              day.getMonth() !== month.getMonth() && styles.calendarOutside,
+              sameDay(day, today) && styles.calendarToday
+            )}
+            aria-pressed={value !== null && sameDay(day, value)}
+            aria-label={`${day.getDate()} de ${MONTH_NAMES[day.getMonth()]} de ${day.getFullYear()}`}
+            onClick={() => onPick(day)}
+          >
+            {day.getDate()}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

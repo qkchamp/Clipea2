@@ -15,7 +15,7 @@ interface RootFolderProps {
 /** A library folder with its games inside; hovering it shows where it lives on disk. */
 export function RootFolder({ root, clipCount, open, onToggle, children }: RootFolderProps) {
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-root={root}>
       <button type="button" className={styles.rootHeader} aria-expanded={open} title={root} onClick={onToggle}>
         <ChevronRight size={14} className={cx(styles.chevron, open && styles.open)} />
         {open ? <FolderOpen size={14} className={styles.rootIcon} /> : <Folder size={14} className={styles.rootIcon} />}

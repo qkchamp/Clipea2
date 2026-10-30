@@ -1,13 +1,14 @@
-import { useDeferredValue, useEffect, useMemo, useRef } from 'react'
-import { FolderOpen, Gamepad2, RefreshCw, Search } from 'lucide-react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { CalendarDays, FolderOpen, FolderPlus, Gamepad2, RefreshCw, Search } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { IconButton } from '@shared/ui/atoms'
-import { EmptyState, PanelHeader } from '@shared/ui/molecules'
+import { Calendar, EmptyState, PanelHeader } from '@shared/ui/molecules'
+import { Popover } from '@shared/ui/organisms/Popover'
 import { useScrollingFlag } from '@shared/ui/useScrollingFlag'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
-import { filterGames } from '../domain/libraryClip'
+import { dayInSearch, filterGames, searchOnDay } from '../domain/libraryClip'
 import { GameGroup } from './GameGroup'
 import { RootFolder } from './RootFolder'
 import { useLibraryStore } from './libraryStore'
@@ -18,6 +19,54 @@ export function openRecording(path: string): void {
   player.stopPreview()
   useTrimStore.getState().stopEditing()
   player.open(path)
+}
+
+const SEARCH_HINT = 'Buscar juego, clip o fecha'
+
+/** Names, a day ("28/10/26") or a time ("04:28"); the day can also be picked on a calendar. */
+function SearchField() {
+  const query = useLibraryStore((state) => state.query)
+  const [picking, setPicking] = useState(false)
+  const field = useRef<HTMLLabelElement>(null)
+  const setQuery = (value: string): void => useLibraryStore.getState().setQuery(value)
+
+  return (
+    <>
+      <label ref={field} className={styles.search}>
+        <Search size={14} />
+        <input
+          type="search"
+          // Its own name: the calendar button inside the label would lend it its own.
+          aria-label={SEARCH_HINT}
+          placeholder={SEARCH_HINT}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => event.key === 'Escape' && setQuery('')}
+        />
+        <IconButton
+          className={styles.dayButton}
+          label="Buscar por fecha"
+          active={picking}
+          aria-haspopup="dialog"
+          aria-expanded={picking}
+          onClick={() => setPicking((open) => !open)}
+        >
+          <CalendarDays size={14} />
+        </IconButton>
+      </label>
+      {picking ? (
+        <Popover anchor={field} label="Buscar por fecha" onClose={() => setPicking(false)}>
+          <Calendar
+            value={dayInSearch(query, new Date().getFullYear())}
+            onPick={(day) => {
+              setQuery(searchOnDay(query, day))
+              setPicking(false)
+            }}
+          />
+        </Popover>
+      ) : null}
+    </>
+  )
 }
 
 /** ShadowPlay recordings of every library folder, grouped by folder and game, newest first. */
@@ -56,9 +105,23 @@ export function LibraryPanel() {
     })
   }, [libraryRoots])
 
+  // A folder just added: brought into view once its clips are in, at the end of the list.
+  const [revealRoot, setRevealRoot] = useState<string | null>(null)
+  useEffect(() => {
+    if (!revealRoot || !scans?.some((scan) => scan.root === revealRoot)) return
+    const folders = scrollRef.current?.querySelectorAll<HTMLElement>('[data-root]') ?? []
+    for (const folder of folders) if (folder.dataset.root === revealRoot) folder.scrollIntoView({ block: 'start' })
+    setRevealRoot(null)
+  }, [scans, revealRoot])
+
   const openFile = async (): Promise<void> => {
     const [first] = await api.system.openVideos()
     if (first) openRecording(first)
+  }
+
+  const addFolder = async (): Promise<void> => {
+    const folder = await useSettingsStore.getState().addLibraryRoot()
+    if (folder) setRevealRoot(folder)
   }
 
   return (
@@ -69,6 +132,9 @@ export function LibraryPanel() {
         meta={scans ? `${totalClips} clips` : undefined}
         actions={
           <>
+            <IconButton small label="Agregar una carpeta de clips" onClick={() => void addFolder()}>
+              <FolderPlus size={16} />
+            </IconButton>
             <IconButton small label="Abrir un video de otra carpeta" onClick={() => void openFile()}>
               <FolderOpen size={16} />
             </IconButton>
@@ -83,16 +149,7 @@ export function LibraryPanel() {
           </>
         }
       />
-      <label className={styles.search}>
-        <Search size={14} />
-        <input
-          type="search"
-          placeholder="Buscar juego o clip"
-          value={typed}
-          onChange={(event) => useLibraryStore.getState().setQuery(event.target.value)}
-          onKeyDown={(event) => event.key === 'Escape' && useLibraryStore.getState().setQuery('')}
-        />
-      </label>
+      <SearchField />
 
       <div ref={scrollRef} className={styles.scroll}>
         {loading && !scans ? <p className={styles.status}>Buscando clips…</p> : null}
@@ -103,7 +160,7 @@ export function LibraryPanel() {
             icon={<Gamepad2 size={18} />}
             title={query ? 'Nada coincide' : 'No hay clips en estas carpetas'}
           >
-            {query ? 'Probá con otro nombre.' : 'Agregá la carpeta de ShadowPlay en Ajustes o abrí un video suelto.'}
+            {query ? 'Probá con otro nombre o fecha.' : 'Agregá la carpeta de ShadowPlay en Ajustes o abrí un video suelto.'}
           </EmptyState>
         ) : null}
         {shownClips > 0

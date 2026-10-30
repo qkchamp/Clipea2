@@ -98,14 +98,88 @@ export function groupByGame(clips: readonly LibraryClip[]): GameFolder[] {
   return folders.sort((a, b) => b.latestMs - a.latestMs)
 }
 
+/** A day typed in the search. `month` 1–12; `year` null until it has 2 or 4 digits: any year. */
+export interface SearchDay {
+  day: number
+  month: number
+  year: number | null
+}
+
+/** The library search split into names and a day and time: "rematch 28/10/26 04:2". */
+export interface LibrarySearch {
+  /** The rest, lowercase: it matches game and file names as before. */
+  text: string
+  day: SearchDay | null
+  /** The hour and the start of the minutes typed so far: "04:" any minute of 4 AM, "04:2" 04:20–04:29. */
+  time: { hour: number; minutes: string } | null
+}
+
+const DAY_WORD = /^(\d{1,2})\/(\d{1,2})(?:\/(\d*))?$/
+const TIME_WORD = /^(\d{1,2}):(\d{0,2})$/
+
+function readDay(first: number, second: number, year: string): SearchDay | null {
+  const fullYear = year.length === 2 ? 2000 + Number(year) : year.length === 4 ? Number(year) : null
+  const isDay = (day: number, month: number): boolean => day >= 1 && day <= 31 && month >= 1 && month <= 12
+  // Day first, as written in Spanish: 03/04 is the 3rd of April. MM/DD only when that is no date.
+  if (isDay(first, second)) return { day: first, month: second, year: fullYear }
+  if (isDay(second, first)) return { day: second, month: first, year: fullYear }
+  return null
+}
+
+/**
+ * Reads "28/10/26", "10/28/2026" or "28/10" (any year) as a day and "04:28" or "04:" as a time.
+ * File and folder names on Windows can't hold "/" or ":": no clip was ever found by such a word,
+ * so reading it as a date hides nothing. One that is no date stays a word and matches nothing.
+ */
+export function parseLibrarySearch(query: string): LibrarySearch {
+  const words: string[] = []
+  let day: SearchDay | null = null
+  let time: LibrarySearch['time'] = null
+  for (const word of query.trim().toLowerCase().split(/\s+/)) {
+    const date = DAY_WORD.exec(word)
+    const clock = TIME_WORD.exec(word)
+    const typedDay = date ? readDay(Number(date[1]), Number(date[2]), date[3] ?? '') : null
+    if (typedDay) day = typedDay
+    else if (clock && Number(clock[1]) <= 23) time = { hour: Number(clock[1]), minutes: clock[2] }
+    else if (word !== '') words.push(word)
+  }
+  return { text: words.join(' '), day, time }
+}
+
+function recordedWhen(ms: number, { day, time }: LibrarySearch): boolean {
+  const at = new Date(ms)
+  if (day && (at.getDate() !== day.day || at.getMonth() + 1 !== day.month || (day.year !== null && at.getFullYear() !== day.year))) {
+    return false
+  }
+  return !time || (at.getHours() === time.hour && String(at.getMinutes()).padStart(2, '0').startsWith(time.minutes))
+}
+
 export function filterGames(games: readonly GameFolder[], query: string): GameFolder[] {
-  const needle = query.trim().toLowerCase()
-  if (needle === '') return [...games]
+  const search = parseLibrarySearch(query)
+  const timed = search.day !== null || search.time !== null
+  if (search.text === '' && !timed) return [...games]
   return games
-    .map((game) =>
-      game.name.toLowerCase().includes(needle)
-        ? game
-        : { ...game, clips: game.clips.filter((clip) => clip.fileName.toLowerCase().includes(needle)) }
-    )
+    .map((game) => {
+      const named = game.name.toLowerCase().includes(search.text)
+      const clips = game.clips.filter(
+        (clip) => (named || clip.fileName.toLowerCase().includes(search.text)) && (!timed || recordedWhen(clipTimestamp(clip), search))
+      )
+      return clips.length === game.clips.length ? game : { ...game, clips }
+    })
     .filter((game) => game.clips.length > 0)
+}
+
+/** The day in the search as a date, in `year` when it has none; null without one or for 31/02. */
+export function dayInSearch(query: string, year: number): Date | null {
+  const { day } = parseLibrarySearch(query)
+  if (!day) return null
+  const date = new Date(day.year ?? year, day.month - 1, day.day)
+  return date.getMonth() === day.month - 1 ? date : null
+}
+
+/** The search with this day in it, in place of the one typed before: "rematch" → "rematch 28/10/26". */
+export function searchOnDay(query: string, at: Date): string {
+  const pad = (value: number): string => String(value).padStart(2, '0')
+  const words = query.trim().split(/\s+/).filter((word) => word !== '' && !DAY_WORD.test(word))
+  return [...words, `${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${pad(at.getFullYear() % 100)}`].join(' ')
 }

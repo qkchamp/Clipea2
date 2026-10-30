@@ -498,6 +498,70 @@
   line-height: 18px;
 }
 
+/* ---------- Calendar ---------- */
+.calendar {
+  display: grid;
+  gap: 8px;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendarTitle {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* 7 days of 30 with 2 between: 222 wide. */
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 30px);
+  gap: 2px;
+}
+
+.calendarWeekday {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 24px;
+  text-align: center;
+}
+
+.calendarDay {
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 0.12s var(--fade),
+    color 0.12s var(--fade);
+}
+
+.calendarDay:hover {
+  background: var(--surface-3);
+}
+
+.calendarOutside {
+  color: var(--text-faint);
+}
+
+.calendarToday {
+  border-color: var(--border-strong);
+  font-weight: 600;
+}
+
+.calendarDay[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
 /* ---------- Tabs ---------- */
 /* A strip of cells split by hairlines, like a top navigation bar. */
 .tabs {
