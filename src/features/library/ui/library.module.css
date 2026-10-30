@@ -52,10 +52,18 @@
   color: var(--text-faint);
 }
 
-/* 24 square, its icon 12 in from the right border like the magnifier from the left. */
-.search .dayButton {
+/* While empty, the clear button is invisible but keeps its room: the hint gets it back. */
+.search input:placeholder-shown::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* Hour and day: 24 square, the last icon 12 in from the right border like the magnifier from the left. */
+.search .pickButton {
   width: 24px;
   height: 24px;
+}
+
+.search .pickButton:last-child {
   margin-right: -5px;
 }
 

@@ -529,7 +529,8 @@
   text-align: center;
 }
 
-.calendarDay {
+/* A day of the Calendar or an hour of the HourPicker. */
+.pickCell {
   height: 30px;
   padding: 0;
   border: 1px solid transparent;
@@ -542,7 +543,7 @@
     color 0.12s var(--fade);
 }
 
-.calendarDay:hover {
+.pickCell:hover {
   background: var(--surface-3);
 }
 
@@ -555,11 +556,29 @@
   font-weight: 600;
 }
 
-.calendarDay[aria-pressed='true'] {
+.pickCell[aria-pressed='true'] {
   border-color: transparent;
   background: var(--accent);
   color: var(--accent-contrast);
   font-weight: 600;
+}
+
+/* ---------- HourPicker ---------- */
+/* As wide as the Calendar: 4 hours a row, AM or PM above. */
+.hourPicker {
+  display: grid;
+  gap: 8px;
+  width: 222px;
+}
+
+.hourPicker > .segmented {
+  display: flex;
+}
+
+.hourGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
 }
 
 /* ---------- Tabs ---------- */

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { formatTime, parseTime } from '@shared/domain/time'
+import { formatHourOfDay, formatTime, parseTime } from '@shared/domain/time'
 import { IconButton, TextInput } from '../atoms'
 import { cx } from '../cx'
 import styles from '../ui.module.css'
@@ -214,7 +214,7 @@ export function Calendar({ value, onPick }: { value: Date | null; onPick: (day: 
             key={day.getTime()}
             type="button"
             className={cx(
-              styles.calendarDay,
+              styles.pickCell,
               day.getMonth() !== month.getMonth() && styles.calendarOutside,
               sameDay(day, today) && styles.calendarToday
             )}
@@ -225,6 +225,43 @@ export function Calendar({ value, onPick }: { value: Date | null; onPick: (day: 
             {day.getDate()}
           </button>
         ))}
+      </div>
+    </div>
+  )
+}
+
+type HalfOfDay = 'am' | 'pm'
+
+/** An hour to pick on a 12-hour clock: AM or PM, then 12, 1 … 11. Opens on `value`'s half (0–23), or now's. */
+export function HourPicker({ value, onPick }: { value: number | null; onPick: (hour: number) => void }) {
+  const [half, setHalf] = useState<HalfOfDay>(() => ((value ?? new Date().getHours()) < 12 ? 'am' : 'pm'))
+  return (
+    <div className={styles.hourPicker}>
+      <SegmentedControl<HalfOfDay>
+        label="AM o PM"
+        value={half}
+        onChange={setHalf}
+        options={[
+          { value: 'am', label: 'AM' },
+          { value: 'pm', label: 'PM' }
+        ]}
+      />
+      <div className={styles.hourGrid}>
+        {Array.from({ length: 12 }, (_, index) => {
+          const hour = index + (half === 'pm' ? 12 : 0)
+          return (
+            <button
+              key={hour}
+              type="button"
+              className={styles.pickCell}
+              aria-pressed={hour === value}
+              aria-label={formatHourOfDay(hour)}
+              onClick={() => onPick(hour)}
+            >
+              {index || 12}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

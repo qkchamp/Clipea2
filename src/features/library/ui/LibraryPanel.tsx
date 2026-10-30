@@ -1,14 +1,14 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarDays, FolderOpen, FolderPlus, Gamepad2, RefreshCw, Search } from 'lucide-react'
+import { CalendarDays, Clock, FolderOpen, FolderPlus, Gamepad2, RefreshCw, Search } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { IconButton } from '@shared/ui/atoms'
-import { Calendar, EmptyState, PanelHeader } from '@shared/ui/molecules'
+import { Calendar, EmptyState, HourPicker, PanelHeader } from '@shared/ui/molecules'
 import { Popover } from '@shared/ui/organisms/Popover'
 import { useScrollingFlag } from '@shared/ui/useScrollingFlag'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
-import { dayInSearch, filterGames, searchOnDay } from '../domain/libraryClip'
+import { dayInSearch, filterGames, hourInSearch, searchOnDay, searchOnHour } from '../domain/libraryClip'
 import { GameGroup } from './GameGroup'
 import { RootFolder } from './RootFolder'
 import { useLibraryStore } from './libraryStore'
@@ -23,12 +23,23 @@ export function openRecording(path: string): void {
 
 const SEARCH_HINT = 'Buscar juego, clip o fecha'
 
-/** Names, a day ("28/10/26") or a time ("04:28"); the day can also be picked on a calendar. */
+const PICKERS = {
+  hour: { label: 'Buscar por hora', icon: <Clock size={14} /> },
+  day: { label: 'Buscar por fecha', icon: <CalendarDays size={14} /> }
+} as const
+
+type Picker = keyof typeof PICKERS
+
+/** Names, a day ("28/10/26") or a time ("04:28", "4 PM"); the hour and the day can also be picked. */
 function SearchField() {
   const query = useLibraryStore((state) => state.query)
-  const [picking, setPicking] = useState(false)
+  const [picking, setPicking] = useState<Picker | null>(null)
   const field = useRef<HTMLLabelElement>(null)
   const setQuery = (value: string): void => useLibraryStore.getState().setQuery(value)
+  const pick = (value: string): void => {
+    setQuery(value)
+    setPicking(null)
+  }
 
   return (
     <>
@@ -36,33 +47,34 @@ function SearchField() {
         <Search size={14} />
         <input
           type="search"
-          // Its own name: the calendar button inside the label would lend it its own.
+          // Its own name: the buttons inside the label would lend it theirs.
           aria-label={SEARCH_HINT}
           placeholder={SEARCH_HINT}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => event.key === 'Escape' && setQuery('')}
         />
-        <IconButton
-          className={styles.dayButton}
-          label="Buscar por fecha"
-          active={picking}
-          aria-haspopup="dialog"
-          aria-expanded={picking}
-          onClick={() => setPicking((open) => !open)}
-        >
-          <CalendarDays size={14} />
-        </IconButton>
+        {(Object.keys(PICKERS) as Picker[]).map((picker) => (
+          <IconButton
+            key={picker}
+            className={styles.pickButton}
+            label={PICKERS[picker].label}
+            active={picking === picker}
+            aria-haspopup="dialog"
+            aria-expanded={picking === picker}
+            onClick={() => setPicking((open) => (open === picker ? null : picker))}
+          >
+            {PICKERS[picker].icon}
+          </IconButton>
+        ))}
       </label>
       {picking ? (
-        <Popover anchor={field} label="Buscar por fecha" onClose={() => setPicking(false)}>
-          <Calendar
-            value={dayInSearch(query, new Date().getFullYear())}
-            onPick={(day) => {
-              setQuery(searchOnDay(query, day))
-              setPicking(false)
-            }}
-          />
+        <Popover anchor={field} label={PICKERS[picking].label} onClose={() => setPicking(null)}>
+          {picking === 'hour' ? (
+            <HourPicker value={hourInSearch(query)} onPick={(hour) => pick(searchOnHour(query, hour))} />
+          ) : (
+            <Calendar value={dayInSearch(query, new Date().getFullYear())} onPick={(day) => pick(searchOnDay(query, day))} />
+          )}
         </Popover>
       ) : null}
     </>

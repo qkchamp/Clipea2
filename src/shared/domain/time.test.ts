@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { clamp, formatBytes, formatDuration, formatTime, parseTime } from './time'
+import { clamp, formatBytes, formatDuration, formatHourOfDay, formatTime, parseTime } from './time'
+
+describe('formatHourOfDay', () => {
+  it('names the hour on a 12-hour clock', () => {
+    expect(formatHourOfDay(0)).toBe('12 AM')
+    expect(formatHourOfDay(4)).toBe('4 AM')
+    expect(formatHourOfDay(12)).toBe('12 PM')
+    expect(formatHourOfDay(23)).toBe('11 PM')
+  })
+})
 
 describe('formatTime', () => {
   it('formats minutes, seconds and hundredths', () => {

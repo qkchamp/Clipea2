@@ -25,6 +25,11 @@ export function formatDuration(seconds: number): string {
   return formatTime(safe, 0)
 }
 
+/** An hour of the day (0–23) on a 12-hour clock: 0 → "12 AM", 16 → "4 PM". */
+export function formatHourOfDay(hour: number): string {
+  return `${hour % 12 || 12} ${hour < 12 ? 'AM' : 'PM'}`
+}
+
 /**
  * Parses what a person would type in a time field.
  * Accepts "50", "50,5", "1:19", "01:19.250", "1:02:03", "1m19s", "90s".

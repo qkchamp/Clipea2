@@ -6,12 +6,14 @@ import {
   filterGames,
   formatRecordedAt,
   groupByGame,
+  hourInSearch,
   isInstantReplay,
   isVideoFile,
   parseLibrarySearch,
   parseRecordedAt,
   recordingLabel,
   searchOnDay,
+  searchOnHour,
   stripExtension,
   type LibraryClip
 } from './libraryClip'
@@ -158,6 +160,29 @@ describe('searching by date and time', () => {
   it('puts the picked day in the search, in place of the one typed', () => {
     expect(searchOnDay('Rematch 03/04', new Date(2026, 9, 28))).toBe('Rematch 28/10/26')
     expect(searchOnDay('', new Date(2026, 3, 3))).toBe('03/04/26')
+  })
+
+  it('reads the hour with AM and PM, with or without a space', () => {
+    expect(parseLibrarySearch('4 PM').time).toEqual({ hour: 16, minutes: '' })
+    expect(parseLibrarySearch('4pm').time).toEqual({ hour: 16, minutes: '' })
+    expect(parseLibrarySearch('12 am').time).toEqual({ hour: 0, minutes: '' })
+    expect(parseLibrarySearch('12 PM').time).toEqual({ hour: 12, minutes: '' })
+    expect(parseLibrarySearch('4:30 am').time).toEqual({ hour: 4, minutes: '30' })
+    expect(parseLibrarySearch('13 pm')).toEqual({ text: '13 pm', day: null, time: null })
+    expect(parseLibrarySearch('4')).toEqual({ text: '4', day: null, time: null })
+  })
+
+  it('finds the clips of an hour picked with AM or PM', () => {
+    expect(found('4 AM')).toEqual(['Rematch 2026.10.28 - 04.28.12.01.DVR.mp4', 'Rematch 2025.10.28 - 04.10.00.03.DVR.mp4'])
+    expect(found('28/10/26 11 pm')).toEqual(['Rematch 2026.10.28 - 23.05.00.02.DVR.mp4'])
+  })
+
+  it('puts the picked hour in the search, in place of the time typed', () => {
+    expect(searchOnHour('Rematch 28/10/26 04:2', 16)).toBe('Rematch 28/10/26 4 PM')
+    expect(searchOnHour('rematch 9 am', 0)).toBe('rematch 12 AM')
+    expect(searchOnDay('rematch 4 PM', new Date(2026, 9, 28))).toBe('rematch 4 PM 28/10/26')
+    expect(hourInSearch('28/10 4 PM')).toBe(16)
+    expect(hourInSearch('rematch')).toBeNull()
   })
 
   it('gives the calendar the day searched', () => {

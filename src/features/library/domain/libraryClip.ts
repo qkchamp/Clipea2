@@ -1,3 +1,5 @@
+import { formatHourOfDay } from '@shared/domain/time'
+
 export const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.mov', '.webm', '.m4v'] as const
 
 export interface LibraryClip {
@@ -105,17 +107,46 @@ export interface SearchDay {
   year: number | null
 }
 
+/** A time typed in the search: the hour (0–23) and the start of the minutes typed so far. */
+export interface SearchTime {
+  hour: number
+  /** "" any minute of the hour, "2" 20–29, "28" just that one. */
+  minutes: string
+}
+
 /** The library search split into names and a day and time: "rematch 28/10/26 04:2". */
 export interface LibrarySearch {
   /** The rest, lowercase: it matches game and file names as before. */
   text: string
   day: SearchDay | null
-  /** The hour and the start of the minutes typed so far: "04:" any minute of 4 AM, "04:2" 04:20–04:29. */
-  time: { hour: number; minutes: string } | null
+  time: SearchTime | null
 }
 
 const DAY_WORD = /^(\d{1,2})\/(\d{1,2})(?:\/(\d*))?$/
-const TIME_WORD = /^(\d{1,2}):(\d{0,2})$/
+/** "04:28", "04:", "4 PM", "4:30pm": a time has its colon or its AM/PM. */
+const TIME_WORD = /^(\d{1,2})(:(\d{0,2}))?(?: ?([ap]m))?$/i
+
+function readTime(word: string): SearchTime | null {
+  const match = TIME_WORD.exec(word)
+  if (!match || (!match[2] && !match[4])) return null
+  const hour = Number(match[1])
+  const minutes = match[3] ?? ''
+  const half = match[4]?.toLowerCase()
+  if (!half) return hour <= 23 ? { hour, minutes } : null
+  if (hour < 1 || hour > 12) return null
+  return { hour: (hour % 12) + (half === 'pm' ? 12 : 0), minutes }
+}
+
+/** The words of a search, with "4 PM" kept as one. */
+function searchWords(query: string): string[] {
+  const words: string[] = []
+  for (const word of query.trim().split(/\s+/)) {
+    const last = words.length - 1
+    if (/^[ap]m$/i.test(word) && /^\d{1,2}(:\d{0,2})?$/.test(words[last] ?? '')) words[last] = `${words[last]} ${word}`
+    else if (word !== '') words.push(word)
+  }
+  return words
+}
 
 function readDay(first: number, second: number, year: string): SearchDay | null {
   const fullYear = year.length === 2 ? 2000 + Number(year) : year.length === 4 ? Number(year) : null
@@ -127,21 +158,21 @@ function readDay(first: number, second: number, year: string): SearchDay | null 
 }
 
 /**
- * Reads "28/10/26", "10/28/2026" or "28/10" (any year) as a day and "04:28" or "04:" as a time.
- * File and folder names on Windows can't hold "/" or ":": no clip was ever found by such a word,
- * so reading it as a date hides nothing. One that is no date stays a word and matches nothing.
+ * Reads "28/10/26", "10/28/2026" or "28/10" (any year) as a day and "04:28", "04:" or "4 PM" as a time.
+ * File and folder names on Windows can't hold "/" or ":", so those words never found a clip by name;
+ * only "4 PM" could, and a clip named like that is rare. A word that is no date stays a word.
  */
 export function parseLibrarySearch(query: string): LibrarySearch {
   const words: string[] = []
   let day: SearchDay | null = null
-  let time: LibrarySearch['time'] = null
-  for (const word of query.trim().toLowerCase().split(/\s+/)) {
+  let time: SearchTime | null = null
+  for (const word of searchWords(query.toLowerCase())) {
     const date = DAY_WORD.exec(word)
-    const clock = TIME_WORD.exec(word)
     const typedDay = date ? readDay(Number(date[1]), Number(date[2]), date[3] ?? '') : null
+    const typedTime = typedDay ? null : readTime(word)
     if (typedDay) day = typedDay
-    else if (clock && Number(clock[1]) <= 23) time = { hour: Number(clock[1]), minutes: clock[2] }
-    else if (word !== '') words.push(word)
+    else if (typedTime) time = typedTime
+    else words.push(word)
   }
   return { text: words.join(' '), day, time }
 }
@@ -180,6 +211,16 @@ export function dayInSearch(query: string, year: number): Date | null {
 /** The search with this day in it, in place of the one typed before: "rematch" → "rematch 28/10/26". */
 export function searchOnDay(query: string, at: Date): string {
   const pad = (value: number): string => String(value).padStart(2, '0')
-  const words = query.trim().split(/\s+/).filter((word) => word !== '' && !DAY_WORD.test(word))
+  const words = searchWords(query).filter((word) => !DAY_WORD.test(word))
   return [...words, `${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${pad(at.getFullYear() % 100)}`].join(' ')
+}
+
+/** The hour in the search (0–23), or null. */
+export function hourInSearch(query: string): number | null {
+  return parseLibrarySearch(query).time?.hour ?? null
+}
+
+/** The search with this hour in it, in place of the time typed before: "28/10/26" → "28/10/26 4 PM". */
+export function searchOnHour(query: string, hour: number): string {
+  return [...searchWords(query).filter((word) => !readTime(word)), formatHourOfDay(hour)].join(' ')
 }
