@@ -104,7 +104,7 @@ export function TrimPanel() {
   }
 
   return (
-    <section className={styles.panel} aria-label="Recorte">
+    <section className={styles.panel} aria-label="Recorte" data-drawing={drawingMode || undefined}>
       <Timeline
         duration={duration}
         range={selection}

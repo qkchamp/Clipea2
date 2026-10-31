@@ -556,3 +556,10 @@
   font-size: 12px;
   line-height: 18px;
 }
+
+/* Short windows: closer to the video. */
+@media (max-height: 640px) {
+  .toolbar {
+    margin-bottom: 6px;
+  }
+}

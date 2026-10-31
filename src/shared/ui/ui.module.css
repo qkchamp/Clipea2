@@ -699,3 +699,9 @@
   color: var(--ink-contrast);
 }
 
+/* Short windows: lower panel headers (40 instead of 48) leave the height to the lists. */
+@media (max-height: 640px) {
+  .panelHeader {
+    min-height: 40px;
+  }
+}

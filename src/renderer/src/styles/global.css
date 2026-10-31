@@ -54,6 +54,10 @@
   /* Geometry: shell columns, the 16 inset of every column and the control heights. */
   --col-left: 296px;
   --col-right: 356px;
+  --rail: 44px;
+  /* What each side column takes right now: its width, or a rail's on narrow windows (below). */
+  --shell-left: var(--col-left);
+  --shell-right: var(--col-right);
   --gutter: 16px;
   --size-chip: 18px;
   --size-badge: 20px;
@@ -162,6 +166,30 @@ input {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+}
+
+/*
+ * Narrow windows fold the side columns into rails, the library first: the center keeps the room its
+ * controls need (468, what it had at the old 1120 minimum). Same widths as the queries in App.tsx.
+ */
+@media (max-width: 1119px) {
+  :root {
+    --shell-left: var(--rail);
+  }
+}
+
+@media (max-width: 879px) {
+  :root {
+    --shell-right: var(--rail);
+  }
+}
+
+/* Short windows: tighter insets and a smaller play button leave the height to the video. */
+@media (max-height: 640px) {
+  :root {
+    --gutter: 10px;
+    --size-play: 32px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

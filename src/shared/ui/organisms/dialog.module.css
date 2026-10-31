@@ -89,3 +89,10 @@
 .dialog:focus {
   outline: none;
 }
+
+/* Short windows: dialogs keep more of their height. */
+@media (max-height: 640px) {
+  .backdrop {
+    padding: 12px;
+  }
+}

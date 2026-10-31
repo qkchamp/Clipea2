@@ -19,9 +19,10 @@
 }
 
 .workspace {
+  position: relative;
   display: grid;
   flex: 1;
-  grid-template-columns: var(--col-left) minmax(0, 1fr) var(--col-right);
+  grid-template-columns: var(--shell-left) minmax(0, 1fr) var(--shell-right);
   min-height: 0;
 }
 
@@ -31,6 +32,7 @@
  * transform: a transform hint would turn their text grayscale.
  */
 .left {
+  position: relative;
   min-height: 0;
   border-right: 1px solid var(--border);
   background: var(--surface);
@@ -45,14 +47,22 @@
 }
 
 .right {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
   border-left: 1px solid var(--border);
   background: var(--surface);
   will-change: opacity;
+}
+
+/* What the column shows: on wide windows it fills it, on narrow ones it is the drawer over the video. */
+.drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebarBody {
@@ -62,4 +72,129 @@
   /* Montage header + one card; past that the Exportar body scrolls instead. */
   min-height: 130px;
   overflow-y: auto;
+}
+
+/* The folded column: one button per panel, in the order they sit in the column. */
+.rail {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  /* (44 - 32) / 2: the buttons centered; the top one on the 16 line, like the tabs. */
+  padding: var(--gutter) 6px;
+}
+
+/* Exportar stays at the bottom, where the export panel sits in the column. */
+.railEnd {
+  margin-top: auto;
+}
+
+/* How many cuts or exports there are, on the button's corner (like the tab's count). */
+.railCount {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+
+.railButton {
+  position: relative;
+}
+
+/* An export running while the panel is folded: a dot on Exportar. */
+.railDot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Dims the video behind an open drawer; a click on it closes the drawer. */
+.scrim {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Library folded (same width as in App.tsx). */
+@media (max-width: 1119px) {
+  .left {
+    z-index: 10;
+  }
+
+  .left > .rail {
+    display: flex;
+  }
+
+  .left > .drawer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 100%;
+    width: min(var(--col-left), calc(100vw - 2 * var(--rail)));
+    height: auto;
+    border-right: 1px solid var(--border-strong);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    visibility: hidden;
+  }
+
+  .left[data-open] > .drawer,
+  .scrim[data-for='library'] {
+    display: flex;
+    visibility: visible;
+  }
+}
+
+/* Montage, history and export folded too. */
+@media (max-width: 879px) {
+  .right {
+    z-index: 10;
+  }
+
+  .right > .rail {
+    display: flex;
+  }
+
+  .right > .drawer {
+    position: absolute;
+    top: 0;
+    right: 100%;
+    bottom: 0;
+    width: min(var(--col-right), calc(100vw - 2 * var(--rail)));
+    height: auto;
+    border-left: 1px solid var(--border-strong);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    visibility: hidden;
+  }
+
+  .right[data-open] > .drawer,
+  .scrim[data-for='sidebar'] {
+    display: flex;
+    visibility: visible;
+  }
+}
+
+/* Short windows: about a third of the height for the montage (one whole card); the export body scrolls under its button. */
+@media (max-height: 640px) {
+  .sidebarBody {
+    min-height: max(88px, 36vh);
+  }
 }

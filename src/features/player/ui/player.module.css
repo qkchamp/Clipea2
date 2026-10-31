@@ -547,3 +547,11 @@
     padding-left: 2px;
   }
 }
+
+/* Short windows: the row hugs the 32 buttons (6 + 32 + 6), the height goes to the video. */
+@media (max-height: 640px) {
+  .controls {
+    min-height: 44px;
+    padding-block: 6px;
+  }
+}

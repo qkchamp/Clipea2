@@ -119,36 +119,38 @@ export function ExportPanel() {
           onChange={(event) => useExportStore.getState().setFileName(event.target.value)}
         />
 
-        {job.status === 'running' || job.status === 'preparing' ? (
-          <div className={styles.progress}>
-            <div className={styles.progressHead}>
-              <span className={styles.progressLabel}>
-                <span className={styles.progressName} title={job.label}>
-                  {job.label}
+        <div className={styles.action}>
+          {job.status === 'running' || job.status === 'preparing' ? (
+            <div className={styles.progress}>
+              <div className={styles.progressHead}>
+                <span className={styles.progressLabel}>
+                  <span className={styles.progressName} title={job.label}>
+                    {job.label}
+                  </span>
+                  {job.status === 'preparing'
+                    ? 'Preparando…'
+                    : `${Math.round(job.fraction * 100)}%${job.speed ? ` · ${job.speed.toFixed(1).replace('.', ',')}x` : ''}`}
                 </span>
-                {job.status === 'preparing'
-                  ? 'Preparando…'
-                  : `${Math.round(job.fraction * 100)}%${job.speed ? ` · ${job.speed.toFixed(1).replace('.', ',')}x` : ''}`}
-              </span>
-              <Button size="sm" variant="ghost" icon={<X size={14} />} disabled={job.status !== 'running'} onClick={cancelExport}>
-                Cancelar
-              </Button>
+                <Button size="sm" variant="ghost" icon={<X size={14} />} disabled={job.status !== 'running'} onClick={cancelExport}>
+                  Cancelar
+                </Button>
+              </div>
+              <ProgressBar value={job.status === 'running' ? job.fraction : 0} label="Progreso de la exportación" />
+              {job.status === 'running' && job.note ? <p className={styles.note} data-tone="warning">{job.note}</p> : null}
             </div>
-            <ProgressBar value={job.status === 'running' ? job.fraction : 0} label="Progreso de la exportación" />
-            {job.status === 'running' && job.note ? <p className={styles.note} data-tone="warning">{job.note}</p> : null}
-          </div>
-        ) : (
-          <Button
-            variant="primary"
-            size="lg"
-            block
-            icon={<Upload size={18} />}
-            disabled={!target || !planning || (limit !== null && !planning.plan.fits) || !ffmpeg?.found}
-            onClick={() => void startExport()}
-          >
-            Exportar a disco <Kbd>Ctrl+E</Kbd>
-          </Button>
-        )}
+          ) : (
+            <Button
+              variant="primary"
+              size="lg"
+              block
+              icon={<Upload size={18} />}
+              disabled={!target || !planning || (limit !== null && !planning.plan.fits) || !ffmpeg?.found}
+              onClick={() => void startExport()}
+            >
+              Exportar a disco <Kbd>Ctrl+E</Kbd>
+            </Button>
+          )}
+        </div>
 
         {job.status === 'error' ? (
           <p className={styles.note} data-tone="danger" role="alert">

@@ -3,8 +3,8 @@
   position: fixed;
   position-anchor: --trim-bar;
   position-visibility: always;
-  left: var(--col-left);
-  right: var(--col-right);
+  left: var(--shell-left);
+  right: var(--shell-right);
   bottom: calc(anchor(top, calc(var(--gutter) + var(--size-lg))) + 6px);
   z-index: 60;
   display: flex;

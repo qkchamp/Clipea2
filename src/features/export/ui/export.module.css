@@ -23,6 +23,11 @@
   min-width: 0;
 }
 
+/* The export button (or its progress): one more item of the body, kept in view on short windows (below). */
+.action {
+  display: contents;
+}
+
 .target {
   margin: 0;
   color: var(--text-muted);
@@ -211,4 +216,37 @@
   font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/*
+ * Short windows: a tighter body and meter leave room for the montage above, and the button stays at
+ * the bottom of the panel while the rest scrolls under it.
+ */
+@media (max-height: 640px) {
+  .body {
+    gap: 8px;
+  }
+
+  .specs {
+    margin-top: 0;
+  }
+
+  .meter {
+    gap: 6px;
+    padding: 7px 11px;
+  }
+
+  .meterValue strong {
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  .action {
+    position: sticky;
+    bottom: calc(-1 * var(--gutter));
+    display: grid;
+    margin-bottom: calc(-1 * var(--gutter));
+    padding: 0 0 var(--gutter);
+    background: var(--surface);
+  }
 }

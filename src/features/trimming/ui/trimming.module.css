@@ -549,3 +549,24 @@
     flex: 1;
   }
 }
+
+/* Short windows: a lower filmstrip and tighter gaps leave the height to the video. */
+@media (max-height: 640px) {
+  .panel {
+    gap: 8px;
+  }
+
+  .track {
+    height: 48px;
+  }
+
+  /* Two lanes in view (they scroll), the third one's room goes to the video. */
+  .drawings {
+    max-height: 34px;
+  }
+
+  /* While drawing, the trim bar steps aside: the drawing's times are set on its bar in the timeline. */
+  .panel[data-drawing] .rangeBar {
+    display: none;
+  }
+}

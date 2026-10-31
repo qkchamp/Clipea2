@@ -42,7 +42,8 @@ const KEY_BINDINGS: Record<string, Binding> = {
   d: () => player().sourcePath && drawings().setDrawing(!drawings().drawing),
   '?': () => useUiStore.getState().openDialog('help'),
   escape: () => {
-    if (drawings().drawing) drawings().setDrawing(false)
+    if (useUiStore.getState().drawer) useUiStore.getState().closeDrawer()
+    else if (drawings().drawing) drawings().setDrawing(false)
     else player().stopPreview()
   },
   // The drawing picked with the cursor or on its bar in the timeline.

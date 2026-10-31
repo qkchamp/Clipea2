@@ -21,8 +21,8 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1480,
     height: 920,
-    minWidth: 1120,
-    minHeight: 700,
+    minWidth: 600,
+    minHeight: 440,
     show: false,
     title: 'Clipea2',
     backgroundColor: '#0d0e12',
