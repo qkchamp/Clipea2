@@ -302,7 +302,7 @@ try {
   await page.waitForFunction((name) => decodeURIComponent(document.querySelector('video')?.src ?? '').endsWith(name), other)
   const exportMeta = page.locator('section[aria-label="Exportar"] header > span').first()
   await page.waitForFunction(() => /^\d+,\d s · Discord/.test(document.querySelector('section[aria-label="Exportar"] header > span')?.textContent ?? ''))
-  await page.getByText('Peso estimado').waitFor({ timeout: 10_000 })
+  await page.getByText('Peso máximo').waitFor({ timeout: 10_000 })
   const placeholder = await nameField.getAttribute('placeholder')
   check('el siguiente clip muestra su peso estimado', true, `${await exportMeta.innerText()} · nombre sugerido «${placeholder}»`)
 

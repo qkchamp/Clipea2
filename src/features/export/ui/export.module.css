@@ -47,51 +47,94 @@
 .meter {
   position: relative;
   display: grid;
-  gap: 12px;
-  padding: 11px;
+  /* The weight carries its limit ("19,0 MB de 20,0 MB"): a bit more room than the quality. */
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  padding: 11px 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--tile);
 }
 
-.meterTop {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+/* Label, value and bar; both halves 12 in from the box and from the line between them. */
+.stat {
+  display: grid;
+  grid-template-rows: auto auto 4px;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 11px;
 }
 
-.meterLabel {
+.stat + .stat {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.statLabel {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
   line-height: 16px;
 }
 
-.meterValue {
+.statValue {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: var(--text-faint);
+  font-size: 12px;
+  line-height: 24px;
+  white-space: nowrap;
 }
 
-.meterValue strong {
-  margin: 0 2px;
+.statValue strong {
   color: var(--text);
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 500;
-  line-height: 32px;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
-.meterLimit {
-  color: var(--text-faint);
+/* Four steps, filled up to the grade; the same 4px as the weight's bar beside it. */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
 }
 
+.steps span {
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.steps span[data-on] {
+  background: var(--ink);
+}
+
+.stat[data-tone='warning'] strong {
+  color: var(--warning);
+}
+
+.stat[data-tone='warning'] .steps span[data-on] {
+  background: var(--warning);
+}
+
+.stat[data-tone='danger'] strong {
+  color: var(--danger);
+}
+
+.stat[data-tone='danger'] .steps span[data-on] {
+  background: var(--danger);
+}
+
+/* Doesn't fit the limit: the box and the weight say so in red. */
 .meter[data-tone='danger'] {
   border-color: rgba(242, 84, 91, 0.4);
 }
 
-.meter[data-tone='danger'] .meterValue strong {
+.meter[data-tone='danger'] .stat:first-child strong {
   color: var(--danger);
 }
 
@@ -232,13 +275,11 @@
   }
 
   .meter {
-    gap: 6px;
-    padding: 7px 11px;
+    padding-block: 7px;
   }
 
-  .meterValue strong {
-    font-size: 22px;
-    line-height: 28px;
+  .stat {
+    gap: 4px;
   }
 
   .action {
