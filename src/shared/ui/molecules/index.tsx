@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { heatLevel } from '@shared/domain/heat'
 import { formatHourOfDay, formatTime, parseTime } from '@shared/domain/time'
 import { IconButton, TextInput } from '../atoms'
 import { cx } from '../cx'
@@ -178,8 +179,34 @@ const WEEKDAYS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do']
 const sameDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
+/** How many of something each cell of a picker holds: it colors the cell, green for few to red for many. */
+export interface Heat<T> {
+  count: (key: T) => number
+  max: number
+  /** 13 → "13 clips": said on hover, so the color is never the only way to know. */
+  describe: (count: number) => string
+}
+
+/** A cell's name, plus its count and color when it holds any. */
+function heatCell<T>(heat: Heat<T> | undefined, key: T, label: string) {
+  const count = heat?.count(key) ?? 0
+  if (!heat || count === 0) return { 'aria-label': label }
+  const named = `${label} · ${heat.describe(count)}`
+  return { 'aria-label': named, title: named, 'data-heat': '', style: { '--heat': heatLevel(count, heat.max).toFixed(3) } as CSSProperties }
+}
+
+function HeatLegend() {
+  return (
+    <div className={styles.heatLegend} aria-hidden>
+      Pocos
+      <span className={styles.heatScale} />
+      Muchos
+    </div>
+  )
+}
+
 /** A month to pick a day from, Monday first, like the date pickers of Windows. Opens on `value`'s month, or today's. */
-export function Calendar({ value, onPick }: { value: Date | null; onPick: (day: Date) => void }) {
+export function Calendar({ value, heat, onPick }: { value: Date | null; heat?: Heat<Date>; onPick: (day: Date) => void }) {
   const [month, setMonth] = useState(() => {
     const start = value ?? new Date()
     return new Date(start.getFullYear(), start.getMonth(), 1)
@@ -219,13 +246,14 @@ export function Calendar({ value, onPick }: { value: Date | null; onPick: (day: 
               sameDay(day, today) && styles.calendarToday
             )}
             aria-pressed={value !== null && sameDay(day, value)}
-            aria-label={`${day.getDate()} de ${MONTH_NAMES[day.getMonth()]} de ${day.getFullYear()}`}
+            {...heatCell(heat, day, `${day.getDate()} de ${MONTH_NAMES[day.getMonth()]} de ${day.getFullYear()}`)}
             onClick={() => onPick(day)}
           >
             {day.getDate()}
           </button>
         ))}
       </div>
+      {heat && heat.max > 0 ? <HeatLegend /> : null}
     </div>
   )
 }
@@ -233,7 +261,7 @@ export function Calendar({ value, onPick }: { value: Date | null; onPick: (day: 
 type HalfOfDay = 'am' | 'pm'
 
 /** An hour to pick on a 12-hour clock: AM or PM, then 12, 1 … 11. Opens on `value`'s half (0–23), or now's. */
-export function HourPicker({ value, onPick }: { value: number | null; onPick: (hour: number) => void }) {
+export function HourPicker({ value, heat, onPick }: { value: number | null; heat?: Heat<number>; onPick: (hour: number) => void }) {
   const [half, setHalf] = useState<HalfOfDay>(() => ((value ?? new Date().getHours()) < 12 ? 'am' : 'pm'))
   return (
     <div className={styles.hourPicker}>
@@ -255,7 +283,7 @@ export function HourPicker({ value, onPick }: { value: number | null; onPick: (h
               type="button"
               className={styles.pickCell}
               aria-pressed={hour === value}
-              aria-label={formatHourOfDay(hour)}
+              {...heatCell(heat, hour, formatHourOfDay(hour))}
               onClick={() => onPick(hour)}
             >
               {index || 12}
@@ -263,6 +291,7 @@ export function HourPicker({ value, onPick }: { value: number | null; onPick: (h
           )
         })}
       </div>
+      {heat && heat.max > 0 ? <HeatLegend /> : null}
     </div>
   )
 }

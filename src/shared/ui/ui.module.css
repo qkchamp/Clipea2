@@ -556,11 +556,51 @@
   font-weight: 600;
 }
 
+/*
+ * Heat: --heat (0–1) runs green → yellow → red, filled solid with dark numbers: on black a tint of
+ * yellow turns brown. The picked cell is white, like the picked AM/PM, so no color means two things.
+ */
+.pickCell[data-heat]:not([aria-pressed='true']) {
+  --heat-color: color-mix(
+    in oklch,
+    color-mix(in oklch, var(--heat-low), var(--heat-mid) clamp(0%, calc(var(--heat) * 200%), 100%)),
+    var(--heat-high) clamp(0%, calc((var(--heat) - 0.5) * 200%), 100%)
+  );
+  background: var(--heat-color);
+  color: var(--ink-contrast);
+  font-weight: 600;
+}
+
+.pickCell[data-heat]:not([aria-pressed='true']):hover {
+  background: color-mix(in oklch, var(--heat-color), white 20%);
+}
+
+/* Days of the months around: their heat, faded. */
+.calendarOutside[data-heat] {
+  opacity: 0.45;
+}
+
 .pickCell[aria-pressed='true'] {
   border-color: transparent;
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--ink);
+  color: var(--ink-contrast);
   font-weight: 600;
+}
+
+.heatLegend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.heatScale {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg in oklch, var(--heat-low), var(--heat-mid), var(--heat-high));
 }
 
 /* ---------- HourPicker ---------- */
@@ -658,3 +698,4 @@
   background: var(--ink);
   color: var(--ink-contrast);
 }
+

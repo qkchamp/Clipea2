@@ -2,13 +2,23 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, Clock, FolderOpen, FolderPlus, Gamepad2, RefreshCw, Search } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { IconButton } from '@shared/ui/atoms'
-import { Calendar, EmptyState, HourPicker, PanelHeader } from '@shared/ui/molecules'
+import { Calendar, EmptyState, HourPicker, PanelHeader, type Heat } from '@shared/ui/molecules'
 import { Popover } from '@shared/ui/organisms/Popover'
 import { useScrollingFlag } from '@shared/ui/useScrollingFlag'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
-import { dayInSearch, filterGames, hourInSearch, searchOnDay, searchOnHour } from '../domain/libraryClip'
+import {
+  clipsPerDay,
+  clipsPerHour,
+  dayInSearch,
+  dayKey,
+  filterGames,
+  hourInSearch,
+  searchOnDay,
+  searchOnHour,
+  type GameFolder
+} from '../domain/libraryClip'
 import { GameGroup } from './GameGroup'
 import { RootFolder } from './RootFolder'
 import { useLibraryStore } from './libraryStore'
@@ -29,6 +39,35 @@ const PICKERS = {
 } as const
 
 type Picker = keyof typeof PICKERS
+
+const describeClips = (count: number): string => `${count} ${count === 1 ? 'clip' : 'clips'}`
+
+/**
+ * The clips the pickers count: the list already in memory, counted when a picker opens (a few ms for
+ * thousands of clips) and again only when the list or the search changes.
+ */
+function useLibraryGames(): GameFolder[] {
+  const scans = useLibraryStore((state) => state.scans)
+  return useMemo(() => scans?.flatMap((scan) => scan.games) ?? [], [scans])
+}
+
+function HourSearch({ query, onPick }: { query: string; onPick: (hour: number) => void }) {
+  const games = useLibraryGames()
+  const heat = useMemo((): Heat<number> => {
+    const perHour = clipsPerHour(games, query)
+    return { count: (hour) => perHour[hour], max: Math.max(...perHour), describe: describeClips }
+  }, [games, query])
+  return <HourPicker value={hourInSearch(query)} heat={heat} onPick={onPick} />
+}
+
+function DaySearch({ query, onPick }: { query: string; onPick: (day: Date) => void }) {
+  const games = useLibraryGames()
+  const heat = useMemo((): Heat<Date> => {
+    const perDay = clipsPerDay(games, query)
+    return { count: (day) => perDay.get(dayKey(day)) ?? 0, max: Math.max(0, ...perDay.values()), describe: describeClips }
+  }, [games, query])
+  return <Calendar value={dayInSearch(query, new Date().getFullYear())} heat={heat} onPick={onPick} />
+}
 
 /** Names, a day ("28/10/26") or a time ("04:28", "4 PM"); the hour and the day can also be picked. */
 function SearchField() {
@@ -71,9 +110,9 @@ function SearchField() {
       {picking ? (
         <Popover anchor={field} label={PICKERS[picking].label} onClose={() => setPicking(null)}>
           {picking === 'hour' ? (
-            <HourPicker value={hourInSearch(query)} onPick={(hour) => pick(searchOnHour(query, hour))} />
+            <HourSearch query={query} onPick={(hour) => pick(searchOnHour(query, hour))} />
           ) : (
-            <Calendar value={dayInSearch(query, new Date().getFullYear())} onPick={(day) => pick(searchOnDay(query, day))} />
+            <DaySearch query={query} onPick={(day) => pick(searchOnDay(query, day))} />
           )}
         </Popover>
       ) : null}

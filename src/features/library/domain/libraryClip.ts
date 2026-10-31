@@ -178,6 +178,7 @@ export function parseLibrarySearch(query: string): LibrarySearch {
 }
 
 function recordedWhen(ms: number, { day, time }: LibrarySearch): boolean {
+  if (!day && !time) return true
   const at = new Date(ms)
   if (day && (at.getDate() !== day.day || at.getMonth() + 1 !== day.month || (day.year !== null && at.getFullYear() !== day.year))) {
     return false
@@ -185,19 +186,52 @@ function recordedWhen(ms: number, { day, time }: LibrarySearch): boolean {
   return !time || (at.getHours() === time.hour && String(at.getMinutes()).padStart(2, '0').startsWith(time.minutes))
 }
 
+/** The clips of a game the search finds: all of them when the game's name matches the words. */
+function foundIn(game: GameFolder, search: LibrarySearch): LibraryClip[] {
+  const named = game.name.toLowerCase().includes(search.text)
+  return game.clips.filter((clip) => (named || clip.fileName.toLowerCase().includes(search.text)) && recordedWhen(clipTimestamp(clip), search))
+}
+
 export function filterGames(games: readonly GameFolder[], query: string): GameFolder[] {
   const search = parseLibrarySearch(query)
-  const timed = search.day !== null || search.time !== null
-  if (search.text === '' && !timed) return [...games]
+  if (search.text === '' && !search.day && !search.time) return [...games]
   return games
     .map((game) => {
-      const named = game.name.toLowerCase().includes(search.text)
-      const clips = game.clips.filter(
-        (clip) => (named || clip.fileName.toLowerCase().includes(search.text)) && (!timed || recordedWhen(clipTimestamp(clip), search))
-      )
+      const clips = foundIn(game, search)
       return clips.length === game.clips.length ? game : { ...game, clips }
     })
     .filter((game) => game.clips.length > 0)
+}
+
+/** "2026-10-28": a day's key in clipsPerDay. */
+export function dayKey(at: Date): string {
+  return `${at.getFullYear()}-${at.getMonth() + 1}-${at.getDate()}`
+}
+
+/**
+ * Clips per day (by dayKey) among those the rest of the search finds: the day typed is left out,
+ * so the calendar shows where the clips of "rematch" or of "4 PM" are.
+ */
+export function clipsPerDay(games: readonly GameFolder[], query: string): Map<string, number> {
+  const search = { ...parseLibrarySearch(query), day: null }
+  const counts = new Map<string, number>()
+  for (const game of games) {
+    for (const clip of foundIn(game, search)) {
+      const key = dayKey(new Date(clipTimestamp(clip)))
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+  }
+  return counts
+}
+
+/** Clips per hour of the day (0–23) among those the rest of the search finds, the time typed left out. */
+export function clipsPerHour(games: readonly GameFolder[], query: string): number[] {
+  const search = { ...parseLibrarySearch(query), time: null }
+  const counts = Array.from({ length: 24 }, () => 0)
+  for (const game of games) {
+    for (const clip of foundIn(game, search)) counts[new Date(clipTimestamp(clip)).getHours()]++
+  }
+  return counts
 }
 
 /** The day in the search as a date, in `year` when it has none; null without one or for 31/02. */

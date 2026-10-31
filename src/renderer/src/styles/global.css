@@ -30,6 +30,10 @@
   --discord: #5865f2;
   --discord-hover: #6c78f5;
   --selection: rgba(255, 122, 26, 0.25);
+  /* Heat on the day and hour pickers: few, some, many clips. */
+  --heat-low: #3ddc84;
+  --heat-mid: #f5c451;
+  --heat-high: #f2545b;
 
   /* Main action: white on black, like the reference. */
   --ink: #fafafa;

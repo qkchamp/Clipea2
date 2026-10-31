@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   baseName,
+  clipsPerDay,
+  clipsPerHour,
   dayInSearch,
+  dayKey,
   describeRecording,
   filterGames,
   formatRecordedAt,
@@ -183,6 +186,26 @@ describe('searching by date and time', () => {
     expect(searchOnDay('rematch 4 PM', new Date(2026, 9, 28))).toBe('rematch 4 PM 28/10/26')
     expect(hourInSearch('28/10 4 PM')).toBe(16)
     expect(hourInSearch('rematch')).toBeNull()
+  })
+
+  it('counts the clips of each day, leaving the day typed out', () => {
+    const perDay = clipsPerDay(games, '28/10/26')
+    expect(perDay.get(dayKey(new Date(2026, 9, 28)))).toBe(3)
+    expect(perDay.get(dayKey(new Date(2025, 9, 28)))).toBe(1)
+    expect(perDay.get(dayKey(new Date(2026, 3, 3)))).toBe(1)
+    expect(clipsPerDay(games, 'rematch 4 AM')).toEqual(
+      new Map([
+        [dayKey(new Date(2026, 9, 28)), 1],
+        [dayKey(new Date(2025, 9, 28)), 1]
+      ])
+    )
+  })
+
+  it('counts the clips of each hour, leaving the time typed out', () => {
+    const perHour = clipsPerHour(games, '28/10/26 11 PM')
+    expect(perHour).toHaveLength(24)
+    expect([perHour[4], perHour[12], perHour[23], perHour[20]]).toEqual([1, 1, 1, 0])
+    expect(clipsPerHour(games, 'fortnite')[20]).toBe(1)
   })
 
   it('gives the calendar the day searched', () => {
