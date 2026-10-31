@@ -1,4 +1,5 @@
 import { formatHourOfDay } from '@shared/domain/time'
+import { getT } from '@shared/i18n'
 
 export const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.mov', '.webm', '.m4v'] as const
 
@@ -72,13 +73,12 @@ export function describeRecording(fileName: string): { title: string; recordedAt
   return { title: title || name, recordedAtMs: parseRecordedAt(fileName) }
 }
 
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-
-/** 2026-09-16 02:47 → "16 sep · 02:47" */
+/** 2026-09-16 02:47 → "16 sep · 02:47" ("Sep 16 · 02:47" in English). */
 export function formatRecordedAt(ms: number): string {
   const date = new Date(ms)
   const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-  return `${date.getDate()} ${MONTHS[date.getMonth()]} · ${time}`
+  const { dates } = getT()
+  return dates.recordedAt(date.getDate(), dates.monthsShort[date.getMonth()], time)
 }
 
 /** Short label for a recording: "How To Fish · 16 sep · 02:47". */
@@ -151,9 +151,11 @@ function searchWords(query: string): string[] {
 function readDay(first: number, second: number, year: string): SearchDay | null {
   const fullYear = year.length === 2 ? 2000 + Number(year) : year.length === 4 ? Number(year) : null
   const isDay = (day: number, month: number): boolean => day >= 1 && day <= 31 && month >= 1 && month <= 12
-  // Day first, as written in Spanish: 03/04 is the 3rd of April. MM/DD only when that is no date.
-  if (isDay(first, second)) return { day: first, month: second, year: fullYear }
-  if (isDay(second, first)) return { day: second, month: first, year: fullYear }
+  // The order of the language in use: 03/04 is the 3rd of April in Spanish, March 4th in English.
+  // The other order only when that is no date.
+  const [day, month] = getT().dates.monthFirst ? [second, first] : [first, second]
+  if (isDay(day, month)) return { day, month, year: fullYear }
+  if (isDay(month, day)) return { day: month, month: day, year: fullYear }
   return null
 }
 
@@ -242,11 +244,12 @@ export function dayInSearch(query: string, year: number): Date | null {
   return date.getMonth() === day.month - 1 ? date : null
 }
 
-/** The search with this day in it, in place of the one typed before: "rematch" → "rematch 28/10/26". */
+/** The search with this day in it, in place of the one typed before: "rematch" → "rematch 28/10/26" ("10/28/26" in English). */
 export function searchOnDay(query: string, at: Date): string {
   const pad = (value: number): string => String(value).padStart(2, '0')
   const words = searchWords(query).filter((word) => !DAY_WORD.test(word))
-  return [...words, `${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${pad(at.getFullYear() % 100)}`].join(' ')
+  const [first, second] = getT().dates.monthFirst ? [at.getMonth() + 1, at.getDate()] : [at.getDate(), at.getMonth() + 1]
+  return [...words, `${pad(first)}/${pad(second)}/${pad(at.getFullYear() % 100)}`].join(' ')
 }
 
 /** The hour in the search (0–23), or null. */

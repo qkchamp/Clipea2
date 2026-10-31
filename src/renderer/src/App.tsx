@@ -1,6 +1,7 @@
 import { Activity, useEffect, type ReactNode } from 'react'
 import { Clapperboard, Download, History, LibraryBig, TriangleAlert, Upload } from 'lucide-react'
 import { formatBytes } from '@shared/domain/time'
+import { getT, onLanguageChange } from '@shared/i18n'
 import { api } from '@shared/ui/api'
 import { Button, IconButton } from '@shared/ui/atoms'
 import { cx } from '@shared/ui/cx'
@@ -8,6 +9,7 @@ import { Tabs } from '@shared/ui/molecules'
 import { InstantTooltip } from '@shared/ui/organisms/InstantTooltip'
 import { Toasts } from '@shared/ui/organisms/Toasts'
 import { useUiStore, type SidebarTab } from '@shared/ui/uiStore'
+import { useT } from '@shared/ui/useT'
 import { AnnotationList } from '@features/annotations/ui/AnnotationList'
 import { SendToChannelDialog } from '@features/discord/ui/SendToChannelDialog'
 import { ExportPanel } from '@features/export/ui/ExportPanel'
@@ -39,7 +41,7 @@ const openDropped = (paths: string[]): void => {
   openRecording(paths[0])
   if (paths.length > 1) {
     useUiStore.getState().showToast({
-      text: `Soltaste ${paths.length} videos: abrí «${baseName(paths[0])}». Para juntarlos, abrí cada uno y agregá sus cortes al montaje.`,
+      text: getT().app.droppedMany(paths.length, baseName(paths[0])),
       tone: 'warning',
       durationMs: 7000
     })
@@ -49,19 +51,20 @@ const openDropped = (paths: string[]): void => {
 /** Finished export: say so where the eyes are, with the two things people do next. */
 function announceExport(path: string, sizeBytes: number, fits: boolean): void {
   const ui = useUiStore.getState()
+  const t = getT()
   ui.showToast({
-    text: `Exportado «${baseName(path)}» · ${formatBytes(sizeBytes)}${fits ? '' : ' (supera el límite)'}`,
+    text: t.app.exported(baseName(path), formatBytes(sizeBytes), fits),
     tone: fits ? 'success' : 'warning',
     actions: [
       {
-        label: 'Copiar para Discord',
+        label: t.common.copyForDiscord,
         run: () =>
           api.system.copyFileToClipboard(path).then(
-            () => void ui.showToast({ text: 'Copiado: pegalo con Ctrl+V en Discord', tone: 'success' }),
-            () => void ui.showToast({ text: 'No se pudo copiar el archivo', tone: 'warning' })
+            () => void ui.showToast({ text: getT().common.copiedForDiscord, tone: 'success' }),
+            () => void ui.showToast({ text: getT().common.copyFailed, tone: 'warning' })
           )
       },
-      { label: 'Mostrar', run: () => api.system.showInFolder(path) }
+      { label: t.common.show, run: () => api.system.showInFolder(path) }
     ],
     durationMs: 12_000
   })
@@ -77,6 +80,7 @@ function windowTitle(sourcePath: string | null): string {
 function FfmpegBanner() {
   const ffmpeg = useSettingsStore((state) => state.ffmpeg)
   const installing = useSettingsStore((state) => state.ffmpegTask?.kind === 'installing')
+  const t = useT()
   if (!ffmpeg || ffmpeg.found) return null
   // One click: starts the install and opens Ajustes, where the download progress shows.
   const install = (): void => {
@@ -87,10 +91,12 @@ function FfmpegBanner() {
     <div className={styles.banner} role="alert">
       <TriangleAlert size={16} />
       <span>
-        No encontré <strong>ffmpeg</strong>: sin él no se puede exportar. Clipea2 lo puede instalar con un clic.
+        {t.app.ffmpegMissingBefore}
+        <strong>ffmpeg</strong>
+        {t.app.ffmpegMissingAfter}
       </span>
       <Button size="sm" variant="primary" icon={<Download size={14} />} onClick={install}>
-        {installing ? 'Ver progreso' : 'Instalar ffmpeg'}
+        {installing ? t.app.seeProgress : t.app.installFfmpeg}
       </Button>
     </div>
   )
@@ -109,10 +115,11 @@ function RailButton({ label, count, active, onClick, children }: { label: string
 /** Left column. Folded on narrow windows: its rail button shows the library over the video. */
 function LibraryColumn() {
   const open = useUiStore((state) => state.drawer === 'library')
+  const t = useT()
   return (
     <aside className={styles.left} data-open={open || undefined}>
-      <nav className={styles.rail} aria-label="Columna de la biblioteca">
-        <IconButton label="Biblioteca" active={open} onClick={() => useUiStore.getState().toggleDrawer('library')}>
+      <nav className={styles.rail} aria-label={t.app.libraryColumn}>
+        <IconButton label={t.library.title} active={open} onClick={() => useUiStore.getState().toggleDrawer('library')}>
           <LibraryBig size={16} />
         </IconButton>
       </nav>
@@ -133,6 +140,7 @@ function Sidebar() {
   const segmentCount = useMontageStore((state) => state.segments.length)
   const exportCount = useHistoryStore((state) => state.entries.length)
   const exporting = useExportStore((state) => state.job.status === 'running' || state.job.status === 'preparing')
+  const t = useT()
   // The open tab's button closes the drawer; the other one switches to its tab.
   const showTab = (next: SidebarTab): void => {
     const ui = useUiStore.getState()
@@ -143,15 +151,15 @@ function Sidebar() {
 
   return (
     <aside className={styles.right} data-open={open || undefined}>
-      <nav className={styles.rail} aria-label="Columna de montaje y exportación">
-        <RailButton label="Montaje" count={segmentCount} active={open && tab === 'montage'} onClick={() => showTab('montage')}>
+      <nav className={styles.rail} aria-label={t.app.sidebarColumn}>
+        <RailButton label={t.app.montage} count={segmentCount} active={open && tab === 'montage'} onClick={() => showTab('montage')}>
           <Clapperboard size={16} />
         </RailButton>
-        <RailButton label="Exportados" count={exportCount} active={open && tab === 'history'} onClick={() => showTab('history')}>
+        <RailButton label={t.app.exports} count={exportCount} active={open && tab === 'history'} onClick={() => showTab('history')}>
           <History size={16} />
         </RailButton>
         <IconButton
-          label={exporting ? 'Exportar · exportando' : 'Exportar (Ctrl+E)'}
+          label={exporting ? t.app.exportRailBusy : t.app.exportRail}
           className={cx(styles.railButton, styles.railEnd)}
           onClick={() => useUiStore.getState().toggleDrawer('sidebar')}
         >
@@ -161,12 +169,12 @@ function Sidebar() {
       </nav>
       <div className={styles.drawer}>
         <Tabs
-          label="Panel lateral"
+          label={t.app.sidebar}
           value={tab}
           onChange={(next) => useUiStore.getState().setSidebarTab(next)}
           options={[
-            { value: 'montage', label: 'Montaje', count: segmentCount },
-            { value: 'history', label: 'Exportados', count: exportCount }
+            { value: 'montage', label: t.app.montage, count: segmentCount },
+            { value: 'history', label: t.app.exports, count: exportCount }
           ]}
         />
         <div className={styles.sidebarBody}>
@@ -214,10 +222,17 @@ function useDrawerAutoClose(): void {
 /** The window title follows the open recording without re-rendering the whole app. */
 function useWindowTitle(): void {
   useEffect(() => {
-    document.title = windowTitle(usePlayerStore.getState().sourcePath)
-    return usePlayerStore.subscribe((state, previous) => {
-      if (state.sourcePath !== previous.sourcePath) document.title = windowTitle(state.sourcePath)
+    const show = (): void => void (document.title = windowTitle(usePlayerStore.getState().sourcePath))
+    show()
+    // The recording's date is written in the language in use.
+    const stopLanguage = onLanguageChange(show)
+    const stopPlayer = usePlayerStore.subscribe((state, previous) => {
+      if (state.sourcePath !== previous.sourcePath) show()
     })
+    return () => {
+      stopLanguage()
+      stopPlayer()
+    }
   }, [])
 }
 

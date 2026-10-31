@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { isNewerRelease, type FfmpegInstallProgress } from '@features/media/domain/ffmpegRelease'
 import type { FfmpegStatus } from '@shared/contracts/clipea2Api'
+import { getLanguage, isLanguage, setLanguage, type Language } from '@shared/i18n'
 import { api } from '@shared/ui/api'
 import { ipcErrorMessage } from '@shared/ui/ipcError'
 import type { AppSettings } from '../domain/settings'
@@ -100,6 +101,27 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   }
 }))
+
+const LANGUAGE_KEY = 'clipea2.language'
+
+function speak(language: Language): void {
+  setLanguage(language)
+  document.documentElement.lang = language
+  if (localStorage.getItem(LANGUAGE_KEY) !== language) localStorage.setItem(LANGUAGE_KEY, language)
+}
+
+/**
+ * The window speaks the language of the settings, live. It is also kept in localStorage, so the first
+ * frame of the next start already shows it, before the settings arrive.
+ */
+export function followLanguageSetting(): void {
+  const saved = localStorage.getItem(LANGUAGE_KEY)
+  speak(isLanguage(saved) ? saved : getLanguage())
+  useSettingsStore.subscribe((state) => {
+    const language = state.settings?.language
+    if (language) speak(language)
+  })
+}
 
 /** True when the ffmpeg in use is an older release than the one Clipea2 can install. */
 export function ffmpegOutdated(state: Pick<SettingsState, 'ffmpeg' | 'ffmpegLatest'>): boolean {

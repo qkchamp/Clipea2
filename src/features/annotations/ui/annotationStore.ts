@@ -18,9 +18,9 @@ import { clampDuration, clampRate, removeEffect, setEffect, type Effect, type Ef
 
 export const DRAW_COLORS = ['#ff3b30', '#ffd60a', '#34c759', '#0ab4ff', '#ffffff', '#ff2daa'] as const
 export const DRAW_WIDTHS = [
-  { value: 0.004, label: 'Fino' },
-  { value: 0.007, label: 'Medio' },
-  { value: 0.012, label: 'Grueso' }
+  { value: 0.004, name: 'thin' },
+  { value: 0.007, name: 'medium' },
+  { value: 0.012, name: 'thick' }
 ] as const
 
 /** The shapes plus the cursor, which picks drawings to move them or edit a text. */

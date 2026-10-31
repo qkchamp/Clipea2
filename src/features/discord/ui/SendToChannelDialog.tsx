@@ -6,6 +6,8 @@ import { Field } from '@shared/ui/molecules'
 import { Dialog } from '@shared/ui/organisms/Dialog'
 import { ipcErrorMessage } from '@shared/ui/ipcError'
 import { useUiStore } from '@shared/ui/uiStore'
+import { useT } from '@shared/ui/useT'
+import { getT } from '@shared/i18n'
 import type { WebhookTarget } from '../domain/discordTargets'
 import styles from './discord.module.css'
 
@@ -25,6 +27,7 @@ function EditWebhookForm({
   const [url, setUrl] = useState('')
   const [label, setLabel] = useState(() => targetLabel(target))
   const [saving, setSaving] = useState(false)
+  const t = useT()
   return (
     <form
       className={styles.form}
@@ -35,7 +38,7 @@ function EditWebhookForm({
       }}
     >
       <div className={styles.fields}>
-        <Field label="URL nueva del webhook" hint="Dejala vacía para mantener la actual.">
+        <Field label={t.discord.newUrl} hint={t.discord.keepUrl}>
           <TextInput
             type="password"
             autoFocus
@@ -44,14 +47,14 @@ function EditWebhookForm({
             onChange={(event) => setUrl(event.target.value)}
           />
         </Field>
-        <Field label="Nombre en la lista">
+        <Field label={t.discord.listName}>
           <TextInput value={label} onChange={(event) => setLabel(event.target.value)} />
         </Field>
       </div>
       <div className={styles.fields}>
-        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onCancel}>{t.common.cancel}</Button>
         <Button type="submit" variant="primary" loading={saving}>
-          Guardar
+          {t.common.save}
         </Button>
       </div>
     </form>
@@ -78,13 +81,14 @@ function DirectList({
   onCancel: () => void
   onRemove: (target: WebhookTarget) => void
 }) {
+  const t = useT()
   return (
     <ul className={styles.directList}>
       {targets.map((target) =>
         target.channelId === editingId ? (
           <li key={target.channelId} className={styles.direct}>
             <span className={styles.columnTitle}>
-              <Pencil size={14} /> Editar canal
+              <Pencil size={14} /> {t.discord.editChannel}
             </span>
             <EditWebhookForm target={target} onSave={(url, label) => onSave(target, url, label)} onCancel={onCancel} />
           </li>
@@ -93,12 +97,12 @@ function DirectList({
             <Zap size={14} className={styles.directMark} />
             <span className={styles.name}>{targetLabel(target)}</span>
             <Button size="sm" variant="primary" icon={<Send size={14} />} loading={busyId === target.channelId} onClick={() => onSend(target)}>
-              Enviar
+              {t.discord.send}
             </Button>
             <Button size="sm" icon={<Pencil size={14} />} onClick={() => onEdit(target)}>
-              Editar
+              {t.common.edit}
             </Button>
-            <IconButton small label={`Quitar ${targetLabel(target)}`} onClick={() => onRemove(target)}>
+            <IconButton small label={t.discord.removeNamed(targetLabel(target))} onClick={() => onRemove(target)}>
               <X size={14} />
             </IconButton>
           </li>
@@ -113,6 +117,7 @@ function AddWebhookForm({ onAdd }: { onAdd: (url: string, label: string) => Prom
   const [url, setUrl] = useState('')
   const [label, setLabel] = useState('')
   const [saving, setSaving] = useState(false)
+  const t = useT()
   return (
     <form
       className={styles.form}
@@ -128,20 +133,20 @@ function AddWebhookForm({ onAdd }: { onAdd: (url: string, label: string) => Prom
       }}
     >
       <ol className={styles.steps}>
-        <li>En Discord, en el canal donde querés mandar clips: ⚙ Editar canal › Integraciones › Webhooks.</li>
-        <li>Nuevo webhook › (opcional: ponele tu nombre y tu foto) › Copiar URL del webhook.</li>
-        <li>Pegala acá abajo. Se hace una sola vez por canal.</li>
+        {t.discord.steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
       </ol>
       <div className={styles.fields}>
-        <Field label="URL del webhook">
+        <Field label={t.discord.url}>
           <TextInput type="password" placeholder="https://discord.com/api/webhooks/…" value={url} onChange={(event) => setUrl(event.target.value)} />
         </Field>
-        <Field label="Nombre en la lista (opcional)">
-          <TextInput placeholder="Ej: Amigos › #clips" value={label} onChange={(event) => setLabel(event.target.value)} />
+        <Field label={t.discord.listNameOptional}>
+          <TextInput placeholder={t.discord.listNamePlaceholder} value={label} onChange={(event) => setLabel(event.target.value)} />
         </Field>
       </div>
       <Button type="submit" variant="secondary" icon={<Plus size={16} />} loading={saving} disabled={!url.trim()}>
-        Agregar canal
+        {t.discord.add}
       </Button>
     </form>
   )
@@ -153,6 +158,7 @@ export function SendToChannelDialog({ clipPath, onClose }: { clipPath: string; o
   const [webhooks, setWebhooks] = useState<WebhookTarget[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const t = useT()
 
   useEffect(() => {
     void api.discord.webhooks().then(setWebhooks, () => undefined)
@@ -163,7 +169,7 @@ export function SendToChannelDialog({ clipPath, onClose }: { clipPath: string; o
     setError(null)
     try {
       await api.discord.sendClip(target.channelId, clipPath)
-      useUiStore.getState().showToast({ text: `Enviado a ${targetLabel(target)}.`, tone: 'success' })
+      useUiStore.getState().showToast({ text: getT().discord.sent(targetLabel(target)), tone: 'success' })
       onClose()
     } catch (reason) {
       setError(ipcErrorMessage(reason))
@@ -197,7 +203,7 @@ export function SendToChannelDialog({ clipPath, onClose }: { clipPath: string; o
   }
 
   return (
-    <Dialog title="Enviar a un canal de Discord" onClose={onClose}>
+    <Dialog title={t.discord.title} onClose={onClose}>
       <div className={styles.body}>
         {error ? (
           <p className={styles.error} role="alert">
@@ -220,7 +226,7 @@ export function SendToChannelDialog({ clipPath, onClose }: { clipPath: string; o
 
         <section className={styles.direct}>
           <span className={styles.columnTitle}>
-            <Zap size={14} /> {webhooks.length > 0 ? 'Agregar otro canal' : 'Envío directo a un canal'}
+            <Zap size={14} /> {webhooks.length > 0 ? t.discord.addAnother : t.discord.direct}
           </span>
           <AddWebhookForm onAdd={addByUrl} />
         </section>

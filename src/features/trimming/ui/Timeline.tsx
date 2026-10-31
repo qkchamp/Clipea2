@@ -14,6 +14,7 @@ import {
 import { Pencil, Trash2 } from 'lucide-react'
 import { clamp, formatTime } from '@shared/domain/time'
 import { ContextMenu } from '@shared/ui/organisms/ContextMenu'
+import { useT } from '@shared/ui/useT'
 import type { EffectKind } from '@features/annotations/domain/effects'
 import { MIN_RANGE_SECONDS, rangeDuration, shiftRange, type TimeRange } from '../domain/timeRange'
 import styles from './trimming.module.css'
@@ -152,6 +153,7 @@ export function TimelinePlayhead({
 }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const percent = toPercent(time)
+  const t = useT()
 
   // As many pixels as the screen has under the track, drawn again whenever that changes.
   useLayoutEffect(() => {
@@ -177,7 +179,7 @@ export function TimelinePlayhead({
       className={styles.playhead}
       role="slider"
       tabIndex={0}
-      aria-label="Posición en el video"
+      aria-label={t.timeline.position}
       aria-valuemin={0}
       aria-valuemax={sliderValue(duration)}
       aria-valuenow={sliderValue(time)}
@@ -219,6 +221,7 @@ const Ruler = memo(function Ruler({
   disabled: boolean
   onSeek: (time: number) => void
 }) {
+  const t = useT()
   const span = Math.max(to - from, 0.001)
   const step = TICK_STEPS.find((candidate) => candidate * (width / span) >= MIN_TICK_PX) ?? 7200
   const ticks: number[] = []
@@ -237,7 +240,7 @@ const Ruler = memo(function Ruler({
           {formatTime(tick, step < 1 ? 1 : 0)}
         </span>
       ))}
-      {zoomed ? <span className={styles.zoomHint}>Zoom · doble clic para ver todo</span> : null}
+      {zoomed ? <span className={styles.zoomHint}>{t.timeline.zoomHint}</span> : null}
     </div>
   )
 })
@@ -289,6 +292,7 @@ const DrawingRows = memo(function DrawingRows({
   menuId: string | null
   handlers: RefObject<DrawingBarHandlers>
 }) {
+  const t = useT()
   const span = Math.max(to - from, 0.001)
   const lanes = drawings.reduce((count, drawing) => Math.max(count, drawing.lane + 1), 0)
   return (
@@ -340,7 +344,7 @@ const DrawingRows = memo(function DrawingRows({
                 data-role="keyframe"
                 data-time={time}
                 style={{ left: `${((time - drawing.start) / Math.max(drawing.end - drawing.start, 1e-6)) * 100}%` }}
-                title={`Keyframe en ${formatTime(time)}`}
+                title={t.timeline.keyframeAt(formatTime(time))}
               />
             ))}
             <span className={styles.drawingEdge} data-role="end" data-side="end" />
@@ -371,6 +375,7 @@ export function Timeline({
   onDrawingDelete,
   renderPlayhead
 }: TimelineProps) {
+  const t = useT()
   const timelineRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const drawingsRef = useRef<HTMLDivElement>(null)
@@ -546,7 +551,7 @@ export function Timeline({
             key={band.id}
             className={styles.band}
             style={{ left: `${pct(band.start)}%`, width: `${((band.end - band.start) / span) * 100}%` }}
-            title={`Corte #${band.number} del montaje`}
+            title={t.timeline.montageCut(band.number)}
           >
             <span>{band.number}</span>
           </div>
@@ -560,7 +565,7 @@ export function Timeline({
               className={styles.selection}
               style={{ left: `${pct(range.start)}%`, width: `${((range.end - range.start) / span) * 100}%` }}
             >
-              <div className={styles.grip} data-role="grip" title="Arrastrá para mover la selección">
+              <div className={styles.grip} data-role="grip" title={t.timeline.dragSelection}>
                 {formatTime(rangeDuration(range), 1)}
               </div>
               <div
@@ -589,7 +594,7 @@ export function Timeline({
           ref={drawingsRef}
           className={styles.drawings}
           style={{ height: VISIBLE_LANES * LANE_PX - LANE_GAP_PX }}
-          aria-label="Dibujos en la línea de tiempo"
+          aria-label={t.timeline.drawings}
         >
           <DrawingRows
             drawings={drawings}
@@ -607,8 +612,8 @@ export function Timeline({
           at={menu}
           label={`Dibujo: ${menuDrawing.label}`}
           items={[
-            { label: 'Editar', icon: <Pencil size={14} />, onSelect: () => onDrawingEdit(menu.id) },
-            { label: 'Borrar', icon: <Trash2 size={14} />, danger: true, onSelect: () => onDrawingDelete(menu.id) }
+            { label: t.common.edit, icon: <Pencil size={14} />, onSelect: () => onDrawingEdit(menu.id) },
+            { label: t.common.delete, icon: <Trash2 size={14} />, danger: true, onSelect: () => onDrawingDelete(menu.id) }
           ]}
           onClose={() => setMenu(null)}
         />

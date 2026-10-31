@@ -3,19 +3,20 @@ import { Check, Circle, DiamondMinus, DiamondPlus, MousePointer2, PenLine, Redo2
 import { Button, IconButton } from '@shared/ui/atoms'
 import { cx } from '@shared/ui/cx'
 import { useCrowded } from '@shared/ui/useCrowded'
+import { useT } from '@shared/ui/useT'
 import { DRAW_COLORS, DRAW_WIDTHS, useAnnotationStore, type DrawTool } from './annotationStore'
 import { CustomColor } from './CustomColor'
 import { EffectsMenu } from './EffectsMenu'
 import { ArrowToolIcon } from './ToolIcons'
 import styles from './annotations.module.css'
 
-const TOOLS: Array<{ kind: DrawTool; label: string; icon: ReactNode }> = [
-  { kind: 'select', label: 'Mover dibujos (doble clic en un texto para editarlo)', icon: <MousePointer2 size={16} /> },
-  { kind: 'arrow', label: 'Flecha', icon: <ArrowToolIcon size={16} /> },
-  { kind: 'ellipse', label: 'Círculo', icon: <Circle size={16} /> },
-  { kind: 'rect', label: 'Rectángulo', icon: <Square size={14} /> },
-  { kind: 'pen', label: 'Lápiz', icon: <PenLine size={16} /> },
-  { kind: 'text', label: 'Texto', icon: <Type size={16} /> }
+const TOOLS: Array<{ kind: DrawTool; icon: ReactNode }> = [
+  { kind: 'select', icon: <MousePointer2 size={16} /> },
+  { kind: 'arrow', icon: <ArrowToolIcon size={16} /> },
+  { kind: 'ellipse', icon: <Circle size={16} /> },
+  { kind: 'rect', icon: <Square size={14} /> },
+  { kind: 'pen', icon: <PenLine size={16} /> },
+  { kind: 'text', icon: <Type size={16} /> }
 ]
 
 interface AnnotationToolbarProps {
@@ -41,25 +42,26 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
   const { tool, color, width, setTool, setColor, setWidth } = useAnnotationStore()
   const row = useRef<HTMLDivElement>(null)
   const crowded = useCrowded(row, 'parent')
+  const t = useT()
 
   return (
-    <div ref={row} className={cx(styles.toolbar, crowded && styles.crowded)} role="toolbar" aria-label="Herramientas de dibujo" onClick={(event) => event.stopPropagation()}>
+    <div ref={row} className={cx(styles.toolbar, crowded && styles.crowded)} role="toolbar" aria-label={t.drawing.toolbar} onClick={(event) => event.stopPropagation()}>
       <div className={styles.group}>
         {TOOLS.map((item) => (
-          <IconButton key={item.kind} small label={item.label} active={tool === item.kind} onClick={() => setTool(item.kind)}>
+          <IconButton key={item.kind} small label={t.drawing.tools[item.kind]} active={tool === item.kind} onClick={() => setTool(item.kind)}>
             {item.icon}
           </IconButton>
         ))}
       </div>
 
-      <div className={styles.group} role="radiogroup" aria-label="Color">
+      <div className={styles.group} role="radiogroup" aria-label={t.drawing.color}>
         {DRAW_COLORS.map((swatch) => (
           <button
             key={swatch}
             type="button"
             role="radio"
             aria-checked={color === swatch}
-            aria-label={`Color ${swatch}`}
+            aria-label={t.drawing.colorNamed(swatch)}
             className={styles.swatch}
             style={{ background: swatch }}
             onClick={() => setColor(swatch)}
@@ -68,7 +70,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
         <CustomColor edge={row} />
       </div>
 
-      <div className={styles.group} role="radiogroup" aria-label="Grosor">
+      <div className={styles.group} role="radiogroup" aria-label={t.drawing.width}>
         {DRAW_WIDTHS.map((option) => {
           // An even size, so the dot sits centered on whole pixels in its even box.
           const dot = 2 * Math.round((4 + option.value * 900) / 2)
@@ -78,8 +80,8 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
               type="button"
               role="radio"
               aria-checked={width === option.value}
-              title={option.label}
-              aria-label={`Grosor ${option.label}`}
+              title={t.drawing.widths[option.name]}
+              aria-label={t.drawing.widthNamed(t.drawing.widths[option.name])}
               className={styles.widthOption}
               onClick={() => setWidth(option.value)}
             >
@@ -93,9 +95,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
         <IconButton
           small
           label={
-            keyframe === 'remove'
-              ? 'Quitar el keyframe de este cuadro'
-              : 'Keyframe en este cuadro: fija dónde está el dibujo elegido. En otro cuadro, arrastralo y se mueve solo entre los dos'
+            keyframe === 'remove' ? t.drawing.removeKeyframe : t.drawing.addKeyframe
           }
           active={keyframe === 'remove'}
           disabled={keyframe === 'none'}
@@ -106,7 +106,7 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
         <EffectsMenu small edge={row} />
         <IconButton
           small
-          label={canDelete ? 'Borrar el dibujo elegido (Supr)' : 'Borrar: elegí antes un dibujo con el cursor o en su barra'}
+          label={canDelete ? t.drawing.deleteSelected : t.drawing.deleteNeedsPick}
           disabled={!canDelete}
           onClick={onDelete}
         >
@@ -115,10 +115,10 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
       </div>
 
       <div className={styles.group}>
-        <IconButton small label="Deshacer (Ctrl+Z)" onClick={onUndo} disabled={!canUndo}>
+        <IconButton small label={t.drawing.undo} onClick={onUndo} disabled={!canUndo}>
           <Undo2 size={16} />
         </IconButton>
-        <IconButton small label="Rehacer (Ctrl+Y)" onClick={onRedo} disabled={!canRedo}>
+        <IconButton small label={t.drawing.redo} onClick={onRedo} disabled={!canRedo}>
           <Redo2 size={16} />
         </IconButton>
       </div>
@@ -128,11 +128,11 @@ export function AnnotationToolbar({ canUndo, canRedo, keyframe, canDelete, onUnd
           size="sm"
           variant="primary"
           icon={<Check size={14} />}
-          title="Terminar de dibujar (D o Esc)"
-          aria-label={crowded ? 'Listo' : undefined}
+          title={t.drawing.finishTitle}
+          aria-label={crowded ? t.drawing.done : undefined}
           onClick={onClose}
         >
-          {crowded ? null : 'Listo'}
+          {crowded ? null : t.drawing.done}
         </Button>
       </div>
     </div>

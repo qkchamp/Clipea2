@@ -5,6 +5,7 @@ import { mergeSettings, type AppSettings } from '../domain/settings'
 export function defaultSettings(videosDir: string): AppSettings {
   const nvidia = join(videosDir, 'NVIDIA')
   return {
+    language: 'es',
     libraryRoots: [nvidia],
     // Discord-ready exports live next to the recordings.
     outputDir: join(nvidia, 'PARA_DISCORD'),

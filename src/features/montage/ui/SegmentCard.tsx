@@ -3,6 +3,8 @@ import { ChevronDown, ChevronUp, GripVertical, Pencil, Play, Trash } from 'lucid
 import { formatDuration, formatTime } from '@shared/domain/time'
 import { cx } from '@shared/ui/cx'
 import { IconButton } from '@shared/ui/atoms'
+import { useT } from '@shared/ui/useT'
+import { recordingLabel } from '@features/library/domain/libraryClip'
 import { segmentDuration, type Segment } from '../domain/montage'
 import styles from './montage.module.css'
 
@@ -43,6 +45,9 @@ export function SegmentCard({
   onDrop,
   onDragEnd
 }: SegmentCardProps) {
+  const t = useT()
+  // From the path, not the label saved with the cut: the date is written in the language in use.
+  const label = recordingLabel(segment.sourcePath)
   return (
     <li
       className={cx(styles.card, playing && styles.playing, editing && styles.editing, dropTarget && styles.dropTarget)}
@@ -55,7 +60,7 @@ export function SegmentCard({
       <span className={styles.grip} aria-hidden>
         <GripVertical size={14} />
       </span>
-      <button type="button" className={styles.thumb} onClick={onPlay} title="Ver este corte">
+      <button type="button" className={styles.thumb} onClick={onPlay} title={t.montage.playCut}>
         {thumbnail ? <img src={thumbnail} alt="" draggable={false} /> : null}
         <span className={styles.number}>{number}</span>
         <span className={styles.playIcon}>
@@ -63,8 +68,8 @@ export function SegmentCard({
         </span>
       </button>
       <div className={styles.info}>
-        <span className={styles.label} title={segment.sourceLabel}>
-          {segment.sourceLabel}
+        <span className={styles.label} title={label}>
+          {label}
         </span>
         <span className={cx(styles.range, 'tabular')}>
           {formatTime(segment.start)} → {formatTime(segment.end)}
@@ -72,16 +77,16 @@ export function SegmentCard({
         <span className={styles.length}>{formatDuration(segmentDuration(segment))}</span>
       </div>
       <div className={styles.actions}>
-        <IconButton small label="Subir" disabled={isFirst} onClick={() => onMove(-1)}>
+        <IconButton small label={t.montage.moveUp} disabled={isFirst} onClick={() => onMove(-1)}>
           <ChevronUp size={14} />
         </IconButton>
-        <IconButton small label="Bajar" disabled={isLast} onClick={() => onMove(1)}>
+        <IconButton small label={t.montage.moveDown} disabled={isLast} onClick={() => onMove(1)}>
           <ChevronDown size={14} />
         </IconButton>
-        <IconButton small label="Editar inicio y fin en la línea de tiempo" active={editing} onClick={onEdit}>
+        <IconButton small label={t.montage.editCut} active={editing} onClick={onEdit}>
           <Pencil size={14} />
         </IconButton>
-        <IconButton small label="Quitar del montaje" onClick={onRemove}>
+        <IconButton small label={t.montage.remove} onClick={onRemove}>
           <Trash size={14} />
         </IconButton>
       </div>

@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { createHash } from 'node:crypto'
 import { createWriteStream } from 'node:fs'
 import { access, mkdir, readdir, rename, rm } from 'node:fs/promises'
@@ -13,22 +14,22 @@ const BINARIES = ['ffmpeg.exe', 'ffprobe.exe'] as const
 /** Where downloads and unzipping happen, inside the install folder so the final move is a rename. */
 const WORK_DIR = '.descarga'
 
-async function fetchText(fetchUrl: FetchUrl, url: string, what: string): Promise<string> {
+async function fetchText(fetchUrl: FetchUrl, url: string, failed: (status: number) => string): Promise<string> {
   const response = await fetchUrl(url)
-  if (!response.ok) throw new Error(`No pude consultar ${what} de ffmpeg (HTTP ${response.status}).`)
+  if (!response.ok) throw new Error(failed(response.status))
   return (await response.text()).trim()
 }
 
 export async function fetchLatestFfmpegVersion(fetchUrl: FetchUrl): Promise<string> {
-  const version = await fetchText(fetchUrl, FFMPEG_RELEASE.version, 'la última versión')
-  if (!releaseNumber(version)) throw new Error(`La versión publicada de ffmpeg no se entiende: «${version}».`)
+  const version = await fetchText(fetchUrl, FFMPEG_RELEASE.version, getT().ffmpeg.latestFailed)
+  if (!releaseNumber(version)) throw new Error(getT().ffmpeg.badVersion(version))
   return version
 }
 
 /** Streams the zip to disk, reporting progress, and returns its SHA-256. */
 async function download(fetchUrl: FetchUrl, path: string, onProgress: (progress: FfmpegInstallProgress) => void): Promise<string> {
   const response = await fetchUrl(FFMPEG_RELEASE.zip)
-  if (!response.ok || !response.body) throw new Error(`No pude descargar ffmpeg (HTTP ${response.status}).`)
+  if (!response.ok || !response.body) throw new Error(getT().ffmpeg.downloadFailed(response.status))
   const totalBytes = Number(response.headers.get('content-length')) || null
   const hash = createHash('sha256')
   const file = createWriteStream(path)
@@ -65,7 +66,7 @@ async function findBinFolder(unzipped: string): Promise<string> {
       // Not this folder.
     }
   }
-  throw new Error('El zip de ffmpeg no trae ffmpeg.exe y ffprobe.exe.')
+  throw new Error(getT().ffmpeg.zipIncomplete)
 }
 
 interface InstallOptions {
@@ -81,7 +82,7 @@ interface InstallOptions {
  */
 export async function installFfmpeg({ fetchUrl, installRoot, onProgress }: InstallOptions): Promise<string> {
   const version = await fetchLatestFfmpegVersion(fetchUrl)
-  const expected = (await fetchText(fetchUrl, FFMPEG_RELEASE.sha256, 'el checksum')).split(/\s+/)[0].toLowerCase()
+  const expected = (await fetchText(fetchUrl, FFMPEG_RELEASE.sha256, getT().ffmpeg.checksumFailed)).split(/\s+/)[0].toLowerCase()
   const work = join(installRoot, WORK_DIR)
   await rm(work, { recursive: true, force: true })
   await mkdir(join(work, 'unzip'), { recursive: true })
@@ -89,7 +90,7 @@ export async function installFfmpeg({ fetchUrl, installRoot, onProgress }: Insta
     const zip = join(work, 'ffmpeg.zip')
     const actual = await download(fetchUrl, zip, onProgress)
     if (!/^[0-9a-f]{64}$/.test(expected) || actual !== expected) {
-      throw new Error('La descarga de ffmpeg llegó incompleta o dañada. Probá de nuevo.')
+      throw new Error(getT().ffmpeg.corrupted)
     }
 
     onProgress({ stage: 'extracting' })
@@ -97,7 +98,7 @@ export async function installFfmpeg({ fetchUrl, installRoot, onProgress }: Insta
     // Only the two binaries: the rest of the zip (ffplay, docs) is never used.
     const patterns = BINARIES.map((name) => `*/bin/${name}`)
     const { code, stderr } = await runProcess(tar, ['-xf', zip, '-C', join(work, 'unzip'), ...patterns], { timeoutMs: 180_000 })
-    if (code !== 0) throw new Error(`No pude descomprimir ffmpeg: ${stderr.trim() || `tar terminó con ${code}`}`)
+    if (code !== 0) throw new Error(getT().ffmpeg.unzipFailed(stderr.trim() || getT().ffmpeg.tarExit(code)))
     const bin = await findBinFolder(join(work, 'unzip'))
 
     const target = join(installRoot, version)

@@ -3,6 +3,7 @@ import { CircleCheck, FolderOpen, Info, Pencil, Play, RotateCw, Send, Trash, Tri
 import { formatBytes, formatDuration, formatTime } from '@shared/domain/time'
 import { cx } from '@shared/ui/cx'
 import { useResetOnShow } from '@shared/ui/useResetOnShow'
+import { useT } from '@shared/ui/useT'
 import { Badge, Button, DiscordIcon, IconButton } from '@shared/ui/atoms'
 import { exceedsLimit } from '@features/export/domain/discordLimits'
 import { GPU_LABEL } from '@features/export/domain/encoderSupport'
@@ -33,10 +34,6 @@ interface HistoryItemProps {
   onRemove: () => void
 }
 
-function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`
-}
-
 export function HistoryItem({
   ref,
   entry,
@@ -56,6 +53,7 @@ export function HistoryItem({
 }: HistoryItemProps) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [showSpecs, setShowSpecs] = useState(false)
+  const t = useT()
   useResetOnShow(() => {
     setCopyState('idle')
     setShowSpecs(false)
@@ -66,9 +64,9 @@ export function HistoryItem({
   const encoding = describeEncoding(entry.video, gpu === undefined ? null : gpu !== null)
   const extras = [
     gpu ? GPU_LABEL[gpu] : gpu === null ? 'CPU' : null,
-    plural(entry.segments.length, 'corte', 'cortes'),
-    entry.annotations.length > 0 ? plural(entry.annotations.length, 'dibujo', 'dibujos') : null,
-    entry.attempts > 1 ? `${entry.attempts} pasadas` : null
+    t.montage.cuts(entry.segments.length),
+    entry.annotations.length > 0 ? t.history.drawings(entry.annotations.length) : null,
+    entry.attempts > 1 ? t.history.passes(entry.attempts) : null
   ].filter(Boolean)
 
   useEffect(() => {
@@ -91,9 +89,9 @@ export function HistoryItem({
           <button
             type="button"
             className={styles.thumbTool}
-            aria-label="Con qué ajustes se exportó"
+            aria-label={t.history.specs}
             aria-pressed={showSpecs}
-            title="Con qué ajustes se exportó"
+            title={t.history.specs}
             onClick={() => setShowSpecs(!showSpecs)}
           >
             <Info size={12} />
@@ -101,8 +99,8 @@ export function HistoryItem({
           <button
             type="button"
             className={styles.thumbTool}
-            aria-label="Ver en el reproductor"
-            title="Ver en el reproductor"
+            aria-label={t.history.watch}
+            title={t.history.watch}
             disabled={!entry.fileExists}
             onClick={onWatch}
           >
@@ -119,18 +117,18 @@ export function HistoryItem({
               {recordTitle(entry)}
             </span>
             <span className={styles.meta}>
-              {isNew ? <Badge tone="accent">Nuevo</Badge> : null}
+              {isNew ? <Badge tone="accent">{t.history.isNew}</Badge> : null}
               {formatExportDate(entry.createdAt)}
-              {entry.renderSec !== undefined ? ` · Render ${formatDuration(entry.renderSec)}` : null}
+              {entry.renderSec !== undefined ? t.history.render(formatDuration(entry.renderSec)) : null}
             </span>
             <span className={cx(styles.size, fits ? styles.fits : styles.tooBig)}>
               {fits ? <CircleCheck size={12} /> : <TriangleAlert size={12} />}
-              Peso: <strong className="tabular">{formatBytes(entry.sizeBytes)}</strong>/ {sizeLimitBytes === null ? 'sin límite' : formatBytes(sizeLimitBytes)}
+              {t.history.size} <strong className="tabular">{formatBytes(entry.sizeBytes)}</strong>/ {sizeLimitBytes === null ? t.common.noLimit : formatBytes(sizeLimitBytes)}
             </span>
           </span>
         </button>
         {!expanded ? (
-          <IconButton small label="Copiar para Discord" disabled={!entry.fileExists} onClick={copy}>
+          <IconButton small label={t.common.copyForDiscord} disabled={!entry.fileExists} onClick={copy}>
             <DiscordIcon size={14} />
           </IconButton>
         ) : null}
@@ -147,27 +145,26 @@ export function HistoryItem({
         <div className={styles.details}>
           {!entry.fileExists ? (
             <p className={styles.warning}>
-              <TriangleAlert size={14} /> El archivo ya no está en la carpeta. Podés exportarlo de nuevo.
+              <TriangleAlert size={14} /> {t.history.fileGone}
             </p>
           ) : null}
           {entry.missingSources > 0 ? (
             <p className={styles.warning}>
-              <TriangleAlert size={14} /> Falta {plural(entry.missingSources, 'video original', 'videos originales')}: no se puede volver a
-              exportar.
+              <TriangleAlert size={14} /> {t.history.missingSources(entry.missingSources)}
             </p>
           ) : null}
 
           <Button variant="discord" block icon={<DiscordIcon size={16} />} disabled={!entry.fileExists} onClick={copy}>
-            {copyState === 'copied' ? 'Copiado: Ctrl+V en Discord' : copyState === 'failed' ? 'No se pudo copiar' : 'Copiar para Discord'}
+            {copyState === 'copied' ? t.history.copied : copyState === 'failed' ? t.history.copyFailed : t.common.copyForDiscord}
           </Button>
           <Button variant="secondary" block icon={<Send size={16} />} disabled={!entry.fileExists} onClick={onSendToChannel}>
-            Enviar a canal
+            {t.history.sendToChannel}
           </Button>
 
           <div className={styles.secondary}>
             <IconButton
               small
-              label="Reexportar: los mismos cortes y dibujos, con las opciones de exportación actuales"
+              label={t.history.reexport}
               disabled={!canReexport}
               onClick={onReexport}
             >
@@ -175,16 +172,16 @@ export function HistoryItem({
             </IconButton>
             <IconButton
               small
-              label="Editar: carga los cortes y dibujos en el montaje para cambiarlos"
+              label={t.history.edit}
               disabled={entry.missingSources > 0}
               onClick={onEdit}
             >
               <Pencil size={14} />
             </IconButton>
-            <IconButton small label="Mostrar en la carpeta" disabled={!entry.fileExists} onClick={onShowInFolder}>
+            <IconButton small label={t.history.showInFolder} disabled={!entry.fileExists} onClick={onShowInFolder}>
               <FolderOpen size={14} />
             </IconButton>
-            <IconButton small label="Quitar del historial (el archivo no se borra)" onClick={onRemove}>
+            <IconButton small label={t.history.remove} onClick={onRemove}>
               <Trash size={14} />
             </IconButton>
           </div>

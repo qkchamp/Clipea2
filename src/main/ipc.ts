@@ -6,6 +6,7 @@ import { VIDEO_EXTENSIONS } from '@features/library/domain/libraryClip'
 import type { AppSettings } from '@features/settings/domain/settings'
 import type { ExportRequest, SessionSnapshot } from '@shared/contracts/clipea2Api'
 import { IPC } from '@shared/contracts/ipcChannels'
+import { getT, setLanguage } from '@shared/i18n'
 import { toMediaUrl } from '@shared/contracts/mediaUrl'
 import type { Services } from './services'
 import { copyFileToClipboard, prepareFileCopy } from './windowsClipboard'
@@ -53,6 +54,8 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
   handle(IPC.settingsGet, (s) => s.settings.get())
   handle(IPC.settingsUpdate, async (s, patch: Partial<AppSettings>) => {
     const next = await s.settings.update(patch)
+    // Errors and dialogs from here on speak the language just picked.
+    setLanguage(next.language)
     if ('ffmpegDir' in patch) await s.reloadFfmpeg()
     return next
   })
@@ -68,10 +71,10 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
     const window = getWindow()
     const { libraryRoots } = await s.settings.get()
     const options: Electron.OpenDialogOptions = {
-      title: 'Abrir video',
+      title: getT().system.openVideo,
       defaultPath: libraryRoots[0],
       properties: ['openFile'],
-      filters: [{ name: 'Videos', extensions: VIDEO_EXTENSIONS.map((extension) => extension.slice(1)) }]
+      filters: [{ name: getT().system.videos, extensions: VIDEO_EXTENSIONS.map((extension) => extension.slice(1)) }]
     }
     const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
     return result.canceled ? [] : result.filePaths
@@ -79,9 +82,9 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
   ipcMain.handle(IPC.chooseExportPath, async (_event, dir: string, fileName: string, freeName: boolean) => {
     const window = getWindow()
     const options: Electron.SaveDialogOptions = {
-      title: 'Guardar clip',
+      title: getT().system.saveClip,
       defaultPath: freeName ? uniqueOutputPath(dir, fileName) : join(dir, `${fileName}.mp4`),
-      filters: [{ name: 'Video MP4', extensions: ['mp4'] }],
+      filters: [{ name: getT().system.mp4Video, extensions: ['mp4'] }],
       properties: ['createDirectory', 'showOverwriteConfirmation']
     }
     const result = window ? await dialog.showSaveDialog(window, options) : await dialog.showSaveDialog(options)

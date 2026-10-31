@@ -24,6 +24,7 @@ import { FfprobeMediaProber } from '@features/media/infrastructure/ffprobeMediaP
 import { JsonSessionStore } from '@features/session/infrastructure/jsonSessionStore'
 import { defaultSettings, JsonSettingsStore } from '@features/settings/infrastructure/jsonSettingsStore'
 import type { ExportEvent, FfmpegStatus } from '@shared/contracts/clipea2Api'
+import { getT, setLanguage } from '@shared/i18n'
 
 export interface Services {
   settings: JsonSettingsStore
@@ -55,6 +56,8 @@ export async function createServices(emit: Emitters): Promise<Services> {
   const userData = app.getPath('userData')
   const cacheDir = join(userData, 'cache')
   const settings = new JsonSettingsStore(join(userData, 'settings.json'), defaultSettings(app.getPath('videos')))
+  // Errors and dialogs speak the language of the settings (Ajustes keeps it in step from then on).
+  setLanguage((await settings.get()).language)
   const ffmpegHome = join(userData, 'ffmpeg')
   const fetchUrl = (url: string): Promise<Response> => net.fetch(url)
 
@@ -141,7 +144,7 @@ export async function createServices(emit: Emitters): Promise<Services> {
   // DPAPI: the webhook URLs can only be read back by this Windows user.
   const vault: SecretVault = {
     seal: (text) => {
-      if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows no permite guardar la clave de Discord cifrada.')
+      if (!safeStorage.isEncryptionAvailable()) throw new Error(getT().system.noEncryption)
       return safeStorage.encryptString(text).toString('base64')
     },
     open: (sealed) => safeStorage.decryptString(Buffer.from(sealed, 'base64'))

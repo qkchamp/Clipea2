@@ -1,4 +1,5 @@
 import type { Annotation } from '@features/annotations/domain/annotation'
+import { getT } from '@shared/i18n'
 import type { GpuVendor } from '@features/export/domain/encoderSupport'
 import type { VideoCodec } from '@features/export/domain/encodingPlan'
 
@@ -62,16 +63,15 @@ export function reexportName(record: Pick<ExportRecord, 'path'>): string {
 }
 
 const pad = (value: number): string => String(value).padStart(2, '0')
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-
-/** "Hoy 07:52", "Ayer 23:10", "16 sep · 02:47" */
+/** "Hoy 07:52", "Ayer 23:10", "16 sep · 02:47" (in the language in use). */
 export function formatExportDate(ms: number, now: Date = new Date()): string {
   const date = new Date(ms)
   const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  if (ms >= startOfToday) return `Hoy ${time}`
-  if (ms >= startOfToday - 86_400_000) return `Ayer ${time}`
-  return `${date.getDate()} ${MONTHS[date.getMonth()]} · ${time}`
+  const { history, dates } = getT()
+  if (ms >= startOfToday) return history.today(time)
+  if (ms >= startOfToday - 86_400_000) return history.yesterday(time)
+  return dates.recordedAt(date.getDate(), dates.monthsShort[date.getMonth()], time)
 }
 
 export function totalSize(entries: readonly HistoryEntry[]): number {

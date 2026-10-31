@@ -1,3 +1,5 @@
+import { getT } from '@shared/i18n'
+
 /** Side of the frame a drawing slides in from, or out to. */
 export type Side = 'left' | 'right' | 'top' | 'bottom'
 
@@ -35,18 +37,8 @@ export const SIDES: readonly Side[] = ['left', 'right', 'top', 'bottom']
 
 export const EFFECT_KINDS: readonly EffectKind[] = ['fadeIn', 'fadeOut', 'zoomIn', 'zoomOut', 'slideIn', 'slideOut', 'blink', 'pulse']
 
-export const EFFECT_LABELS: Record<EffectKind, string> = {
-  fadeIn: 'Aparecer',
-  fadeOut: 'Desvanecer',
-  zoomIn: 'Zoom al entrar',
-  zoomOut: 'Zoom al salir',
-  slideIn: 'Deslizar al entrar',
-  slideOut: 'Deslizar al salir',
-  blink: 'Parpadeo',
-  pulse: 'Latido'
-}
-
-export const SIDE_LABELS: Record<Side, string> = { left: 'Izquierda', right: 'Derecha', top: 'Arriba', bottom: 'Abajo' }
+/** An effect's name, in the language in use. */
+export const effectLabel = (kind: EffectKind): string => getT().effects.names[kind]
 
 export const DEFAULT_EFFECTS: Record<EffectKind, Effect> = {
   fadeIn: { kind: 'fadeIn', duration: 0.5 },

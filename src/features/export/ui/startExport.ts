@@ -1,4 +1,5 @@
 import { formatBytes, formatDuration } from '@shared/domain/time'
+import { getT } from '@shared/i18n'
 import { api } from '@shared/ui/api'
 import { groupSameTimes, isAnimated, shapeOnFrame, type Annotation, type Shape } from '@features/annotations/domain/annotation'
 import { shapeBox } from '@features/annotations/domain/shapeGeometry'
@@ -12,6 +13,7 @@ import { useMontageStore } from '@features/montage/ui/montageStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { currentSelection } from '@features/trimming/ui/trimActions'
 import { canEncode } from '../domain/encoderSupport'
+import { CODEC_LABEL } from '../domain/encodingPlan'
 import {
   defaultFileName,
   preferencesFrom,
@@ -22,8 +24,6 @@ import {
 } from './exportTarget'
 import { useExportStore } from './exportStore'
 import { computePlanning } from './useExportPlan'
-
-const CODEC_NAMES = { hevc: 'H.265', h264: 'H.264', av1: 'AV1' } as const
 
 interface ExportInput {
   target: ExportTarget
@@ -46,23 +46,20 @@ async function runExport({ target, annotations, fileName, labels, outputPath }: 
   try {
     // Right after start-up the GPU check may still be running: wait for it instead of guessing.
     const ffmpeg = await useSettingsStore.getState().ensureEncoders()
-    if (!ffmpeg.found || !ffmpeg.encoders) throw new Error('No encontré ffmpeg: instalalo (winget install Gyan.FFmpeg) o elegilo en Ajustes.')
+    if (!ffmpeg.found || !ffmpeg.encoders) throw new Error(getT().export.noFfmpeg)
     if (!canEncode(ffmpeg.encoders, settings.codec, settings.hardwareAcceleration)) {
-      throw new Error(`Tu ffmpeg no puede codificar ${CODEC_NAMES[settings.codec]}. Elegí otro códec.`)
+      throw new Error(getT().export.cantEncode(CODEC_LABEL[settings.codec]))
     }
 
     const sources = uniqueSources(target)
     const infos = await Promise.all(sources.map((path) => useMediaStore.getState().ensureInfo(path)))
     const summary = sourceSummary(sources, Object.fromEntries(infos.map((info) => [info.path, info])))
-    if (!summary) throw new Error('Alguno de los videos no tiene imagen.')
+    if (!summary) throw new Error(getT().export.noPicture)
 
     const drawn = annotations.filter((annotation) => sources.includes(annotation.sourcePath))
     const { plan, preferences } = computePlanning(target, summary, preferencesFrom(settings))
     if (!plan.fits && preferences.sizeLimitBytes !== null) {
-      throw new Error(
-        `No entra en ${formatBytes(preferences.sizeLimitBytes)} ni bajando la calidad. ` +
-          `Recortá a menos de ${formatDuration(plan.maxDurationAtAll ?? 0)} o elegí «Sin límite».`
-      )
+      throw new Error(getT().export.noFit(formatBytes(preferences.sizeLimitBytes), formatDuration(plan.maxDurationAtAll ?? 0)))
     }
 
     // Effects scale a drawing around the middle of its shape, which only the canvas can measure for a text.

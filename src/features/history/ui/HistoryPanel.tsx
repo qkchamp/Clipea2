@@ -3,6 +3,7 @@ import { FolderOpen, History, RefreshCw, Trash } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { useInView } from '@shared/ui/useInView'
 import { useResetOnShow } from '@shared/ui/useResetOnShow'
+import { useT } from '@shared/ui/useT'
 import { useUiStore } from '@shared/ui/uiStore'
 import { Button, IconButton } from '@shared/ui/atoms'
 import { EmptyState, PanelHeader } from '@shared/ui/molecules'
@@ -65,6 +66,7 @@ export function HistoryPanel() {
   const [expandedId, setExpandedId] = useState<string | null>(highlighted)
   const [confirmClear, setConfirmClear] = useState(false)
   const [pending, setPending] = useState<Pending | null>(null)
+  const t = useT()
 
   useEffect(() => {
     if (!confirmClear) return
@@ -107,9 +109,9 @@ export function HistoryPanel() {
   )
 
   return (
-    <section className={styles.panel} aria-label="Exportados">
+    <section className={styles.panel} aria-label={t.app.exports}>
       <PanelHeader
-        meta={entries.length > 0 ? `${entries.length} ${entries.length === 1 ? 'clip' : 'clips'} · ${formatBytes(totalSize(entries))}` : undefined}
+        meta={entries.length > 0 ? `${t.library.clips(entries.length)} · ${formatBytes(totalSize(entries))}` : undefined}
         actions={
           <>
             {entries.length > 0 ? (
@@ -117,7 +119,7 @@ export function HistoryPanel() {
                 size="sm"
                 variant={confirmClear ? 'danger' : 'ghost'}
                 icon={<Trash size={14} />}
-                title="Vaciar la lista de exportados (los archivos no se borran)"
+                title={t.history.clearTitle}
                 onClick={() => {
                   if (!confirmClear) return setConfirmClear(true)
                   setConfirmClear(false)
@@ -125,21 +127,21 @@ export function HistoryPanel() {
                   void useHistoryStore.getState().clear()
                 }}
               >
-                {confirmClear ? '¿Vaciar?' : 'Vaciar'}
+                {confirmClear ? t.common.confirmClear : t.common.clear}
               </Button>
             ) : null}
-            <IconButton small label="Abrir la carpeta de exportación" disabled={!outputDir} onClick={() => outputDir && void api.system.openPath(outputDir)}>
+            <IconButton small label={t.history.openFolder} disabled={!outputDir} onClick={() => outputDir && void api.system.openPath(outputDir)}>
               <FolderOpen size={16} />
             </IconButton>
-            <IconButton small label="Actualizar (revisa si los archivos siguen ahí)" onClick={() => void useHistoryStore.getState().refresh()}>
+            <IconButton small label={t.history.refresh} onClick={() => void useHistoryStore.getState().refresh()}>
               <RefreshCw size={16} />
             </IconButton>
           </>
         }
       />
       {loaded && entries.length === 0 ? (
-        <EmptyState icon={<History size={18} />} title="Todavía no exportaste nada">
-          Cada exportación queda acá para copiarla a Discord, verla o volver a exportarla con otras opciones.
+        <EmptyState icon={<History size={18} />} title={t.history.emptyTitle}>
+          {t.history.emptyBody}
         </EmptyState>
       ) : (
         <ol className={styles.list}>
@@ -158,25 +160,23 @@ export function HistoryPanel() {
       )}
       {pending?.action === 'reexport' ? (
         <ConfirmDialog
-          title="¿Reexportar este clip?"
-          confirmLabel="Sí, reexportar"
+          title={t.history.reexportTitle}
+          confirmLabel={t.history.reexportConfirm}
           onConfirm={() => void reexport(pending.entry)}
           onClose={() => setPending(null)}
         >
-          Se exporta de nuevo «{recordTitle(pending.entry)}» con los mismos cortes y dibujos y las opciones de exportación
-          actuales. Después elegís dónde guardarlo.
+          {t.history.reexportBody(recordTitle(pending.entry))}
         </ConfirmDialog>
       ) : null}
       {pending?.action === 'edit' ? (
         <ConfirmDialog
-          title="¿Reemplazar el montaje?"
-          confirmLabel="Sí, reemplazar"
+          title={t.history.replaceTitle}
+          confirmLabel={t.history.replaceConfirm}
           danger
           onConfirm={() => editInMontage(pending.entry)}
           onClose={() => setPending(null)}
         >
-          Los cortes y dibujos de «{recordTitle(pending.entry)}» van a reemplazar {montageSegments === 1 ? 'el corte' : `los ${montageSegments} cortes`}{' '}
-          que tenés ahora en el montaje.
+          {t.history.replaceBody(recordTitle(pending.entry), montageSegments)}
         </ConfirmDialog>
       ) : null}
     </section>

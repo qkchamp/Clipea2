@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import type { WebhookTarget } from '../domain/discordTargets'
 
 export type { WebhookTarget }
@@ -57,7 +58,7 @@ export class DiscordWebhooks {
    */
   async edit(channelId: string, url: string, label: string): Promise<WebhookTarget[]> {
     const current = (await this.store.list()).find((saved) => saved.channelId === channelId)
-    if (!current) throw new Error('Ese canal ya no está en la lista.')
+    if (!current) throw new Error(getT().discord.notListed)
     const name = label.trim()
     const next = url.trim() ? await this.fromUrl(url, name) : name ? { ...current, guildName: name, channelName: '' } : current
     await this.store.replace(channelId, next)
@@ -71,14 +72,14 @@ export class DiscordWebhooks {
 
   async send(channelId: string, filePath: string): Promise<{ guildId: string; channelId: string; messageId: string }> {
     const webhook = (await this.store.list()).find((saved) => saved.channelId === channelId)
-    if (!webhook) throw new Error('Ese canal todavía no tiene envío directo.')
-    if ((await this.sizeOf(filePath)) > MAX_POST_BYTES) throw new Error('El clip pasa los 25 MB: Discord no lo acepta por webhook.')
+    if (!webhook) throw new Error(getT().discord.notDirect)
+    if ((await this.sizeOf(filePath)) > MAX_POST_BYTES) throw new Error(getT().discord.tooBig)
     try {
       const { messageId } = await this.api.post(webhook.url, filePath)
       return { guildId: webhook.guildId, channelId, messageId }
     } catch (error) {
       // Deleted in Discord: the channel stays listed, so Editar takes the new URL and keeps its name.
-      if (error instanceof WebhookGoneError) throw new WebhookGoneError('Ese webhook ya no existe en Discord: tocá Editar y pegá la URL de uno nuevo.')
+      if (error instanceof WebhookGoneError) throw new WebhookGoneError(getT().discord.goneEdit)
       throw error
     }
   }
@@ -89,9 +90,9 @@ export class DiscordWebhooks {
    */
   private async fromUrl(url: string, label: string): Promise<SavedWebhook> {
     const clean = url.trim()
-    if (!isWebhookUrl(clean)) throw new Error('Eso no es la URL de un webhook (empieza con https://discord.com/api/webhooks/…).')
+    if (!isWebhookUrl(clean)) throw new Error(getT().discord.notWebhook)
     const real = await this.api.inspect(clean)
-    const name = label.trim() || real.name || 'Canal de Discord'
+    const name = label.trim() || real.name || getT().discord.defaultName
     return { guildId: real.guildId ?? '', guildName: name, channelId: real.channelId, channelName: '', url: clean }
   }
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { clamp } from '@shared/domain/time'
+import { getT } from '@shared/i18n'
 import { formatPlaybackRate, PLAYBACK_RATE, stepPlaybackRate } from '../domain/playbackRate'
 
 /** Imperative handle registered by the <video> container; other features drive playback through it. */
@@ -92,18 +93,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setRate(rate) {
     const next = clamp(rate, PLAYBACK_RATE.min, PLAYBACK_RATE.max)
     set({ rate: next })
-    get().showOsd(`Velocidad ${formatPlaybackRate(next)}`)
+    get().showOsd(getT().player.speedOsd(formatPlaybackRate(next)))
   },
 
   stepRate(direction) {
     const rate = stepPlaybackRate(get().rate, direction)
     set({ rate })
-    get().showOsd(`Velocidad ${formatPlaybackRate(rate)}`)
+    get().showOsd(getT().player.speedOsd(formatPlaybackRate(rate)))
   },
 
   resetRate() {
     set({ rate: PLAYBACK_RATE.normal })
-    get().showOsd(`Velocidad ${formatPlaybackRate(PLAYBACK_RATE.normal)}`)
+    get().showOsd(getT().player.speedOsd(formatPlaybackRate(PLAYBACK_RATE.normal)))
   },
 
   setVolume: (volume) => set({ volume: Math.min(1, Math.max(0, volume)), muted: false }),

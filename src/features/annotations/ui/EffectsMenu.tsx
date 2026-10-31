@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Sparkles } from 'lucide-react'
 import { IconButton } from '@shared/ui/atoms'
+import type { Messages } from '@shared/i18n'
 import { Popover } from '@shared/ui/organisms/Popover'
+import { useT } from '@shared/ui/useT'
 import { annotationLabel, type Annotation } from '../domain/annotation'
 import {
   DEFAULT_EFFECTS,
@@ -17,41 +19,12 @@ import {
 import { useAnnotationStore } from './annotationStore'
 import styles from './annotations.module.css'
 
-interface EffectRow {
-  kind: EffectKind
-  name: string
-}
-
 /** Effects by where they act on the drawing's bar; the title of each group says it, so the rows stay short. */
-const GROUPS: ReadonlyArray<{ title: string; rows: readonly EffectRow[] }> = [
-  {
-    title: 'Al empezar la barra del dibujo',
-    rows: [
-      { kind: 'fadeIn', name: 'Aparecer' },
-      { kind: 'zoomIn', name: 'Zoom' },
-      { kind: 'slideIn', name: 'Deslizar' }
-    ]
-  },
-  {
-    title: 'Al terminar la barra',
-    rows: [
-      { kind: 'fadeOut', name: 'Desvanecer' },
-      { kind: 'zoomOut', name: 'Zoom' },
-      { kind: 'slideOut', name: 'Deslizar' }
-    ]
-  },
-  {
-    title: 'Mientras se ve',
-    rows: [
-      { kind: 'blink', name: 'Parpadeo' },
-      { kind: 'pulse', name: 'Latido' }
-    ]
-  }
+const GROUPS: ReadonlyArray<{ title: (t: Messages) => string; rows: readonly EffectKind[] }> = [
+  { title: (t) => t.effects.atStart, rows: ['fadeIn', 'zoomIn', 'slideIn'] },
+  { title: (t) => t.effects.atEnd, rows: ['fadeOut', 'zoomOut', 'slideOut'] },
+  { title: (t) => t.effects.whileShown, rows: ['blink', 'pulse'] }
 ]
-
-const SIDE_NAMES: Record<Side, string> = { left: 'la izquierda', right: 'la derecha', top: 'arriba', bottom: 'abajo' }
-
-const formatNumber = (value: number): string => String(Math.round(value * 100) / 100).replace('.', ',')
 
 /** "0,5" and "0.5" both work; anything that is not a number is null. */
 function parseNumber(text: string): number | null {
@@ -83,6 +56,7 @@ function NumberField({
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const parsed = draft === null ? value : parseNumber(draft)
+  const t = useT()
 
   useEffect(() => setDraft(null), [value])
 
@@ -97,11 +71,11 @@ function NumberField({
       <input
         className={styles.numberInput}
         aria-label={label}
-        title={`${label} (↑ y ↓ para ajustar)`}
+        title={t.effects.nudge(label)}
         inputMode="decimal"
         spellCheck={false}
         disabled={disabled}
-        value={draft ?? formatNumber(value)}
+        value={draft ?? t.format.number(value)}
         data-invalid={(draft !== null && parsed === null) || undefined}
         onChange={(event) => setDraft(event.target.value)}
         onFocus={(event) => event.target.select()}
@@ -124,14 +98,16 @@ function NumberField({
   )
 }
 
-function EffectToggleRow({ drawing, row }: { drawing: Annotation; row: EffectRow }) {
+function EffectToggleRow({ drawing, kind }: { drawing: Annotation; kind: EffectKind }) {
   const setEffect = useAnnotationStore((state) => state.setEffect)
   const removeEffect = useAnnotationStore((state) => state.removeEffect)
-  const on = effectOf(drawing, row.kind)
+  const t = useT()
+  const on = effectOf(drawing, kind)
   // Off rows show what turning them on would give.
-  const shown = on ?? DEFAULT_EFFECTS[row.kind]
+  const shown = on ?? DEFAULT_EFFECTS[kind]
   const barSeconds = drawing.end - drawing.start
-  const id = `effect-${row.kind}`
+  const id = `effect-${kind}`
+  const name = t.effects.rows[kind]
 
   return (
     <div className={styles.effectRow} data-on={on ? '' : undefined}>
@@ -140,29 +116,29 @@ function EffectToggleRow({ drawing, row }: { drawing: Annotation; row: EffectRow
         type="checkbox"
         className={styles.effectCheck}
         checked={Boolean(on)}
-        onChange={(event) => (event.target.checked ? setEffect(drawing.id, DEFAULT_EFFECTS[row.kind]) : removeEffect(drawing.id, row.kind))}
+        onChange={(event) => (event.target.checked ? setEffect(drawing.id, DEFAULT_EFFECTS[kind]) : removeEffect(drawing.id, kind))}
       />
       <label htmlFor={id} className={styles.effectName}>
-        {row.name}
+        {name}
       </label>
       {'side' in shown ? (
         <select
           className={styles.effectSide}
-          aria-label={row.kind === 'slideIn' ? 'Desde dónde entra' : 'Hacia dónde sale'}
+          aria-label={kind === 'slideIn' ? t.effects.from : t.effects.to}
           disabled={!on}
           value={shown.side}
           onChange={(event) => on && 'side' in on && setEffect(drawing.id, { ...on, side: event.target.value as Side })}
         >
           {SIDES.map((side) => (
             <option key={side} value={side}>
-              {row.kind === 'slideIn' ? 'desde' : 'hacia'} {SIDE_NAMES[side]}
+              {(kind === 'slideIn' ? t.effects.fromSide : t.effects.toSide)[side]}
             </option>
           ))}
         </select>
       ) : null}
       {'duration' in shown ? (
         <NumberField
-          label={`Segundos que dura: ${row.name}`}
+          label={t.effects.seconds(name)}
           value={shown.duration}
           min={MIN_EFFECT_SECONDS}
           max={Math.max(MIN_EFFECT_SECONDS, barSeconds)}
@@ -174,12 +150,12 @@ function EffectToggleRow({ drawing, row }: { drawing: Annotation; row: EffectRow
       ) : null}
       {'rate' in shown ? (
         <NumberField
-          label={`Veces por segundo: ${row.name}`}
+          label={t.effects.perSecond(name)}
           value={shown.rate}
           min={MIN_RATE}
           max={MAX_RATE}
           step={0.5}
-          unit="por s"
+          unit={t.effects.perSecondUnit}
           disabled={!on}
           onCommit={(rate) => on && 'rate' in on && setEffect(drawing.id, { ...on, rate })}
         />
@@ -189,23 +165,22 @@ function EffectToggleRow({ drawing, row }: { drawing: Annotation; row: EffectRow
 }
 
 function EffectsPanel({ drawing }: { drawing: Annotation }) {
+  const t = useT()
   return (
     <div className={styles.effects}>
       <header className={styles.effectsHeader}>
-        <strong>Efectos</strong>
+        <strong>{t.effects.title}</strong>
         <span className={styles.effectsTarget}>{annotationLabel(drawing)}</span>
       </header>
       {GROUPS.map((group) => (
-        <section key={group.title} className={styles.effectGroup}>
-          <h3 className={styles.effectGroupTitle}>{group.title}</h3>
-          {group.rows.map((row) => (
-            <EffectToggleRow key={row.kind} drawing={drawing} row={row} />
+        <section key={group.rows[0]} className={styles.effectGroup}>
+          <h3 className={styles.effectGroupTitle}>{group.title(t)}</h3>
+          {group.rows.map((kind) => (
+            <EffectToggleRow key={kind} drawing={drawing} kind={kind} />
           ))}
         </section>
       ))}
-      <p className={styles.effectsHint}>
-        Marcá un efecto y ajustá sus segundos. Se ven en la barra del dibujo y se exportan igual. Estirá la barra para darles más tiempo.
-      </p>
+      <p className={styles.effectsHint}>{t.effects.hint}</p>
     </div>
   )
 }
@@ -216,6 +191,7 @@ export function EffectsMenu({ small, edge }: { small: boolean; edge?: RefObject<
   const drawing = useAnnotationStore((state) => state.annotations.find((annotation) => annotation.id === selectedId))
   const [open, setOpen] = useState(false)
   const anchor = useRef<HTMLSpanElement>(null)
+  const t = useT()
 
   // Nothing picked (or the drawing was deleted): there is nothing to show.
   useEffect(() => {
@@ -226,7 +202,7 @@ export function EffectsMenu({ small, edge }: { small: boolean; edge?: RefObject<
     <span ref={anchor} className={styles.customAnchor}>
       <IconButton
         small={small}
-        label={drawing ? 'Efectos del dibujo: aparecer, desvanecer, zoom, deslizar, parpadeo…' : 'Efectos: elegí antes un dibujo con el cursor'}
+        label={drawing ? t.effects.button : t.effects.buttonNeedsPick}
         active={open || (drawing ? hasEffects(drawing) : false)}
         disabled={!drawing}
         aria-haspopup="dialog"
@@ -236,7 +212,7 @@ export function EffectsMenu({ small, edge }: { small: boolean; edge?: RefObject<
         <Sparkles size={16} />
       </IconButton>
       {open && drawing ? (
-        <Popover anchor={anchor} edge={edge} label="Efectos del dibujo" onClose={() => setOpen(false)}>
+        <Popover anchor={anchor} edge={edge} label={t.effects.popover} onClose={() => setOpen(false)}>
           <EffectsPanel drawing={drawing} />
         </Popover>
       ) : null}

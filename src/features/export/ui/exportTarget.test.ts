@@ -43,6 +43,7 @@ describe('sourceSummary', () => {
 describe('preferencesFrom', () => {
   it('turns the MB setting into bytes', () => {
     const base = {
+      language: 'es' as const,
       libraryRoots: [],
       hardwareAcceleration: true,
       classicTimeline: false,

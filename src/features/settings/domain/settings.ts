@@ -1,14 +1,17 @@
 import type { QualityLevel, VideoCodec } from '@features/export/domain/encodingPlan'
+import { isLanguage, type Language } from '@shared/i18n'
 
 export interface AppSettings {
-  /** Folders where ShadowPlay saves recordings (one subfolder per game); the library shows them all together. */
+  /** Ajustes › General › Idioma: Spanish (the original) or English. */
+  language: Language
+  /** Folders with recordings (one subfolder per game, like ShadowPlay's); the library shows them all together. */
   libraryRoots: string[]
   outputDir: string
   /** Folder holding ffmpeg.exe and ffprobe.exe; null = find it automatically. */
   ffmpegDir: string | null
   /** Encode and decode on the GPU (dedicated or integrated) when there is one. */
   hardwareAcceleration: boolean
-  /** Ajustes › Timeline: in and out as the orange tabs of before, instead of the green and red lines. */
+  /** Ajustes › Línea de tiempo: in and out as the orange tabs of before, instead of the green and red lines. */
   classicTimeline: boolean
   codec: VideoCodec
   quality: QualityLevel
@@ -38,6 +41,7 @@ export function mergeSettings(current: AppSettings, patch: Record<string, unknow
   // Settings saved before the library took several folders had a single `libraryRoot`.
   const legacyRoot = text(patch.libraryRoot, '')
   return {
+    language: isLanguage(patch.language) ? patch.language : current.language,
     libraryRoots: has('libraryRoots')
       ? folders(patch.libraryRoots, current.libraryRoots)
       : legacyRoot !== ''

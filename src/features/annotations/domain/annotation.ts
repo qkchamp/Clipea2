@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { hasEffects, normalizeEffects, type Effect } from './effects'
 
 /** Position inside the video frame, 0..1 on both axes, so drawings survive any output resolution. */
@@ -45,17 +46,9 @@ export interface Annotation {
 export const DEFAULT_SHOW_FOR = 2
 export const SAME_FRAME_TOLERANCE = 1e-3
 
-export const SHAPE_LABELS: Record<ShapeKind, string> = {
-  arrow: 'Flecha',
-  ellipse: 'Círculo',
-  rect: 'Rectángulo',
-  pen: 'Trazo',
-  text: 'Texto'
-}
-
-/** Name on its bar in the timeline: the shape, or what a text says. */
+/** Name on its bar in the timeline: the shape (in the language in use), or what a text says. */
 export function annotationLabel(annotation: Annotation): string {
-  return annotation.shape.kind === 'text' ? annotation.shape.text : SHAPE_LABELS[annotation.shape.kind]
+  return annotation.shape.kind === 'text' ? annotation.shape.text : getT().drawing.shapes[annotation.shape.kind]
 }
 
 export function annotationsForSource(annotations: readonly Annotation[], sourcePath: string): Annotation[] {

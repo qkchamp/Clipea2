@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mergeSettings, type AppSettings } from './settings'
 
 const base: AppSettings = {
+  language: 'es',
   libraryRoots: ['C:/Videos/NVIDIA'],
   outputDir: 'C:/Videos/NVIDIA/PARA_DISCORD',
   ffmpegDir: null,
@@ -47,6 +48,12 @@ describe('mergeSettings', () => {
     expect(mergeSettings(base, { classicTimeline: true }).classicTimeline).toBe(true)
     expect(mergeSettings({ ...base, classicTimeline: true }, { classicTimeline: 'no' }).classicTimeline).toBe(true)
     expect(mergeSettings(base, {}).classicTimeline).toBe(false)
+  })
+
+  it('switches the language and ignores ones it does not speak', () => {
+    expect(mergeSettings(base, { language: 'en' }).language).toBe('en')
+    expect(mergeSettings({ ...base, language: 'en' }, { language: 'fr' }).language).toBe('en')
+    expect(mergeSettings(base, {}).language).toBe('es')
   })
 
   it('clears the ffmpeg folder with an empty value', () => {

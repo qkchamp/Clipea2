@@ -25,6 +25,7 @@
     "src/preload/**/*",
     "src/shared/domain/**/*",
     "src/shared/contracts/**/*",
+    "src/shared/i18n/**/*",
     "src/shared/infrastructure/**/*",
     "src/features/*/domain/**/*",
     "src/features/*/application/**/*",

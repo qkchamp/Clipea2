@@ -1,5 +1,6 @@
 import { CircleCheck, Info, TriangleAlert, X } from 'lucide-react'
 import { useUiStore } from '../uiStore'
+import { useT } from '../useT'
 import styles from './toasts.module.css'
 
 const ICONS = { info: Info, success: CircleCheck, warning: TriangleAlert } as const
@@ -7,6 +8,7 @@ const ICONS = { info: Info, success: CircleCheck, warning: TriangleAlert } as co
 /** Short notices at the bottom of the window, with optional actions ("Deshacer", "Copiar"…). */
 export function Toasts() {
   const toasts = useUiStore((state) => state.toasts)
+  const t = useT()
   return (
     <div className={styles.stack} role="status" aria-live="polite">
       {toasts.map((toast) => {
@@ -28,7 +30,7 @@ export function Toasts() {
                 {action.label}
               </button>
             ))}
-            <button type="button" className={styles.close} aria-label="Cerrar aviso" onClick={() => useUiStore.getState().dismissToast(toast.id)}>
+            <button type="button" className={styles.close} aria-label={t.common.closeNotice} onClick={() => useUiStore.getState().dismissToast(toast.id)}>
               <X size={14} />
             </button>
           </div>

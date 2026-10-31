@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { IconButton } from '../atoms'
 import { cx } from '../cx'
+import { useT } from '../useT'
 import styles from './dialog.module.css'
 
 const FOCUSABLE = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
@@ -17,6 +18,7 @@ interface DialogProps {
 /** Modal panel; Escape or a click on the backdrop closes it. Focus stays inside while it is open. */
 export function Dialog({ title, onClose, size = 'md', children }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const t = useT()
 
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -65,7 +67,7 @@ export function Dialog({ title, onClose, size = 'md', children }: DialogProps) {
       >
         <header className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
-          <IconButton label="Cerrar (Esc)" onClick={onClose}>
+          <IconButton label={t.dialog.close} onClick={onClose}>
             <X size={16} />
           </IconButton>
         </header>

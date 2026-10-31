@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { runProcess } from '@features/media/infrastructure/processRunner'
 import type { RenderProgress, RenderSpec, VideoRenderer } from '../application/ports'
 import { buildFfmpegArgs } from './ffmpegCommand'
@@ -8,7 +9,7 @@ export function summarizeFfmpegError(stderr: string): string {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-  return lines.slice(-4).join(' · ') || 'ffmpeg falló sin dar detalles'
+  return lines.slice(-4).join(' · ') || getT().export.ffmpegFailed
 }
 
 export class FfmpegVideoRenderer implements VideoRenderer {

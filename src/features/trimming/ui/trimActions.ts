@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { recordingLabel } from '@features/library/domain/libraryClip'
 import { useMontageStore } from '@features/montage/ui/montageStore'
 import { frameEndTime, frameStartTime } from '@features/player/domain/frameClock'
@@ -38,7 +39,7 @@ export function commitSelection(): void {
   if (trim.editingSegmentId) {
     montage.updateRange(trim.editingSegmentId, selection.range.start, selection.range.end)
     trim.stopEditing()
-    player.showOsd('Corte actualizado')
+    player.showOsd(getT().trim.cutUpdated)
     return
   }
   montage.add({
@@ -47,7 +48,7 @@ export function commitSelection(): void {
     start: selection.range.start,
     end: selection.range.end
   })
-  player.showOsd(`Agregado al montaje (#${useMontageStore.getState().segments.length})`)
+  player.showOsd(getT().trim.added(useMontageStore.getState().segments.length))
 }
 
 export function goToSelectionEdge(edge: 'start' | 'end'): void {

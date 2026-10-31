@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { cx } from '@shared/ui/cx'
 import { useInView } from '@shared/ui/useInView'
+import { useT } from '@shared/ui/useT'
 import { useMediaStore } from '@features/media/ui/mediaStore'
 import { useThumbnail } from '@features/media/ui/useThumbnail'
 import type { GameFolder, LibraryClip } from '../domain/libraryClip'
@@ -37,6 +38,7 @@ interface GameGroupProps {
 
 export function GameGroup({ game, expanded, activePath, onToggle, onOpen }: GameGroupProps) {
   const [limit, setLimit] = useState(PAGE)
+  const t = useT()
   const hidden = game.clips.length - limit
 
   return (
@@ -55,7 +57,7 @@ export function GameGroup({ game, expanded, activePath, onToggle, onOpen }: Game
       ) : null}
       {expanded && hidden > 0 ? (
         <button type="button" className={styles.more} onClick={() => setLimit(limit + PAGE)}>
-          Ver {Math.min(PAGE, hidden)} más
+          {t.library.showMore(Math.min(PAGE, hidden))}
         </button>
       ) : null}
     </div>

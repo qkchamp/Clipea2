@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Mouse, Volume2, VolumeX } from 'lucide-react'
 import { IconButton } from '@shared/ui/atoms'
+import { useT } from '@shared/ui/useT'
 import { parseVolumePercent, stepVolume, volumePercent } from '../domain/volume'
 import { PanelField, usePinnedPanel } from './FloatingPanel'
 import { usePlayerStore } from './playerStore'
@@ -15,6 +16,7 @@ export function VolumeControl() {
   const muted = usePlayerStore((state) => state.muted)
   const { open, setOpen, root } = usePinnedPanel()
   const player = usePlayerStore.getState
+  const t = useT()
 
   return (
     <div
@@ -24,12 +26,12 @@ export function VolumeControl() {
       onWheel={(event) => player().setVolume(stepVolume(player().volume, event.deltaY < 0 ? 1 : -1))}
     >
       <div className={styles.floatingPanel}>
-        <div className={styles.floatingBox} role="group" aria-label="Volumen">
+        <div className={styles.floatingBox} role="group" aria-label={t.player.volume}>
           {open ? (
             <PanelField
               value={String(volumePercent(volume))}
               suffix="%"
-              label="Volumen en porcentaje"
+              label={t.player.volumePercent}
               onApply={(text) => {
                 const next = parseVolumePercent(text)
                 if (next !== null) player().setVolume(next)
@@ -44,14 +46,14 @@ export function VolumeControl() {
             max={1}
             step={0.05}
             value={volume}
-            aria-label="Volumen"
+            aria-label={t.player.volume}
             className={styles.verticalSlider}
             data-muted={muted || undefined}
             style={{ '--fill': `${volumePercent(volume)}%` } as CSSProperties}
             onChange={(event) => player().setVolume(Number(event.target.value))}
           />
           {open ? (
-            <div className={styles.panelSwitch} role="group" aria-label="Sonido">
+            <div className={styles.panelSwitch} role="group" aria-label={t.player.sound}>
               <button type="button" aria-pressed={muted} onClick={() => player().setMuted(true)}>
                 OFF
               </button>
@@ -64,11 +66,11 @@ export function VolumeControl() {
           )}
           <span className={styles.wheelHint}>
             <Mouse size={12} />
-            rueda
+            {t.player.wheel}
           </span>
         </div>
       </div>
-      <IconButton label="Volumen · rueda para ajustar, M silencia" active={open} aria-expanded={open} onClick={() => setOpen(!open)}>
+      <IconButton label={t.player.volumeTitle} active={open} aria-expanded={open} onClick={() => setOpen(!open)}>
         {muted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
       </IconButton>
     </div>

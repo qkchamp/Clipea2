@@ -1,5 +1,6 @@
 import { openAsBlob } from 'node:fs'
 import { basename } from 'node:path'
+import { getT } from '@shared/i18n'
 import { WebhookGoneError, type WebhookApi } from '../application/discordWebhooks'
 
 interface DiscordError {
@@ -9,10 +10,11 @@ interface DiscordError {
 
 async function failure(response: Response): Promise<Error> {
   const body = (await response.json().catch(() => ({}))) as DiscordError
-  if (response.status === 404 || response.status === 401) return new WebhookGoneError('Ese webhook ya no existe en Discord: pegá uno nuevo.')
-  if (response.status === 413) return new Error('Discord rechazó el clip por tamaño: el límite de ese servidor es más chico.')
-  if (response.status === 429) return new Error(`Discord pide esperar ${Math.ceil(body.retry_after ?? 1)} s antes de enviar otro.`)
-  return new Error(body.message ? `Discord: ${body.message}` : `Discord respondió ${response.status}.`)
+  const t = getT().discord
+  if (response.status === 404 || response.status === 401) return new WebhookGoneError(t.gone)
+  if (response.status === 413) return new Error(t.serverLimit)
+  if (response.status === 429) return new Error(t.wait(Math.ceil(body.retry_after ?? 1)))
+  return new Error(body.message ? `Discord: ${body.message}` : t.status(response.status))
 }
 
 /** Discord's webhook endpoints over HTTPS (multipart upload, like a normal message with a file). */
@@ -26,7 +28,7 @@ export class HttpWebhookApi implements WebhookApi {
     const response = await this.fetchImpl(url.trim())
     if (!response.ok) throw await failure(response)
     const webhook = (await response.json()) as { guild_id?: string | null; channel_id?: string; name?: string | null }
-    if (!webhook.channel_id) throw new Error('Discord no devolvió el canal de ese webhook.')
+    if (!webhook.channel_id) throw new Error(getT().discord.noChannel)
     return { guildId: webhook.guild_id ?? null, channelId: webhook.channel_id, name: webhook.name ?? '' }
   }
 

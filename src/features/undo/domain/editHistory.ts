@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import type { Annotation } from '@features/annotations/domain/annotation'
 import type { Segment } from '@features/montage/domain/montage'
 
@@ -69,18 +70,8 @@ export function describeChange(before: EditSnapshot, after: EditSnapshot): Chang
   return 'none'
 }
 
-export const CHANGE_LABELS: Record<ChangeKind, string> = {
-  'segment-added': 'corte agregado',
-  'segment-removed': 'corte quitado',
-  'montage-cleared': 'montaje vaciado',
-  'montage-replaced': 'montaje reemplazado',
-  'montage-reordered': 'orden del montaje',
-  'segment-edited': 'corte editado',
-  'drawing-added': 'dibujo agregado',
-  'drawing-removed': 'dibujo borrado',
-  'drawing-edited': 'dibujo cambiado',
-  none: 'cambio'
-}
+/** "corte agregado", "dibujo borrado"…: what a change was, in the language in use. */
+export const changeLabel = (kind: ChangeKind): string => getT().undo.changes[kind]
 
 /** Changes that lose work: they get a toast with "Deshacer" right away. */
 export function isDestructive(kind: ChangeKind): boolean {

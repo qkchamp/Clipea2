@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ExportEvent } from '@shared/contracts/clipea2Api'
 import { formatBytes } from '@shared/domain/time'
+import { getT } from '@shared/i18n'
 
 export type ExportJob =
   | { status: 'idle' }
@@ -64,7 +65,7 @@ export const useExportStore = create<ExportState>((set, get) => ({
             attempt: event.attempt,
             fraction: 0,
             speed: null,
-            note: `Salió de ${formatBytes(event.previousBytes)}: lo achico y reintento (intento ${event.attempt})`
+            note: getT().export.retryNote(formatBytes(event.previousBytes), event.attempt)
           }
         })
         break
@@ -77,7 +78,7 @@ export const useExportStore = create<ExportState>((set, get) => ({
             attempt: current?.attempt ?? 1,
             fraction: 0,
             speed: null,
-            note: 'La GPU no pudo con este clip: sigo con la CPU (puede tardar más).'
+            note: getT().export.gpuFallback
           }
         })
         break

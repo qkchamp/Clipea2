@@ -1,10 +1,12 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarDays, Clock, FolderOpen, FolderPlus, Gamepad2, RefreshCw, Search } from 'lucide-react'
+import { getT, type Messages } from '@shared/i18n'
 import { api } from '@shared/ui/api'
 import { IconButton } from '@shared/ui/atoms'
 import { Calendar, EmptyState, HourPicker, PanelHeader, type Heat } from '@shared/ui/molecules'
 import { Popover } from '@shared/ui/organisms/Popover'
 import { useScrollingFlag } from '@shared/ui/useScrollingFlag'
+import { useT } from '@shared/ui/useT'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useSettingsStore } from '@features/settings/ui/settingsStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
@@ -31,16 +33,14 @@ export function openRecording(path: string): void {
   player.open(path)
 }
 
-const SEARCH_HINT = 'Buscar juego, clip o fecha'
-
 const PICKERS = {
-  hour: { label: 'Buscar por hora', icon: <Clock size={14} /> },
-  day: { label: 'Buscar por fecha', icon: <CalendarDays size={14} /> }
+  hour: { label: (t: Messages) => t.library.searchByHour, icon: <Clock size={14} /> },
+  day: { label: (t: Messages) => t.library.searchByDay, icon: <CalendarDays size={14} /> }
 } as const
 
 type Picker = keyof typeof PICKERS
 
-const describeClips = (count: number): string => `${count} ${count === 1 ? 'clip' : 'clips'}`
+const describeClips = (count: number): string => getT().library.clips(count)
 
 /**
  * The clips the pickers count: the list already in memory, counted when a picker opens (a few ms for
@@ -74,6 +74,7 @@ function SearchField() {
   const query = useLibraryStore((state) => state.query)
   const [picking, setPicking] = useState<Picker | null>(null)
   const field = useRef<HTMLLabelElement>(null)
+  const t = useT()
   const setQuery = (value: string): void => useLibraryStore.getState().setQuery(value)
   const pick = (value: string): void => {
     setQuery(value)
@@ -87,8 +88,8 @@ function SearchField() {
         <input
           type="search"
           // Its own name: the buttons inside the label would lend it theirs.
-          aria-label={SEARCH_HINT}
-          placeholder={SEARCH_HINT}
+          aria-label={t.library.searchHint}
+          placeholder={t.library.searchHint}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => event.key === 'Escape' && setQuery('')}
@@ -97,7 +98,7 @@ function SearchField() {
           <IconButton
             key={picker}
             className={styles.pickButton}
-            label={PICKERS[picker].label}
+            label={PICKERS[picker].label(t)}
             active={picking === picker}
             aria-haspopup="dialog"
             aria-expanded={picking === picker}
@@ -108,7 +109,7 @@ function SearchField() {
         ))}
       </label>
       {picking ? (
-        <Popover anchor={field} label={PICKERS[picking].label} onClose={() => setPicking(null)}>
+        <Popover anchor={field} label={PICKERS[picking].label(t)} onClose={() => setPicking(null)}>
           {picking === 'hour' ? (
             <HourSearch query={query} onPick={(hour) => pick(searchOnHour(query, hour))} />
           ) : (
@@ -120,8 +121,9 @@ function SearchField() {
   )
 }
 
-/** ShadowPlay recordings of every library folder, grouped by folder and game, newest first. */
+/** Recordings of every library folder, grouped by folder and game, newest first. */
 export function LibraryPanel() {
+  const t = useT()
   // Joined so the effect only runs again when the folders change, not on every settings save.
   const rootsKey = useSettingsStore((state) => state.settings?.libraryRoots.join('\n'))
   const libraryRoots = useMemo(() => (rootsKey === undefined ? null : rootsKey.split('\n').filter(Boolean)), [rootsKey])
@@ -176,22 +178,22 @@ export function LibraryPanel() {
   }
 
   return (
-    <section className={styles.panel} aria-label="Biblioteca">
+    <section className={styles.panel} aria-label={t.library.title}>
       <PanelHeader
         className={styles.header}
-        title="Biblioteca"
-        meta={scans ? `${totalClips} clips` : undefined}
+        title={t.library.title}
+        meta={scans ? t.library.clips(totalClips) : undefined}
         actions={
           <>
-            <IconButton small label="Agregar una carpeta de clips" onClick={() => void addFolder()}>
+            <IconButton small label={t.library.addFolder} onClick={() => void addFolder()}>
               <FolderPlus size={16} />
             </IconButton>
-            <IconButton small label="Abrir un video de otra carpeta" onClick={() => void openFile()}>
+            <IconButton small label={t.library.openOther} onClick={() => void openFile()}>
               <FolderOpen size={16} />
             </IconButton>
             <IconButton
               small
-              label="Volver a buscar clips"
+              label={t.library.rescan}
               disabled={!libraryRoots?.length || loading}
               onClick={() => libraryRoots && void useLibraryStore.getState().load(libraryRoots)}
             >
@@ -203,15 +205,15 @@ export function LibraryPanel() {
       <SearchField />
 
       <div ref={scrollRef} className={styles.scroll}>
-        {loading && !scans ? <p className={styles.status}>Buscando clips…</p> : null}
-        {error ? <p className={styles.status}>No pude leer las carpetas: {error}</p> : null}
+        {loading && !scans ? <p className={styles.status}>{t.library.scanning}</p> : null}
+        {error ? <p className={styles.status}>{t.library.readError(error)}</p> : null}
         {scans && shownClips === 0 ? (
           <EmptyState
             className={styles.empty}
             icon={<Gamepad2 size={18} />}
-            title={query ? 'Nada coincide' : 'No hay clips en estas carpetas'}
+            title={query ? t.library.noMatch : t.library.noClips}
           >
-            {query ? 'Probá con otro nombre o fecha.' : 'Agregá la carpeta donde guardás tus clips o abrí un video suelto.'}
+            {query ? t.library.tryAnother : t.library.addFolderHint}
           </EmptyState>
         ) : null}
         {shownClips > 0

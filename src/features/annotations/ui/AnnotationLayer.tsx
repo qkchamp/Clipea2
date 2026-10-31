@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { clamp } from '@shared/domain/time'
+import { useT } from '@shared/ui/useT'
 import { translateShape, type Point, type Shape, type StrokeStyle } from '../domain/annotation'
 import { isPlain, type Look } from '../domain/effects'
 import { handleAt, handlesOf, resizeShape, shapeAt, shapeBox, type FrameSize, type Handle, type HandleId, type TextMeasure } from '../domain/shapeGeometry'
@@ -66,6 +67,7 @@ export function AnnotationLayer({
   onResize,
   onEditText
 }: AnnotationLayerProps) {
+  const t = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Where a drawing is painted whole before it is faded (see drawWithLook).
   const scratchRef = useRef<HTMLCanvasElement | null>(null)
@@ -302,8 +304,8 @@ export function AnnotationLayer({
             fontSize: textSizeFor(boxStyle.width, rect.height)
           }}
           value={text}
-          aria-label="Texto del dibujo"
-          placeholder="Escribí y Enter"
+          aria-label={t.drawing.textLabel}
+          placeholder={t.drawing.textPlaceholder}
           onChange={(event) => {
             setText(event.target.value)
             if (openBox.current?.id === textBox.id) openBox.current.text = event.target.value

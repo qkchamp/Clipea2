@@ -4,6 +4,7 @@ import { heatLevel } from '@shared/domain/heat'
 import { formatHourOfDay, formatTime, parseTime } from '@shared/domain/time'
 import { IconButton, TextInput } from '../atoms'
 import { cx } from '../cx'
+import { useT } from '../useT'
 import styles from '../ui.module.css'
 
 interface SegmentOption<T extends string> {
@@ -72,6 +73,7 @@ export function TimeField({
   disabled?: boolean
 }) {
   const [draft, setDraft] = useState<string | null>(null)
+  const t = useT()
   const parsed = draft === null ? value : parseTime(draft)
 
   useEffect(() => setDraft(null), [value])
@@ -86,7 +88,7 @@ export function TimeField({
     <span className={styles.timeField}>
       <TextInput
         aria-label={label}
-        title={`${label}: escribí 50, 1:19 o 1m19s`}
+        title={t.timeField.hint(label)}
         value={draft ?? formatTime(value)}
         invalid={draft !== null && parsed === null}
         disabled={disabled}
@@ -173,9 +175,6 @@ export function Tabs<T extends string>({
   )
 }
 
-const MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-const WEEKDAYS = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do']
-
 const sameDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
@@ -196,11 +195,12 @@ function heatCell<T>(heat: Heat<T> | undefined, key: T, label: string) {
 }
 
 function HeatLegend() {
+  const t = useT()
   return (
     <div className={styles.heatLegend} aria-hidden>
-      Pocos
+      {t.dates.few}
       <span className={styles.heatScale} />
-      Muchos
+      {t.dates.many}
     </div>
   )
 }
@@ -216,22 +216,23 @@ export function Calendar({ value, heat, onPick }: { value: Date | null; heat?: H
   const first = new Date(month.getFullYear(), month.getMonth(), 1 - ((month.getDay() + 6) % 7))
   const days = Array.from({ length: 42 }, (_, index) => new Date(first.getFullYear(), first.getMonth(), first.getDate() + index))
   const move = (months: number): void => setMonth(new Date(month.getFullYear(), month.getMonth() + months, 1))
+  const t = useT()
 
   return (
     <div className={styles.calendar}>
       <div className={styles.calendarHeader}>
-        <IconButton small label="Mes anterior" onClick={() => move(-1)}>
+        <IconButton small label={t.dates.previousMonth} onClick={() => move(-1)}>
           <ChevronLeft size={16} />
         </IconButton>
         <span className={styles.calendarTitle} aria-live="polite">
-          {MONTH_NAMES[month.getMonth()]} {month.getFullYear()}
+          {t.dates.months[month.getMonth()]} {month.getFullYear()}
         </span>
-        <IconButton small label="Mes siguiente" onClick={() => move(1)}>
+        <IconButton small label={t.dates.nextMonth} onClick={() => move(1)}>
           <ChevronRight size={16} />
         </IconButton>
       </div>
       <div className={styles.calendarGrid}>
-        {WEEKDAYS.map((name) => (
+        {t.dates.weekdays.map((name) => (
           <span key={name} className={styles.calendarWeekday} aria-hidden>
             {name}
           </span>
@@ -246,7 +247,7 @@ export function Calendar({ value, heat, onPick }: { value: Date | null; heat?: H
               sameDay(day, today) && styles.calendarToday
             )}
             aria-pressed={value !== null && sameDay(day, value)}
-            {...heatCell(heat, day, `${day.getDate()} de ${MONTH_NAMES[day.getMonth()]} de ${day.getFullYear()}`)}
+            {...heatCell(heat, day, t.dates.longDay(day.getDate(), t.dates.months[day.getMonth()], day.getFullYear()))}
             onClick={() => onPick(day)}
           >
             {day.getDate()}
@@ -263,10 +264,11 @@ type HalfOfDay = 'am' | 'pm'
 /** An hour to pick on a 12-hour clock: AM or PM, then 12, 1 … 11. Opens on `value`'s half (0–23), or now's. */
 export function HourPicker({ value, heat, onPick }: { value: number | null; heat?: Heat<number>; onPick: (hour: number) => void }) {
   const [half, setHalf] = useState<HalfOfDay>(() => ((value ?? new Date().getHours()) < 12 ? 'am' : 'pm'))
+  const t = useT()
   return (
     <div className={styles.hourPicker}>
       <SegmentedControl<HalfOfDay>
-        label="AM o PM"
+        label={t.dates.amOrPm}
         value={half}
         onChange={setHalf}
         options={[

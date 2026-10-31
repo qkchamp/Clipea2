@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '../atoms'
+import { useT } from '../useT'
 import { Dialog } from './Dialog'
 import styles from './dialog.module.css'
 
@@ -20,12 +21,13 @@ interface ConfirmDialogProps {
  * body, so a panel deep in a column can ask it over the whole window.
  */
 export function ConfirmDialog({ title, children, confirmLabel, danger = false, onConfirm, onClose }: ConfirmDialogProps) {
+  const t = useT()
   return createPortal(
     <Dialog title={title} size="sm" onClose={onClose}>
       <div className={styles.confirm}>
         <p className={styles.question}>{children}</p>
         <div className={styles.answers}>
-          <Button onClick={onClose}>Cancelar</Button>
+          <Button onClick={onClose}>{t.common.cancel}</Button>
           <Button
             variant={danger ? 'danger' : 'primary'}
             onClick={() => {

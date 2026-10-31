@@ -1,3 +1,5 @@
+import { getT } from '@shared/i18n'
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
@@ -18,10 +20,10 @@ export function formatTime(seconds: number, decimals = 2): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}${decimalsPart}` : `${m}:${pad(s)}${decimalsPart}`
 }
 
-/** Human duration: 9.5 → "9,5 s", 75 → "1:15", 3725 → "1:02:05". */
+/** Human duration: 9.5 → "9,5 s" ("9.5 s" in English), 75 → "1:15", 3725 → "1:02:05". */
 export function formatDuration(seconds: number): string {
   const safe = Number.isFinite(seconds) && seconds > 0 ? seconds : 0
-  if (safe < 60) return `${safe.toFixed(1).replace('.', ',')} s`
+  if (safe < 60) return getT().format.seconds(safe)
   return formatTime(safe, 0)
 }
 
@@ -56,9 +58,9 @@ export function parseTime(input: string): number | null {
 
 const MEGABYTE = 1_000_000
 
-/** Decimal units, like Discord: 14_200_000 → "14,2 MB". */
+/** Decimal units, like Discord: 14_200_000 → "14,2 MB" ("14.2 MB" in English). */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB'
   if (bytes < MEGABYTE) return `${Math.max(1, Math.round(bytes / 1000))} KB`
-  return `${(bytes / MEGABYTE).toFixed(1).replace('.', ',')} MB`
+  return `${getT().format.decimal(bytes / MEGABYTE, 1)} MB`
 }

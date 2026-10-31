@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { baseName, describeRecording } from '@features/library/domain/libraryClip'
 import type { MediaInfo } from '@features/media/domain/mediaInfo'
 import type { Segment } from '@features/montage/domain/montage'
@@ -54,10 +55,10 @@ export function preferencesFrom(settings: AppSettings): EncodingPreferences {
 
 const pad = (value: number): string => String(value).padStart(2, '0')
 
-/** "How To Fish 2026-10-03 07.42" (or "Montaje …" when it mixes games). */
+/** "How To Fish 2026-10-03 07.42" (or "Montaje …", "Montage …" in English, when it mixes games). */
 export function defaultFileName(target: ExportTarget, now = new Date()): string {
   const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}.${pad(now.getMinutes())}`
   const titles = new Set(uniqueSources(target).map((path) => describeRecording(baseName(path)).title))
   const [onlyTitle] = [...titles]
-  return titles.size === 1 && onlyTitle ? `${onlyTitle} ${stamp}` : `Montaje ${stamp}`
+  return titles.size === 1 && onlyTitle ? `${onlyTitle} ${stamp}` : `${getT().export.montageName} ${stamp}`
 }

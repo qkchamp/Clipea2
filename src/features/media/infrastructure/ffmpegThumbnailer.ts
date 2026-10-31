@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { createHash } from 'node:crypto'
 import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -58,7 +59,7 @@ export class FfmpegThumbnailer implements Thumbnailer {
           [...args, '-frames:v', '1', '-fps_mode', 'passthrough', '-vf', 'scale=320:-2', '-q:v', '4', '-y', output],
           { priority: 'background' }
         )
-        if (result.code !== 0 || !(await exists(output))) throw new Error(result.stderr.trim() || 'No se pudo generar la miniatura')
+        if (result.code !== 0 || !(await exists(output))) throw new Error(result.stderr.trim() || getT().media.thumbnailFailed)
         return output
       })
       .finally(() => this.inFlight.delete(output))
@@ -100,7 +101,7 @@ export class FfmpegThumbnailer implements Thumbnailer {
     const rate = (count / Math.max(durationSec, 0.5)).toFixed(6)
     const args = ['-hide_banner', '-loglevel', 'error', '-skip_frame', 'nokey', '-i', videoPath]
     const result = await runProcess(ffmpeg, [...args, '-vf', `fps=${rate},scale=-2:90`, '-frames:v', String(count), '-q:v', '5', '-y', join(dir, 'f%03d.jpg')])
-    if (result.code !== 0) throw new Error(result.stderr.trim() || 'No se pudo generar la tira de miniaturas')
+    if (result.code !== 0) throw new Error(result.stderr.trim() || getT().media.filmstripFailed)
   }
 
   /** One seek per frame (nearest keyframe, nothing else decoded), split across a few ffmpeg processes. */
@@ -121,7 +122,7 @@ export class FfmpegThumbnailer implements Thumbnailer {
         })
     )
     const failed = results.find((result) => result.code !== 0)
-    if (failed) throw new Error(failed.stderr.trim() || 'No se pudo generar la tira de miniaturas')
+    if (failed) throw new Error(failed.stderr.trim() || getT().media.filmstripFailed)
   }
 
   /** Drops previews older than `maxAgeMs`, then the oldest ones until the cache fits in `maxBytes`. */

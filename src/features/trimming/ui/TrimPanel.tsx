@@ -3,8 +3,9 @@ import { ArrowRight, Check, Plus, X } from 'lucide-react'
 import { formatDuration } from '@shared/domain/time'
 import { Button, Kbd } from '@shared/ui/atoms'
 import { TimeField } from '@shared/ui/molecules'
+import { useLanguage, useT } from '@shared/ui/useT'
 import { annotationLabel, annotationsForSource, assignLanes } from '@features/annotations/domain/annotation'
-import { EFFECT_LABELS, effectSpans } from '@features/annotations/domain/effects'
+import { effectLabel, effectSpans } from '@features/annotations/domain/effects'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { useMontageStore } from '@features/montage/ui/montageStore'
 import { frameDuration, frameStartTime } from '@features/player/domain/frameClock'
@@ -66,6 +67,9 @@ export function TrimPanel() {
   const drawingMode = useAnnotationStore((state) => state.drawing)
   const classicTimeline = useSettingsStore((state) => state.settings?.classicTimeline ?? false)
   const frames = useFilmstrip(sourcePath, duration)
+  const t = useT()
+  // The drawings' names and effects on their bars are written in the language in use.
+  const language = useLanguage()
   // One undo step per drag of a drawing bar, however many frames it went through.
   const endGesture = useRef<(() => void) | null>(null)
 
@@ -85,9 +89,9 @@ export function TrimPanel() {
       color: annotation.shape.style.color,
       lane: lanes[index],
       keyframes: annotation.keyframes?.map((keyframe) => keyframe.time) ?? [],
-      effects: effectSpans(annotation).map((span) => ({ ...span, label: EFFECT_LABELS[span.kind] }))
+      effects: effectSpans(annotation).map((span) => ({ ...span, label: effectLabel(span.kind) }))
     }))
-  }, [annotations, sourcePath])
+  }, [annotations, sourcePath, language])
   const bands = useMemo(
     () =>
       segments
@@ -104,7 +108,7 @@ export function TrimPanel() {
   }
 
   return (
-    <section className={styles.panel} aria-label="Recorte" data-drawing={drawingMode || undefined}>
+    <section className={styles.panel} aria-label={t.trim.title} data-drawing={drawingMode || undefined}>
       <Timeline
         duration={duration}
         range={selection}
@@ -149,11 +153,11 @@ export function TrimPanel() {
 
       <div className={styles.rangeBar}>
         <div className={styles.point}>
-          <Button size="sm" variant="ghost" disabled={!selection} title="Inicio en el cuadro actual (I)" onClick={markInAtPlayhead}>
-            Inicio <Kbd>I</Kbd>
+          <Button size="sm" variant="ghost" disabled={!selection} title={t.trim.startHere} onClick={markInAtPlayhead}>
+            {t.trim.start} <Kbd>I</Kbd>
           </Button>
           <TimeField
-            label="Inicio"
+            label={t.trim.start}
             value={selection?.start ?? 0}
             disabled={!selection}
             onCommit={(time) => selection && trim().setRange(withStart(selection, time, duration))}
@@ -161,38 +165,38 @@ export function TrimPanel() {
         </div>
         <ArrowRight size={16} className={styles.arrow} />
         <div className={styles.point}>
-          <Button size="sm" variant="ghost" disabled={!selection} title="Fin después del cuadro actual (O)" onClick={markOutAtPlayhead}>
-            Fin <Kbd>O</Kbd>
+          <Button size="sm" variant="ghost" disabled={!selection} title={t.trim.endHere} onClick={markOutAtPlayhead}>
+            {t.trim.end} <Kbd>O</Kbd>
           </Button>
           <TimeField
-            label="Fin"
+            label={t.trim.end}
             value={selection?.end ?? 0}
             disabled={!selection}
             onCommit={(time) => selection && trim().setRange(withEnd(selection, time, duration))}
           />
         </div>
         <div className={styles.duration}>
-          Duración <strong className="tabular">{formatDuration(selection ? rangeDuration(selection) : 0)}</strong>
+          {t.trim.duration} <strong className="tabular">{formatDuration(selection ? rangeDuration(selection) : 0)}</strong>
         </div>
         <Button
           size="sm"
           variant="ghost"
           disabled={!sourcePath || duration <= 0}
-          title="Seleccionar todo el video"
+          title={t.trim.selectAll}
           onClick={() => sourcePath && trim().setRange(fullRange(duration))}
         >
-          Todo
+          {t.trim.all}
         </Button>
 
         <div className={styles.rangeActions}>
           {editingIndex >= 0 ? (
             <>
-              <span className={styles.editing}>Editando corte #{editingIndex + 1}</span>
+              <span className={styles.editing}>{t.trim.editingCut(editingIndex + 1)}</span>
               <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={() => trim().stopEditing()}>
-                Cancelar
+                {t.common.cancel}
               </Button>
               <Button size="sm" variant="primary" icon={<Check size={14} />} onClick={commitSelection}>
-                Guardar corte <Kbd>Enter</Kbd>
+                {t.trim.saveCut} <Kbd>Enter</Kbd>
               </Button>
             </>
           ) : (
@@ -201,10 +205,10 @@ export function TrimPanel() {
               variant="secondary"
               icon={<Plus size={14} />}
               disabled={!selection || !isValidRange(selection)}
-              title="Suma la selección al montaje (podés juntar cortes de varios videos)"
+              title={t.trim.addToMontageTitle}
               onClick={commitSelection}
             >
-              Agregar al montaje <Kbd>Enter</Kbd>
+              {t.trim.addToMontage} <Kbd>Enter</Kbd>
             </Button>
           )}
         </div>

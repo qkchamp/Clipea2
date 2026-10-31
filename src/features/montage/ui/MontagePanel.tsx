@@ -4,6 +4,7 @@ import { formatDuration } from '@shared/domain/time'
 import { Button } from '@shared/ui/atoms'
 import { EmptyState, PanelHeader } from '@shared/ui/molecules'
 import { useResetOnShow } from '@shared/ui/useResetOnShow'
+import { useT } from '@shared/ui/useT'
 import { useThumbnail } from '@features/media/ui/useThumbnail'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
@@ -32,6 +33,7 @@ export function MontagePanel() {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const t = useT()
   useResetOnShow(() => {
     setDragIndex(null)
     setDropIndex(null)
@@ -59,10 +61,10 @@ export function MontagePanel() {
   }
 
   return (
-    <section className={styles.panel} aria-label="Montaje">
+    <section className={styles.panel} aria-label={t.app.montage}>
       {segments.length > 0 ? (
         <PanelHeader
-          meta={`${segments.length} ${segments.length === 1 ? 'corte' : 'cortes'} · ${formatDuration(montageDuration(segments))}`}
+          meta={`${t.montage.cuts(segments.length)} · ${formatDuration(montageDuration(segments))}`}
           actions={
             <>
               <Button
@@ -71,7 +73,7 @@ export function MontagePanel() {
                 icon={<Play size={14} />}
                 onClick={() => usePlayerStore.getState().startPreview(segments.map(previewItem))}
               >
-                Ver
+                {t.montage.preview}
               </Button>
               <Button
                 size="sm"
@@ -84,7 +86,7 @@ export function MontagePanel() {
                   setConfirmClear(false)
                 }}
               >
-                {confirmClear ? '¿Vaciar?' : 'Vaciar'}
+                {confirmClear ? t.common.confirmClear : t.common.clear}
               </Button>
             </>
           }
@@ -92,9 +94,8 @@ export function MontagePanel() {
       ) : null}
 
       {segments.length === 0 ? (
-        <EmptyState icon={<Clapperboard size={18} />} title="Juntá varios cortes en un clip">
-          Marcá inicio y fin, y tocá Agregar al montaje (Enter). Podés sumar trozos de distintos videos y reordenarlos
-          arrastrando. Si no agregás nada, se exporta la selección actual.
+        <EmptyState icon={<Clapperboard size={18} />} title={t.montage.emptyTitle}>
+          {t.montage.emptyBody}
         </EmptyState>
       ) : (
         <ol className={styles.list}>

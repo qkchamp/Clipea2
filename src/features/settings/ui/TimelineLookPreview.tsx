@@ -1,14 +1,12 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
+import { useT } from '@shared/ui/useT'
 import { TimelinePreview } from '@features/trimming/ui/TimelinePreview'
 import styles from './settings.module.css'
 
 export type TimelineLook = 'on' | 'off'
 
-const LOOKS: readonly { value: TimelineLook; label: string }[] = [
-  { value: 'on', label: 'Activada' },
-  { value: 'off', label: 'Desactivada' }
-]
+const LOOKS: readonly TimelineLook[] = ['on', 'off']
 
 /** Between the popup and the control. */
 const GAP = 8
@@ -31,6 +29,7 @@ export function TimelineLookPreview({
 }) {
   const box = useRef<HTMLDivElement>(null)
   const [place, setPlace] = useState<{ left: number; top: number; width: number } | null>(null)
+  const t = useT()
 
   useLayoutEffect(() => {
     const popup = box.current
@@ -68,12 +67,12 @@ export function TimelineLookPreview({
       }
     >
       {LOOKS.map((look) => (
-        <figure key={look.value} className={styles.look} data-hovered={look.value === hovered || undefined}>
-          <TimelinePreview classic={look.value === 'on'} />
+        <figure key={look} className={styles.look} data-hovered={look === hovered || undefined}>
+          <TimelinePreview classic={look === 'on'} />
           <figcaption className={styles.lookCaption}>
-            {look.label}
-            <span className={styles.lookTag} data-current={look.value === current || undefined}>
-              {look.value === current ? 'Ahora' : 'Con el cambio'}
+            {look === 'on' ? t.common.on : t.common.off}
+            <span className={styles.lookTag} data-current={look === current || undefined}>
+              {look === current ? t.settings.now : t.settings.withChange}
             </span>
           </figcaption>
         </figure>

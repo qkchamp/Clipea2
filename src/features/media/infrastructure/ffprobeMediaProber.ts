@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -116,7 +117,7 @@ export class FfprobeMediaProber implements MediaProber {
   private async ffprobeFrameTimes(path: string): Promise<number[]> {
     const args = ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'packet=pts_time', '-of', 'csv=p=0', path]
     const { stdout, stderr, code } = await runProcess(await this.ffprobePath(), args, { timeoutMs: FRAME_TIMES_TIMEOUT_MS })
-    if (code !== 0) throw new Error(stderr.trim() || `ffprobe terminó con código ${code}`)
+    if (code !== 0) throw new Error(stderr.trim() || getT().media.probeFailed(code))
     return stdout
       .split(/\r?\n/)
       .map((line) => Number.parseFloat(line))
@@ -126,7 +127,7 @@ export class FfprobeMediaProber implements MediaProber {
   private async ffprobeInfo(path: string): Promise<MediaInfo> {
     const args = ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', path]
     const { stdout, stderr, code } = await runProcess(await this.ffprobePath(), args, { timeoutMs: 30_000, priority: 'background' })
-    if (code !== 0) throw new Error(stderr.trim() || `ffprobe terminó con código ${code}`)
+    if (code !== 0) throw new Error(stderr.trim() || getT().media.probeFailed(code))
     return mediaInfoFromFfprobe(path, JSON.parse(stdout) as FfprobeOutput)
   }
 }

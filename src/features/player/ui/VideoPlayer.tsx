@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { CircleAlert, Clapperboard, Square } from 'lucide-react'
 import { toMediaUrl } from '@shared/contracts/mediaUrl'
 import { clamp } from '@shared/domain/time'
+import { getT } from '@shared/i18n'
 import { Button, Kbd } from '@shared/ui/atoms'
+import { useT } from '@shared/ui/useT'
 import { snapToFrames } from '@features/annotations/domain/annotation'
 import type { VideoRect } from '@features/annotations/ui/AnnotationLayer'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
@@ -23,6 +25,7 @@ export function VideoPlayer() {
   const stageRef = useRef<HTMLDivElement>(null)
   const [rect, setRect] = useState<VideoRect | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const t = useT()
 
   const sourcePath = usePlayerStore((state) => state.sourcePath)
   const rate = usePlayerStore((state) => state.rate)
@@ -158,7 +161,7 @@ export function VideoPlayer() {
       const path = player().sourcePath
       if (!path) return
       const failure = video.error
-      console.warn(`[Clipea2] error del video (${failure?.code ?? '?'}): ${failure?.message ?? 'sin detalle'}`)
+      console.warn(`[Clipea2] video error (${failure?.code ?? '?'}): ${failure?.message ?? 'no details'}`)
       const now = performance.now()
       if (canRecover(failure?.code, recoveries, now)) {
         recoveries = [...recoveries, now]
@@ -167,7 +170,7 @@ export function VideoPlayer() {
         video.load()
         return
       }
-      setError('No se pudo reproducir este archivo. ¿Es un video válido?')
+      setError(getT().player.cantPlay)
     }
 
     const controller: PlayerController = {
@@ -239,10 +242,15 @@ export function VideoPlayer() {
           <div className={styles.placeholder}>
             <img src={logo} alt="" width={84} height={84} />
             <p className={styles.placeholderTitle}>
-              Elegí un clip <span>de la biblioteca</span>
+              {t.player.pickClip[0]}
+              <span>{t.player.pickClip[1]}</span>
             </p>
             <p className={styles.placeholderBody}>
-              o arrastrá un video acá. Marcá inicio <Kbd>I</Kbd> y fin <Kbd>O</Kbd>, y exportá para Discord.
+              {t.player.dropHint[0]}
+              <Kbd>I</Kbd>
+              {t.player.dropHint[1]}
+              <Kbd>O</Kbd>
+              {t.player.dropHint[2]}
             </p>
           </div>
         ) : null}
@@ -255,9 +263,9 @@ export function VideoPlayer() {
           {previewItem && preview ? (
             <div className={styles.previewBadge} onClick={(event) => event.stopPropagation()}>
               <Clapperboard size={14} />
-              Viendo montaje · corte {preview.index + 1}/{preview.items.length}
+              {t.player.previewing(preview.index + 1, preview.items.length)}
               <Button size="sm" variant="ghost" icon={<Square size={12} />} onClick={() => usePlayerStore.getState().stopPreview()}>
-                Parar
+                {t.player.stop}
               </Button>
             </div>
           ) : null}

@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { create } from 'zustand'
 import { useUiStore } from '@shared/ui/uiStore'
 import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
@@ -5,7 +6,7 @@ import { useMontageStore } from '@features/montage/ui/montageStore'
 import { usePlayerStore } from '@features/player/ui/playerStore'
 import { useTrimStore } from '@features/trimming/ui/trimStore'
 import {
-  CHANGE_LABELS,
+  changeLabel,
   describeChange,
   EMPTY_HISTORY,
   isDestructive,
@@ -39,10 +40,10 @@ function onChange(): void {
   if (kind === 'none') return
   useUndoStore.setState((state) => ({ history: record(state.history, before) }))
   if (isDestructive(kind)) {
-    const label = CHANGE_LABELS[kind]
+    const label = changeLabel(kind)
     useUiStore.getState().showToast({
       text: label.charAt(0).toUpperCase() + label.slice(1),
-      actions: [{ label: 'Deshacer', run: undo }]
+      actions: [{ label: getT().undo.undo, run: undo }]
     })
   }
 }
@@ -97,17 +98,17 @@ export function resetUndo(): void {
 export function undo(): void {
   const now = current()
   const step = undoStep(useUndoStore.getState().history, now)
-  if (!step) return usePlayerStore.getState().showOsd('Nada para deshacer')
+  if (!step) return usePlayerStore.getState().showOsd(getT().undo.nothingToUndo)
   apply(step.snapshot)
   useUndoStore.setState({ history: step.history })
-  usePlayerStore.getState().showOsd(`Deshecho: ${CHANGE_LABELS[describeChange(step.snapshot, now)]}`)
+  usePlayerStore.getState().showOsd(getT().undo.undone(changeLabel(describeChange(step.snapshot, now))))
 }
 
 export function redo(): void {
   const now = current()
   const step = redoStep(useUndoStore.getState().history, now)
-  if (!step) return usePlayerStore.getState().showOsd('Nada para rehacer')
+  if (!step) return usePlayerStore.getState().showOsd(getT().undo.nothingToRedo)
   apply(step.snapshot)
   useUndoStore.setState({ history: step.history })
-  usePlayerStore.getState().showOsd(`Rehecho: ${CHANGE_LABELS[describeChange(now, step.snapshot)]}`)
+  usePlayerStore.getState().showOsd(getT().undo.redone(changeLabel(describeChange(now, step.snapshot))))
 }

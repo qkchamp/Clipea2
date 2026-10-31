@@ -1,49 +1,57 @@
 import { Fragment } from 'react'
+import type { Messages } from '@shared/i18n'
 import { Kbd } from '@shared/ui/atoms'
 import { Dialog } from '@shared/ui/organisms/Dialog'
+import { useT } from '@shared/ui/useT'
 import styles from './shortcuts.module.css'
 
-const GROUPS: Array<{ title: string; items: Array<{ keys: string[][]; what: string }> }> = [
-  {
-    title: 'Reproductor',
-    items: [
-      { keys: [['Espacio'], ['K']], what: 'Reproducir / pausar' },
-      { keys: [['Ctrl', '←'], ['Ctrl', '→']], what: 'Cuadro anterior / siguiente' },
-      { keys: [['Ctrl', '↓'], ['Ctrl', '↑']], what: 'Velocidad −0.25x / +0.25x' },
-      { keys: [['Ctrl', 'R']], what: 'Volver a 1.00x' },
-      { keys: [['←'], ['→']], what: 'Retroceder / avanzar 5 s (con Shift: 1 s)' },
-      { keys: [['M']], what: 'Silenciar' }
-    ]
-  },
-  {
-    title: 'Recorte y montaje',
-    items: [
-      { keys: [['I'], ['O']], what: 'Marcar inicio / fin en el cuadro actual' },
-      { keys: [['Inicio'], ['Fin']], what: 'Ir al inicio / fin de la selección' },
-      { keys: [['Enter']], what: 'Agregar la selección al montaje (o guardar el corte editado)' },
-      { keys: [['Rueda']], what: 'Cuadro siguiente / anterior con el mouse sobre el video o la línea de tiempo' },
-      { keys: [['Ctrl', 'Rueda']], what: 'Zoom en la línea de tiempo (doble clic: ver todo)' },
-      { keys: [['Shift', 'Rueda']], what: 'Moverse por la línea de tiempo con zoom' },
-      { keys: [['Ctrl', 'O']], what: 'Abrir un video de otra carpeta' }
-    ]
-  },
-  {
-    title: 'Dibujo y exportación',
-    items: [
-      { keys: [['D']], what: 'Dibujar sobre el cuadro actual (Esc para terminar)' },
-      { keys: [['Ctrl', 'Z']], what: 'Deshacer (dibujos, cortes, dibujos borrados, vaciar montaje)' },
-      { keys: [['Ctrl', 'Y'], ['Ctrl', 'Shift', 'Z']], what: 'Rehacer' },
-      { keys: [['Supr']], what: 'Borrar el dibujo elegido (con el cursor o en su barra de la línea de tiempo)' },
-      { keys: [['Ctrl', 'E']], what: 'Exportar a disco (elegís dónde guardarlo)' }
-    ]
-  }
-]
+type Group = { title: string; items: Array<{ keys: string[][]; what: string }> }
+
+function groupsFor(t: Messages): Group[] {
+  const { keys } = t.shortcuts
+  return [
+    {
+      title: t.shortcuts.player,
+      items: [
+        { keys: [[keys.space], ['K']], what: t.shortcuts.playPause },
+        { keys: [['Ctrl', '←'], ['Ctrl', '→']], what: t.shortcuts.frameStep },
+        { keys: [['Ctrl', '↓'], ['Ctrl', '↑']], what: t.shortcuts.speed },
+        { keys: [['Ctrl', 'R']], what: t.shortcuts.speedReset },
+        { keys: [['←'], ['→']], what: t.shortcuts.seek },
+        { keys: [['M']], what: t.shortcuts.mute }
+      ]
+    },
+    {
+      title: t.shortcuts.trimAndMontage,
+      items: [
+        { keys: [['I'], ['O']], what: t.shortcuts.markInOut },
+        { keys: [[keys.home], [keys.end]], what: t.shortcuts.goToEdges },
+        { keys: [['Enter']], what: t.shortcuts.addToMontage },
+        { keys: [[keys.wheel]], what: t.shortcuts.wheelStep },
+        { keys: [['Ctrl', keys.wheel]], what: t.shortcuts.wheelZoom },
+        { keys: [['Shift', keys.wheel]], what: t.shortcuts.wheelPan },
+        { keys: [['Ctrl', 'O']], what: t.shortcuts.openOther }
+      ]
+    },
+    {
+      title: t.shortcuts.drawingAndExport,
+      items: [
+        { keys: [['D']], what: t.shortcuts.draw },
+        { keys: [['Ctrl', 'Z']], what: t.shortcuts.undo },
+        { keys: [['Ctrl', 'Y'], ['Ctrl', 'Shift', 'Z']], what: t.shortcuts.redo },
+        { keys: [[keys.delete]], what: t.shortcuts.deleteDrawing },
+        { keys: [['Ctrl', 'E']], what: t.shortcuts.exportToDisk }
+      ]
+    }
+  ]
+}
 
 export function ShortcutsHelp({ onClose }: { onClose: () => void }) {
+  const t = useT()
   return (
-    <Dialog title="Atajos de teclado" onClose={onClose}>
+    <Dialog title={t.shortcuts.title} onClose={onClose}>
       <div className={styles.groups}>
-        {GROUPS.map((group) => (
+        {groupsFor(t).map((group) => (
           <section key={group.title}>
             <h3 className={styles.groupTitle}>{group.title}</h3>
             <dl className={styles.list}>

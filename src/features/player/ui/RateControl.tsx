@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from 'react'
 import { flushSync } from 'react-dom'
 import { Mouse } from 'lucide-react'
 import { cx } from '@shared/ui/cx'
+import { useT } from '@shared/ui/useT'
 import { formatPlaybackRate, parsePlaybackRate, PLAYBACK_RATE, playbackRateFraction } from '../domain/playbackRate'
 import { PanelField, usePinnedPanel } from './FloatingPanel'
 import { usePlayerStore } from './playerStore'
@@ -18,6 +19,7 @@ export function RateControl() {
   const { open, setOpen, root } = usePinnedPanel()
   const button = useRef<HTMLButtonElement>(null)
   const player = usePlayerStore.getState
+  const t = useT()
 
   return (
     <div
@@ -27,7 +29,7 @@ export function RateControl() {
       onWheel={(event) => player().stepRate(event.deltaY < 0 ? 1 : -1)}
     >
       <div className={styles.floatingPanel}>
-        <div className={styles.floatingBox} role="group" aria-label="Velocidad de reproducción">
+        <div className={styles.floatingBox} role="group" aria-label={t.player.speedGroup}>
           <span className={styles.panelEdge}>{formatPlaybackRate(PLAYBACK_RATE.max)}</span>
           <input
             type="range"
@@ -35,7 +37,7 @@ export function RateControl() {
             max={PLAYBACK_RATE.max}
             step={PLAYBACK_RATE.step}
             value={rate}
-            aria-label="Velocidad"
+            aria-label={t.player.speed}
             className={cx(styles.verticalSlider, styles.speedSlider)}
             style={{ '--fill': `${playbackRateFraction(rate) * 100}%` } as CSSProperties}
             onChange={(event) => player().setRate(Number(event.target.value))}
@@ -44,7 +46,7 @@ export function RateControl() {
           <span className={styles.panelEdge}>{formatPlaybackRate(PLAYBACK_RATE.min)}</span>
           <span className={styles.wheelHint}>
             <Mouse size={12} />
-            rueda
+            {t.player.wheel}
           </span>
         </div>
       </div>
@@ -52,7 +54,7 @@ export function RateControl() {
         <PanelField
           value={rate.toFixed(2)}
           suffix="x"
-          label="Escribir la velocidad"
+          label={t.player.typeSpeed}
           className={cx(styles.rate, styles.rateField)}
           autoFocus
           onApply={(text) => {
@@ -72,7 +74,7 @@ export function RateControl() {
           className={styles.rate}
           data-modified={rate !== PLAYBACK_RATE.normal || undefined}
           aria-expanded={false}
-          title="Velocidad · clic para escribirla, rueda del mouse o Ctrl+↑/↓; doble clic en la barra o Ctrl+R vuelve a 1.00x"
+          title={t.player.speedTitle}
           onClick={() => setOpen(true)}
         >
           {formatPlaybackRate(rate)}

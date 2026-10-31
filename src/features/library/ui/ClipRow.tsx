@@ -1,6 +1,7 @@
 import type { Ref } from 'react'
 import { formatBytes, formatTime } from '@shared/domain/time'
 import { cx } from '@shared/ui/cx'
+import { useLanguage } from '@shared/ui/useT'
 import { describeRecording, formatRecordedAt, type LibraryClip } from '../domain/libraryClip'
 import styles from './library.module.css'
 
@@ -14,6 +15,8 @@ interface ClipRowProps {
 }
 
 export function ClipRow({ ref, clip, thumbnail, durationSec, active, onOpen }: ClipRowProps) {
+  // The date and the size are written in the language in use.
+  useLanguage()
   const { title, recordedAtMs } = describeRecording(clip.fileName)
   return (
     <li ref={ref}>

@@ -1,3 +1,4 @@
+import { getT } from '@shared/i18n'
 import { spawn } from 'node:child_process'
 import { constants, setPriority } from 'node:os'
 
@@ -18,7 +19,7 @@ interface RunOptions {
 
 const MAX_STDERR = 20_000
 
-const abortError = (): Error => Object.assign(new Error('Operación cancelada'), { name: 'AbortError' })
+const abortError = (): Error => Object.assign(new Error(getT().media.cancelled), { name: 'AbortError' })
 
 /**
  * Runs a process and collects its output. On abort it kills the process and only settles once the

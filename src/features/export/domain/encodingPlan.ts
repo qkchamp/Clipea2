@@ -1,3 +1,5 @@
+import { getT } from '@shared/i18n'
+
 export type VideoCodec = 'hevc' | 'h264' | 'av1'
 export type QualityLevel = 'max' | 'high' | 'light'
 export type QualityGrade = 'excelente' | 'buena' | 'aceptable' | 'baja'
@@ -10,8 +12,8 @@ export function describeEncoding(
   gpu: boolean | null
 ): string {
   const device = gpu === null ? '' : gpu ? ' (GPU)' : ' (CPU)'
-  const mbps = (video.kbps / 1000).toFixed(1).replace('.', ',')
-  return `${video.width}×${video.height} · ${Math.round(video.fps)} fps · ${CODEC_LABEL[video.codec]}${device} · ${mbps} Mbps máx.`
+  const t = getT()
+  return `${video.width}×${video.height} · ${Math.round(video.fps)} fps · ${CODEC_LABEL[video.codec]}${device} · ${t.export.maxMbps(t.format.decimal(video.kbps / 1000, 1))}`
 }
 
 export interface EncodingPreferences {

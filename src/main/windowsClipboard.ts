@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { constants, setPriority } from 'node:os'
 import { clipboard } from 'electron'
+import { getT } from '@shared/i18n'
 
 /**
  * Copies the file itself (CF_HDROP, like Ctrl+C in Explorer) so Ctrl+V in Discord attaches it.
@@ -60,7 +61,7 @@ function startHelper(): Helper {
       child.stdin.end(`${Buffer.from(filePath, 'utf8').toString('base64')}\n`)
       const code = await exited
       clearTimeout(timer)
-      if (code !== 0) throw new Error(stderr.trim() || 'No se pudo copiar el archivo al portapapeles')
+      if (code !== 0) throw new Error(stderr.trim() || getT().system.clipboardFailed)
     }
   }
 }
