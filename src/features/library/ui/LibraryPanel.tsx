@@ -211,7 +211,7 @@ export function LibraryPanel() {
             icon={<Gamepad2 size={18} />}
             title={query ? 'Nada coincide' : 'No hay clips en estas carpetas'}
           >
-            {query ? 'Probá con otro nombre o fecha.' : 'Agregá la carpeta de ShadowPlay en Ajustes o abrí un video suelto.'}
+            {query ? 'Probá con otro nombre o fecha.' : 'Agregá la carpeta donde guardás tus clips o abrí un video suelto.'}
           </EmptyState>
         ) : null}
         {shownClips > 0

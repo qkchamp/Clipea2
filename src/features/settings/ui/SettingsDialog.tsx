@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { CircleCheck, CircleX, FolderOpen, FolderPlus, X } from 'lucide-react'
+import { CircleX, FolderOpen, FolderPlus, X } from 'lucide-react'
 import { api } from '@shared/ui/api'
 import { Badge, Button, IconButton } from '@shared/ui/atoms'
 import { Field, SegmentedControl, Tabs } from '@shared/ui/molecules'
@@ -27,24 +27,47 @@ function FolderField({ label, value, hint, onPick }: { label: string; value: str
   )
 }
 
-/** Every folder the library shows; each one keeps ShadowPlay's one-subfolder-per-game layout. */
+/** "D:\Clips\Valorant" → "Valorant" in "D:\Clips": folders under one parent tell apart by their name. A drive root stays whole. */
+function splitFolder(path: string): { name: string; parent: string } {
+  const at = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'))
+  if (at <= 0 || at === path.length - 1) return { name: path, parent: '' }
+  return { name: path.slice(at + 1), parent: path.slice(0, at) }
+}
+
+const describeFolders = (count: number): string =>
+  count === 0 ? 'Ninguna carpeta todavía' : `${count} ${count === 1 ? 'carpeta' : 'carpetas'}`
+
+/**
+ * Every folder the library shows, in one box: the folders (a scrolling list past four), then a last
+ * row with how many there are and "Agregar carpeta" on the right, like "Cambiar" on the export folder.
+ */
 function LibraryFoldersField({ roots }: { roots: string[] }) {
   const save = (libraryRoots: string[]): void => void useSettingsStore.getState().update({ libraryRoots })
 
   return (
-    <Field label="Carpetas de clips" hint="Donde ShadowPlay / NVIDIA App guarda las grabaciones (una carpeta por juego). La biblioteca las muestra juntas.">
-      <div className={styles.folders}>
-        {roots.map((root) => (
-          <div key={root} className={styles.folder}>
-            <span className={styles.path} title={root}>
-              {root}
-            </span>
-            <IconButton small label="Quitar de la biblioteca (los videos no se borran)" onClick={() => save(roots.filter((other) => other !== root))}>
-              <X size={14} />
-            </IconButton>
-          </div>
-        ))}
-        <div>
+    <Field
+      label="Carpetas de clips"
+      hint="Donde se guardan tus grabaciones, del programa que sea. La biblioteca las muestra juntas, y cada subcarpeta (un juego, por ejemplo) como un grupo."
+    >
+      <div className={styles.folderList}>
+        {roots.length > 0 ? (
+          <ul className={styles.folderRows}>
+            {roots.map((root) => {
+              const { name, parent } = splitFolder(root)
+              return (
+                <li key={root} className={styles.folderRow} title={root}>
+                  <span className={styles.folderName}>{name}</span>
+                  <span className={styles.path}>{parent}</span>
+                  <IconButton small label="Quitar de la biblioteca (los videos no se borran)" onClick={() => save(roots.filter((other) => other !== root))}>
+                    <X size={14} />
+                  </IconButton>
+                </li>
+              )
+            })}
+          </ul>
+        ) : null}
+        <div className={styles.folderFoot}>
+          <span className={styles.folderCount}>{describeFolders(roots.length)}</span>
           <Button size="sm" icon={<FolderPlus size={14} />} onClick={() => void useSettingsStore.getState().addLibraryRoot()}>
             Agregar carpeta
           </Button>
@@ -54,7 +77,7 @@ function LibraryFoldersField({ roots }: { roots: string[] }) {
   )
 }
 
-/** Ajustes › Aceleración por GPU: on by default; off keeps every encode and decode on the CPU. */
+/** Ajustes › Performance › Aceleración por GPU: on by default; off keeps every encode and decode on the CPU. */
 function GpuField({ enabled }: { enabled: boolean }) {
   const encoders = useSettingsStore((state) => state.ffmpeg?.encoders ?? null)
   const gpu = encoders ? decodingGpu(encoders, true) : null
@@ -101,7 +124,7 @@ function ClassicTimelineField({ enabled }: { enabled: boolean }) {
   )
 }
 
-type Section = 'general' | 'timeline'
+type Section = 'general' | 'timeline' | 'performance'
 
 const ENCODER_ROWS = [
   { codec: 'hevc', label: 'H.265' },
@@ -134,11 +157,12 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           onChange={setSection}
           options={[
             { value: 'general', label: 'General' },
-            { value: 'timeline', label: 'Timeline' }
+            { value: 'timeline', label: 'Timeline' },
+            { value: 'performance', label: 'Performance' }
           ]}
         />
 
-        {/* Both sections share one cell, so the dialog keeps the taller one's height and the tabs never move. */}
+        {/* The sections share one cell, so the dialog keeps the tallest one's height and the tabs never move. */}
         <div className={styles.sections}>
           <div className={styles.section} inert={section !== 'general'}>
             <LibraryFoldersField roots={settings.libraryRoots} />
@@ -149,7 +173,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
                 {ffmpeg?.found ? (
                   <>
                     <p className={styles.ok}>
-                      <CircleCheck size={14} /> ffmpeg {ffmpeg.version}
+                      ffmpeg {ffmpeg.version}
                       {outdated && latest ? <Badge tone="warning">Versión vieja · ya salió la {releaseNumber(latest)?.join('.')}</Badge> : null}
                     </p>
                     <p className={styles.path} title={ffmpeg.ffmpegPath ?? ''}>
@@ -198,8 +222,6 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
               </div>
             </Field>
 
-            <GpuField enabled={settings.hardwareAcceleration} />
-
             <p className={styles.note}>
               Límite de Discord sin Nitro: <strong>20 MB por archivo</strong> (subió de 10 MB en agosto de 2026). Clipea2
               apunta al 95% del límite y, si el archivo sale más grande, lo vuelve a codificar más liviano.
@@ -208,6 +230,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
 
           <div className={styles.section} inert={section !== 'timeline'}>
             <ClassicTimelineField enabled={settings.classicTimeline} />
+          </div>
+
+          <div className={styles.section} inert={section !== 'performance'}>
+            <GpuField enabled={settings.hardwareAcceleration} />
           </div>
         </div>
       </div>

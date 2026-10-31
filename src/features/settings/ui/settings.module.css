@@ -8,7 +8,7 @@
   justify-self: start;
 }
 
-/* Both sections in one cell: the dialog keeps the taller one's height. */
+/* The sections in one cell: the dialog keeps the tallest one's height. */
 .sections {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -26,11 +26,69 @@
   visibility: hidden;
 }
 
-.folders {
+/* The clip folders: one box with a field's look, rows split by hairlines. */
+.folderList {
   display: grid;
   /* Without it a long nowrap path widens the track past the body. */
   grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+}
+
+/* Four folders in view; past that the list scrolls (half a row peeks out to say so). */
+.folderRows {
+  max-height: calc(4.5 * 37px - 1px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* 4 + 28 + 4 (+1 line above the next one); text 12 in, like an input's. */
+.folderRow {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  padding: 4px 6px 4px 11px;
+}
+
+.folderRow + .folderRow {
+  border-top: 1px solid var(--border);
+}
+
+/* The folder's own name first, where it is after it in the path's gray: alike folders tell apart. */
+.folderName {
+  flex: 0 1 auto;
+  max-width: 70%;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Same 6 + 28 + 6 as the export folder's row, the button on the right like its "Cambiar". */
+.folderFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 11px;
+}
+
+.folderRows + .folderFoot {
+  border-top: 1px solid var(--border);
+}
+
+.folderCount {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 16px;
 }
 
 /* 1 + 6 + 28 + 6 + 1 = 42 (lg); text 12 in, like an input's. */
@@ -79,10 +137,6 @@
   align-items: center;
   gap: 6px;
   font-weight: 500;
-}
-
-.ok svg {
-  color: var(--success);
 }
 
 .bad {
