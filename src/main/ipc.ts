@@ -30,6 +30,7 @@ export function registerIpc(services: Promise<Services>, getWindow: () => Browse
   handle(IPC.mediaProbe, (s, path: string) => s.prober.probe(path))
   handle(IPC.mediaFrameTimes, (s, path: string) => s.prober.frameTimes(path))
   handle(IPC.mediaThumbnail, async (s, path: string, atSec?: number) => toMediaUrl(await s.thumbnailer.thumbnail(path, atSec)))
+  handle(IPC.mediaPlayableFile, (s, path: string, reencode?: boolean) => s.playback.playableFile(path, reencode === true))
   handle(IPC.mediaFilmstrip, async (s, path: string, count: number) => (await s.thumbnailer.filmstrip(path, count)).map(toMediaUrl))
 
   handle(IPC.exportStart, (s, request: ExportRequest) => ({ jobId: s.exports.start(request) }))

@@ -155,6 +155,7 @@ export const es = {
     sound: 'Sonido',
     volumeTitle: 'Volumen · rueda para ajustar, M silencia',
     cantPlay: 'No se pudo reproducir este archivo. ¿Es un video válido?',
+    converting: (percent: number) => `Preparando este formato para reproducirlo… ${percent}%`,
     /** "Elegí un clip" + "de la biblioteca" (the second part, grayed). */
     pickClip: ['Elegí un clip ', 'de la biblioteca'],
     /** Around the I and O keys. */

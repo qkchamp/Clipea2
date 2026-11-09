@@ -6,6 +6,8 @@ export const IPC = {
   mediaFrameTimes: 'media:frame-times',
   mediaThumbnail: 'media:thumbnail',
   mediaFilmstrip: 'media:filmstrip',
+  mediaPlayableFile: 'media:playable-file',
+  mediaConversionProgress: 'media:conversion-progress',
   exportStart: 'export:start',
   exportCancel: 'export:cancel',
   exportEvent: 'export:event',

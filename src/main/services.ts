@@ -4,7 +4,7 @@ import { app, net, safeStorage } from 'electron'
 import { DiscordWebhooks } from '@features/discord/application/discordWebhooks'
 import { HttpWebhookApi } from '@features/discord/infrastructure/discordWebhookApi'
 import { JsonWebhookStore, type SecretVault } from '@features/discord/infrastructure/jsonWebhookStore'
-import { NO_ENCODERS, type EncoderSupport } from '@features/export/domain/encoderSupport'
+import { gpuFor, NO_ENCODERS, type EncoderSupport } from '@features/export/domain/encoderSupport'
 import { detectEncoders } from '@features/export/infrastructure/encoderDetection'
 import { ExportJobRunner } from '@features/export/infrastructure/exportJobRunner'
 import { FfmpegVideoRenderer } from '@features/export/infrastructure/ffmpegVideoRenderer'
@@ -21,6 +21,8 @@ import {
 } from '@features/media/infrastructure/ffmpegInstaller'
 import { FfmpegThumbnailer } from '@features/media/infrastructure/ffmpegThumbnailer'
 import { FfprobeMediaProber } from '@features/media/infrastructure/ffprobeMediaProber'
+import type { ConversionProgress } from '@features/player/domain/playbackPlan'
+import { FfmpegPlaybackConverter } from '@features/player/infrastructure/ffmpegPlaybackConverter'
 import { JsonSessionStore } from '@features/session/infrastructure/jsonSessionStore'
 import { defaultSettings, JsonSettingsStore } from '@features/settings/infrastructure/jsonSettingsStore'
 import type { ExportEvent, FfmpegStatus } from '@shared/contracts/clipea2Api'
@@ -33,6 +35,8 @@ export interface Services {
   libraryWatcher: FsLibraryWatcher
   prober: FfprobeMediaProber
   thumbnailer: FfmpegThumbnailer
+  /** Copies the player can load for the formats Chromium does not play. */
+  playback: FfmpegPlaybackConverter
   exports: ExportJobRunner
   history: JsonHistoryStore
   discordWebhooks: DiscordWebhooks
@@ -49,6 +53,7 @@ interface Emitters {
   exportEvent: (event: ExportEvent) => void
   libraryChanged: (root: string) => void
   ffmpegInstallProgress: (progress: FfmpegInstallProgress) => void
+  conversionProgress: (progress: ConversionProgress) => void
 }
 
 /** Composition root: wires every adapter to its port. */
@@ -128,6 +133,14 @@ export async function createServices(emit: Emitters): Promise<Services> {
   const thumbnailer = new FfmpegThumbnailer(ffmpegPath, prober, join(cacheDir, 'thumbs'))
   // Old previews go away in the background; the cache would otherwise grow forever.
   setTimeout(() => void thumbnailer.prune().catch(() => undefined), 10_000)
+  const playback = new FfmpegPlaybackConverter({
+    ffmpegPath,
+    prober,
+    gpu: async () => gpuFor(await currentEncoders(), 'h264', (await settings.get()).hardwareAcceleration),
+    cacheDir: join(cacheDir, 'playback'),
+    emit: emit.conversionProgress
+  })
+  setTimeout(() => void playback.prune().catch(() => undefined), 10_000)
 
   const history = new JsonHistoryStore(join(userData, 'history.json'))
   const session = new JsonSessionStore(join(userData, 'session.json'))
@@ -162,6 +175,7 @@ export async function createServices(emit: Emitters): Promise<Services> {
     libraryWatcher,
     prober,
     thumbnailer,
+    playback,
     exports,
     history,
     discordWebhooks,
@@ -171,7 +185,7 @@ export async function createServices(emit: Emitters): Promise<Services> {
     installFfmpeg: installFfmpegNow,
     async shutdown() {
       libraryWatcher.stop()
-      await exports.cancelAll()
+      await Promise.all([exports.cancelAll(), playback.shutdown()])
       await Promise.all([session.flush(), settings.flush(), history.flush()])
     }
   }

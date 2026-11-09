@@ -57,6 +57,13 @@ describe('ShadowPlay file names', () => {
     expect(isVideoFile('a.txt')).toBe(false)
     expect(isVideoFile('golazo.1234abcd.partial.mp4')).toBe(false)
   })
+
+  it('recognises the formats that are converted before playing', () => {
+    for (const name of ['old.avi', 'stream.FLV', 'tv.ts', 'camera.MTS', 'bluray.m2ts', 'dvd.mpg', 'dvd.vob', 'capture.wmv', 'phone.3gp', 'pro.mxf']) {
+      expect(isVideoFile(name)).toBe(true)
+    }
+    expect(isVideoFile('song.mp3')).toBe(false)
+  })
 })
 
 describe('recording labels', () => {

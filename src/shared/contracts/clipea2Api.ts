@@ -8,6 +8,7 @@ import type { LibraryScan } from '@features/library/domain/libraryClip'
 import type { FfmpegInstallProgress } from '@features/media/domain/ffmpegRelease'
 import type { MediaInfo } from '@features/media/domain/mediaInfo'
 import type { Segment } from '@features/montage/domain/montage'
+import type { ConversionProgress } from '@features/player/domain/playbackPlan'
 import type { AppSettings } from '@features/settings/domain/settings'
 
 export interface FfmpegStatus {
@@ -84,6 +85,12 @@ export interface Clipea2Api {
     thumbnail(path: string, atSec?: number): Promise<string>
     /** Media URLs of evenly spaced frames for the timeline. */
     filmstrip(path: string, count: number): Promise<string[]>
+    /**
+     * The file the player loads for `path`: itself, or a copy converted with ffmpeg (made once, then
+     * kept) when Chromium does not play its format. `reencode`: the last resort when that did not play.
+     */
+    playableFile(path: string, reencode?: boolean): Promise<string>
+    onConversionProgress(listener: (progress: ConversionProgress) => void): () => void
   }
   exporter: {
     start(request: ExportRequest): Promise<{ jobId: string }>

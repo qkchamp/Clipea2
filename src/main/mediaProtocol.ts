@@ -9,6 +9,9 @@ import { parseRange } from './httpRange'
 const MIME_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
   '.m4v': 'video/mp4',
+  '.f4v': 'video/mp4',
+  '.3gp': 'video/3gpp',
+  '.3g2': 'video/3gpp2',
   '.mov': 'video/quicktime',
   '.mkv': 'video/x-matroska',
   '.webm': 'video/webm',

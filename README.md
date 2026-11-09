@@ -4,6 +4,8 @@ Recortá, uní, dibujá y mandá tus clips de juegos a Discord sin pasarte del l
 
 Sirve para clips de cualquier app que grabe (NVIDIA ShadowPlay, OBS, Medal, AMD ReLive, Xbox Game Bar, Steam…): MP4, MOV, M4V, MKV y WebM.
 
+También abre lo que el reproductor no sabe leer solo: AVI, FLV, WMV, MPG, VOB, TS, MTS/M2TS, 3GP, OGV y MXF, y códecs como MPEG-2, Xvid/DivX, MJPEG, ProRes, DNxHR, Theora, AC-3, DTS o ALAC. La primera vez que abrís uno de esos, ffmpeg arma una copia para verlo (queda guardada; si la imagen ya se puede leer, solo se copia y tarda segundos). Los cortes se exportan siempre desde el archivo original.
+
 ![logo](resources/icon.png)
 
 ## Qué hace
@@ -52,7 +54,7 @@ src/
   features/
     library/      biblioteca de grabaciones (varias carpetas, agrupado por subcarpeta; entiende los nombres de ShadowPlay)
     media/        probe, tabla de cuadros, miniaturas (adaptadores ffprobe/ffmpeg)
-    player/       velocidad, cuadro a cuadro, reproductor
+    player/       velocidad, cuadro a cuadro, reproductor, copia con ffmpeg de los formatos que Chromium no reproduce
     trimming/     selección inicio/fin y línea de tiempo
     montage/      secuencia de cortes
     annotations/  dibujos, sus tiempos, render a PNG

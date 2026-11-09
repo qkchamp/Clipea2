@@ -147,6 +147,36 @@
   color: #ffb4b8;
 }
 
+/* Same place and size as the error: a video being converted before it can play. */
+.notice {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc-size(fit-content, round(up, size, 2px));
+  margin: 0 auto;
+  padding: 10px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+.notice svg {
+  flex: none;
+  color: var(--accent);
+  animation: noticeSpin 0.9s linear infinite;
+}
+
+@keyframes noticeSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /*
  * PlayerControls: time | transport | tools. Both sides take the same share of the row, so play sits
  * in the middle of the video; a side only grows past its share when the window is too narrow.

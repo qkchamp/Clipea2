@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { FfmpegInstallProgress } from '../features/media/domain/ffmpegRelease'
+import type { ConversionProgress } from '../features/player/domain/playbackPlan'
 import type { Clipea2Api, ExportEvent } from '../shared/contracts/clipea2Api'
 import { IPC } from '../shared/contracts/ipcChannels'
 
@@ -17,7 +18,13 @@ const api: Clipea2Api = {
     probe: (path) => ipcRenderer.invoke(IPC.mediaProbe, path),
     frameTimes: (path) => ipcRenderer.invoke(IPC.mediaFrameTimes, path),
     thumbnail: (path, atSec) => ipcRenderer.invoke(IPC.mediaThumbnail, path, atSec),
-    filmstrip: (path, count) => ipcRenderer.invoke(IPC.mediaFilmstrip, path, count)
+    filmstrip: (path, count) => ipcRenderer.invoke(IPC.mediaFilmstrip, path, count),
+    playableFile: (path, reencode) => ipcRenderer.invoke(IPC.mediaPlayableFile, path, reencode ?? false),
+    onConversionProgress: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: ConversionProgress): void => listener(progress)
+      ipcRenderer.on(IPC.mediaConversionProgress, handler)
+      return () => ipcRenderer.removeListener(IPC.mediaConversionProgress, handler)
+    }
   },
   exporter: {
     start: (request) => ipcRenderer.invoke(IPC.exportStart, request),

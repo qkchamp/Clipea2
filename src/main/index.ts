@@ -73,7 +73,8 @@ if (!app.requestSingleInstanceLock()) {
     services = createServices({
       exportEvent: (event) => mainWindow?.webContents.send(IPC.exportEvent, event),
       libraryChanged: (root) => mainWindow?.webContents.send(IPC.libraryChanged, root),
-      ffmpegInstallProgress: (progress) => mainWindow?.webContents.send(IPC.ffmpegInstallProgress, progress)
+      ffmpegInstallProgress: (progress) => mainWindow?.webContents.send(IPC.ffmpegInstallProgress, progress),
+      conversionProgress: (progress) => mainWindow?.webContents.send(IPC.mediaConversionProgress, progress)
     })
     registerIpc(services, () => mainWindow)
     mainWindow = createWindow()

@@ -4,6 +4,7 @@ import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileExists as exists } from '@shared/infrastructure/fileExists'
 import type { MediaProber, Thumbnailer } from '../application/ports'
+import { pruneCacheDir, type CacheLimits } from './cachePruning'
 import { runProcess } from './processRunner'
 import { TaskQueue } from './taskQueue'
 
@@ -18,11 +19,6 @@ const STRIP_DONE = 'done'
 const KEYFRAME_PASS_MAX_SEC = 150
 /** ffmpeg processes sharing the seeks of a long filmstrip. */
 const STRIP_WORKERS = 4
-
-export interface CacheLimits {
-  maxBytes: number
-  maxAgeMs: number
-}
 
 export const DEFAULT_CACHE_LIMITS: CacheLimits = { maxBytes: 500 * 1024 * 1024, maxAgeMs: 60 * 24 * 60 * 60 * 1000 }
 
@@ -51,14 +47,19 @@ export class FfmpegThumbnailer implements Thumbnailer {
         await mkdir(this.cacheDir, { recursive: true })
         // A library preview does not need an exact frame: the nearest keyframe decodes alone.
         const seek = atSec === undefined ? ['-noaccurate_seek', '-skip_frame', 'nokey'] : []
-        const args = ['-hide_banner', '-loglevel', 'error', ...seek, '-ss', seconds.toFixed(3), '-i', videoPath]
+        const ffmpeg = await this.ffmpegPath()
         // That keyframe may come before the seek point (a short export has only the first one): passthrough
         // keeps it instead of dropping it as too early, which left those clips without a preview.
-        const result = await runProcess(
-          await this.ffmpegPath(),
-          [...args, '-frames:v', '1', '-fps_mode', 'passthrough', '-vf', 'scale=320:-2', '-q:v', '4', '-y', output],
-          { priority: 'background' }
-        )
+        const grab = (from: string[]): ReturnType<typeof runProcess> =>
+          runProcess(
+            ffmpeg,
+            ['-hide_banner', '-loglevel', 'error', ...from, '-i', videoPath, '-frames:v', '1', '-fps_mode', 'passthrough', '-vf', 'scale=320:-2', '-q:v', '4', '-y', output],
+            { priority: 'background' }
+          )
+        let result = await grab([...seek, '-ss', seconds.toFixed(3)])
+        // MPEG-TS and MPG have no index to go back to the keyframe before the seek point: a short clip
+        // with none after it shows its first frame instead.
+        if (atSec === undefined && (result.code !== 0 || !(await exists(output)))) result = await grab([])
         if (result.code !== 0 || !(await exists(output))) throw new Error(result.stderr.trim() || getT().media.thumbnailFailed)
         return output
       })
@@ -126,28 +127,8 @@ export class FfmpegThumbnailer implements Thumbnailer {
   }
 
   /** Drops previews older than `maxAgeMs`, then the oldest ones until the cache fits in `maxBytes`. */
-  async prune(limits: CacheLimits = DEFAULT_CACHE_LIMITS, now = Date.now()): Promise<void> {
-    const entries = await readdir(this.cacheDir, { withFileTypes: true }).catch(() => [])
-    const items: Array<{ path: string; bytes: number; mtimeMs: number }> = []
-    for (const entry of entries) {
-      const path = join(this.cacheDir, entry.name)
-      const info = await stat(path).catch(() => null)
-      if (!info) continue
-      let bytes = info.size
-      if (entry.isDirectory()) {
-        const files = await readdir(path).catch(() => [] as string[])
-        const sizes = await Promise.all(files.map((file) => stat(join(path, file)).then((s) => s.size, () => 0)))
-        bytes = sizes.reduce((total, size) => total + size, 0)
-      }
-      items.push({ path, bytes, mtimeMs: info.mtimeMs })
-    }
-    items.sort((a, b) => a.mtimeMs - b.mtimeMs)
-    let total = items.reduce((sum, item) => sum + item.bytes, 0)
-    for (const item of items) {
-      if (now - item.mtimeMs <= limits.maxAgeMs && total <= limits.maxBytes) break
-      await rm(item.path, { recursive: true, force: true }).catch(() => undefined)
-      total -= item.bytes
-    }
+  prune(limits: CacheLimits = DEFAULT_CACHE_LIMITS, now = Date.now()): Promise<void> {
+    return pruneCacheDir(this.cacheDir, limits, now)
   }
 
   private async cacheKey(videoPath: string, variant: string): Promise<string> {

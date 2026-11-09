@@ -13,3 +13,8 @@ export function canRecover(errorCode: number | undefined, recentAttempts: readon
   if (errorCode === SRC_NOT_SUPPORTED) return false
   return recentAttempts.filter((at) => now - at < RECOVERY_WINDOW_MS).length < MAX_RECOVERIES
 }
+
+/** Chromium has no decoder for what is inside: a copy converted with ffmpeg is what can still play. */
+export function needsConversion(errorCode: number | undefined): boolean {
+  return errorCode === SRC_NOT_SUPPORTED
+}

@@ -13,7 +13,22 @@ const MP4_EXTENSIONS = new Set(['.mp4', '.m4v', '.mov'])
 const MAX_MOOV_BYTES = 256 * 1024 * 1024
 
 const VIDEO_CODECS: Record<string, string> = { avc1: 'h264', avc3: 'h264', hvc1: 'hevc', hev1: 'hevc', av01: 'av1', vp09: 'vp9' }
-const AUDIO_CODECS: Record<string, string> = { mp4a: 'aac', Opus: 'opus', 'ac-3': 'ac3', 'ec-3': 'eac3', fLaC: 'flac' }
+const AUDIO_CODECS: Record<string, string> = {
+  mp4a: 'aac',
+  Opus: 'opus',
+  'ac-3': 'ac3',
+  'ec-3': 'eac3',
+  fLaC: 'flac',
+  '.mp3': 'mp3',
+  // Uncompressed sound as cameras and editors write it in MOV (and "ipcm" in MP4).
+  sowt: 'pcm_s16le',
+  twos: 'pcm_s16be',
+  in24: 'pcm_s24le',
+  in32: 'pcm_s32le',
+  fl32: 'pcm_f32le',
+  ipcm: 'pcm_s16le',
+  lpcm: 'pcm_s16le'
+}
 
 /** Nominal rates players and recorders use; ShadowPlay is VFR around one of them. */
 const INTEGER_RATES = [24, 25, 30, 48, 50, 60, 72, 90, 100, 120, 144, 165, 240]

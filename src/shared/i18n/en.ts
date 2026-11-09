@@ -150,6 +150,7 @@ export const en: Messages = {
     sound: 'Sound',
     volumeTitle: 'Volume · wheel to adjust, M to mute',
     cantPlay: "Couldn't play this file. Is it a valid video?",
+    converting: (percent: number) => `Getting this format ready to play… ${percent}%`,
     pickClip: ['Pick a clip ', 'from the library'],
     dropHint: ['or drop a video here. Mark the start ', ' and the end ', ', then export it for Discord.'],
     previewing: (index: number, total: number) => `Playing the montage · cut ${index}/${total}`,

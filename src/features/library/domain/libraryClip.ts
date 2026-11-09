@@ -1,7 +1,14 @@
 import { formatHourOfDay } from '@shared/domain/time'
 import { getT } from '@shared/i18n'
 
-export const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.mov', '.webm', '.m4v'] as const
+/**
+ * The first five play as they are; the rest (and unusual codecs inside any of them) are converted with
+ * ffmpeg the first time they are opened.
+ */
+export const VIDEO_EXTENSIONS = [
+  '.mp4', '.mkv', '.mov', '.webm', '.m4v',
+  '.avi', '.flv', '.f4v', '.wmv', '.asf', '.mpg', '.mpeg', '.vob', '.ts', '.mts', '.m2ts', '.3gp', '.3g2', '.ogv', '.mxf', '.divx'
+] as const
 
 export interface LibraryClip {
   path: string

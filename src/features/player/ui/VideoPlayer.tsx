@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { CircleAlert, Clapperboard, Square } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { CircleAlert, Clapperboard, LoaderCircle, Square } from 'lucide-react'
 import { toMediaUrl } from '@shared/contracts/mediaUrl'
 import { clamp } from '@shared/domain/time'
 import { getT } from '@shared/i18n'
+import { api } from '@shared/ui/api'
 import { Button, Kbd } from '@shared/ui/atoms'
 import { useT } from '@shared/ui/useT'
 import { snapToFrames } from '@features/annotations/domain/annotation'
@@ -11,7 +12,8 @@ import { useAnnotationStore } from '@features/annotations/ui/annotationStore'
 import { useMediaStore } from '@features/media/ui/mediaStore'
 import { untracked } from '@features/undo/ui/undoStore'
 import { frameDuration, frameStepTarget } from '../domain/frameClock'
-import { canRecover } from '../domain/mediaRecovery'
+import { canRecover, needsConversion } from '../domain/mediaRecovery'
+import { opensDirectly, playbackPlan } from '../domain/playbackPlan'
 import { DrawingToolbar, PlayerOverlay } from './PlayerOverlay'
 import { usePlayerStore, type PlayerController } from './playerStore'
 import { SpeedOsd } from './SpeedOsd'
@@ -19,12 +21,30 @@ import { getFrameClock, useFrameClock } from './useFrameClock'
 import logo from '@shared/ui/assets/logo.svg'
 import styles from './player.module.css'
 
+/** What the <video> loads in place of a file Chromium does not play: its converted copy, or nothing while ffmpeg makes it. */
+interface StandIn {
+  source: string
+  file: string | null
+}
+
+/** A conversion asked for the video on screen; a newer one, or another video, makes its answer stale. */
+interface Conversion {
+  source: string
+  /** The last resort: nothing is left to try if this copy does not play either. */
+  reencode: boolean
+  running: boolean
+}
+
 /** Container of the <video>: owns playback, frame stepping and the drawing overlay. */
 export function VideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [rect, setRect] = useState<VideoRect | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [standIn, setStandIn] = useState<StandIn | null>(null)
+  /** 0..1 while ffmpeg converts the video on screen. */
+  const [converting, setConverting] = useState<number | null>(null)
+  const conversion = useRef<Conversion | null>(null)
   const t = useT()
 
   const sourcePath = usePlayerStore((state) => state.sourcePath)
@@ -35,14 +55,72 @@ export function VideoPlayer() {
   const preview = usePlayerStore((state) => state.preview)
   const drawing = useAnnotationStore((state) => state.drawing)
   const frameIndex = useFrameClock().index
+  // MP4, MKV, MOV and WebM load right away; whether what is inside plays is known a moment later.
+  const playFile = !sourcePath ? null : standIn?.source === sourcePath ? standIn.file : opensDirectly(sourcePath) ? sourcePath : null
+
+  /** Asks for the converted copy and loads it at the same spot. `hide`: nothing of the file itself can show meanwhile. */
+  const convert = useCallback((source: string, reencode: boolean, hide: boolean): void => {
+    const player = usePlayerStore.getState
+    const request: Conversion = { source, reencode, running: true }
+    conversion.current = request
+    if (hide) setStandIn({ source, file: null })
+    setError(null)
+    setConverting(0)
+    api.media
+      .playableFile(source, reencode)
+      .then((file) => {
+        if (conversion.current !== request) return
+        // The copy starts where the file was (a seek still waiting for the first load stays as it is).
+        if (!player().pendingSeek) player().setPendingSeek({ time: player().currentTime, play: player().playing })
+        setStandIn({ source, file })
+        void useMediaStore.getState().ensureFrameIndex(source, file)
+      })
+      .catch((reason: unknown) => {
+        if (conversion.current !== request) return
+        console.warn(`[Clipea2] conversion failed: ${reason instanceof Error ? reason.message : String(reason)}`)
+        setError(getT().player.cantPlay)
+      })
+      .finally(() => {
+        if (conversion.current !== request) return
+        request.running = false
+        setConverting(null)
+      })
+  }, [])
 
   useEffect(() => {
-    if (!sourcePath) return
+    conversion.current = null
+    setStandIn(null)
+    setConverting(null)
     setError(null)
+    if (!sourcePath) return
+    const current = (): boolean => usePlayerStore.getState().sourcePath === sourcePath
     const media = useMediaStore.getState()
-    media.ensureInfo(sourcePath).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : String(reason)))
-    void media.ensureFrameIndex(sourcePath)
-  }, [sourcePath])
+    media
+      .ensureInfo(sourcePath)
+      .then((info) => {
+        if (!current() || conversion.current) return
+        const plan = playbackPlan(info)
+        if (plan === 'direct') return void media.ensureFrameIndex(sourcePath)
+        // A file that only lacks its sound keeps playing while the copy is made.
+        convert(sourcePath, false, plan.video === 'encode' || !opensDirectly(sourcePath))
+      })
+      .catch((reason: unknown) => {
+        if (current()) setError(reason instanceof Error ? reason.message : String(reason))
+      })
+  }, [sourcePath, convert])
+
+  useEffect(
+    () =>
+      api.media.onConversionProgress(({ path, fraction }) => {
+        if (conversion.current?.running && conversion.current.source === path) setConverting(fraction)
+      }),
+    []
+  )
+
+  // React only drops the attribute: without this the element keeps (and keeps playing) the video before.
+  useEffect(() => {
+    if (!playFile) videoRef.current?.load()
+  }, [playFile])
 
   useEffect(() => {
     const video = videoRef.current
@@ -122,7 +200,32 @@ export function VideoPlayer() {
       video.currentTime = time
     }
 
+    /** The file on screen does not play: go for its converted copy, unless that is what just failed. */
+    const retryConverted = (path: string): boolean => {
+      const asked = conversion.current?.source === path ? conversion.current : null
+      // Its copy is already on the way.
+      if (asked?.running) return true
+      if (asked?.reencode) return false
+      convert(path, true, true)
+      return true
+    }
+
+    /** Sound and no picture: Chromium opened the file but has no decoder for its video (a file with sound only is fine). */
+    const checkPicture = (): void => {
+      const path = player().sourcePath
+      if (video.videoWidth || !path) return
+      void useMediaStore
+        .getState()
+        .ensureInfo(path)
+        .then((info) => {
+          if (!info.video || player().sourcePath !== path || video.videoWidth) return
+          if (!retryConverted(path)) setError(getT().player.cantPlay)
+        })
+        .catch(() => undefined)
+    }
+
     const onLoaded = (): void => {
+      checkPicture()
       setError(null)
       lastFrameTime = null
       pendingTarget = null
@@ -170,6 +273,7 @@ export function VideoPlayer() {
         video.load()
         return
       }
+      if (needsConversion(failure?.code) && retryConverted(path)) return
       setError(getT().player.cantPlay)
     }
 
@@ -206,7 +310,9 @@ export function VideoPlayer() {
       ['play', onPlay],
       ['pause', onPause],
       ['ended', onEnded],
-      ['error', onError]
+      ['error', onError],
+      // Nothing loaded (a copy is being made): the drawing layer has no picture to sit on.
+      ['emptied', measure]
     ]
     for (const [name, handler] of listeners) video.addEventListener(name, handler)
     frameRequest = video.requestVideoFrameCallback(onFrame)
@@ -220,7 +326,7 @@ export function VideoPlayer() {
       observer.disconnect()
       player().setController(null)
     }
-  }, [])
+  }, [convert])
 
   const previewItem = preview ? preview.items[preview.index] : null
 
@@ -236,7 +342,7 @@ export function VideoPlayer() {
           if (sourcePath && !event.ctrlKey && event.deltaY !== 0) usePlayerStore.getState().controller?.stepFrame(event.deltaY < 0 ? 1 : -1)
         }}
       >
-        <video ref={videoRef} className={styles.video} src={sourcePath ? toMediaUrl(sourcePath) : undefined} preload="auto" hidden={!sourcePath} />
+        <video ref={videoRef} className={styles.video} src={playFile ? toMediaUrl(playFile) : undefined} preload="auto" hidden={!playFile} />
 
         {!sourcePath ? (
           <div className={styles.placeholder}>
@@ -274,6 +380,10 @@ export function VideoPlayer() {
         {error ? (
           <div className={styles.error} role="alert">
             <CircleAlert size={18} /> {error}
+          </div>
+        ) : converting !== null ? (
+          <div className={styles.notice} role="status">
+            <LoaderCircle size={18} /> {t.player.converting(Math.round(converting * 100))}
           </div>
         ) : null}
       </div>
