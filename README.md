@@ -1,37 +1,36 @@
+<p align="center"><img src="resources/icon.png" width="112" alt="Logo de Clipea2"></p>
+
 # Clipea2
 
 Recortá, uní, dibujá y mandá tus clips de juegos a Discord sin pasarte del límite de tamaño, todo en una sola ventana.
+
+![Clipea2 de punta a punta: buscar un clip por fecha, verlo cuadro a cuadro, recortarlo, dibujarle encima con efectos, armar un montaje, exportarlo y mandarlo a Discord](docs/preview.webp)
+
+[Ver en MP4](docs/preview.mp4). El Discord del video es una simulación con nombres inventados.
 
 Sirve para clips de cualquier app que grabe (NVIDIA ShadowPlay, OBS, Medal, AMD ReLive, Xbox Game Bar, Steam…): MP4, MOV, M4V, MKV y WebM.
 
 También abre lo que el reproductor no sabe leer solo: AVI, FLV, WMV, MPG, VOB, TS, MTS/M2TS, 3GP, OGV y MXF, y códecs como MPEG-2, Xvid/DivX, MJPEG, ProRes, DNxHR, Theora, AC-3, DTS o ALAC. La primera vez que abrís uno de esos, ffmpeg arma una copia para verlo (queda guardada; si la imagen ya se puede leer, solo se copia y tarda segundos). Los cortes se exportan siempre desde el archivo original.
 
-![logo](resources/icon.png)
-
 ## Qué hace
 
-- **Biblioteca**: una o varias carpetas de clips, cada una con sus subcarpetas (por ejemplo, una por juego), con miniaturas y duración. Con los clips de ShadowPlay además muestra el juego y la fecha de grabación.
-- **Reproductor**: `Ctrl+↑/↓` cambia la velocidad de a 0.25x (0.25x–4.00x), `Ctrl+←/→` avanza o retrocede **un cuadro exacto** (usa la tabla real de cuadros: muchos grabadores, como ShadowPlay, graban con cuadros por segundo variables), `Ctrl+R` vuelve a 1.00x.
-- **Recorte**: inicio `I` / fin `O`, campos de tiempo que aceptan `50`, `1:19` o `1m19s`, línea de tiempo con zoom (`Ctrl+rueda`).
+- **Biblioteca**: una o varias carpetas de clips, cada una con sus subcarpetas (por ejemplo, una por juego), con miniaturas y duración. Con los clips de ShadowPlay además muestra el juego y la fecha de grabación. Buscás por nombre, por fecha o por hora: el calendario y el reloj pintan con colores los días y las horas en que más grabaste. Las carpetas se suman desde la misma Biblioteca.
+- **Reproductor**: `Ctrl+↑/↓` cambia la velocidad de a 0.25x (0.25x–4.00x), o la escribís en el mismo botón; `Ctrl+←/→` o la rueda del mouse sobre el video avanzan o retroceden **un cuadro exacto** (usa la tabla real de cuadros: muchos grabadores, como ShadowPlay, graban con cuadros por segundo variables), `Ctrl+R` vuelve a 1.00x.
+- **Recorte**: inicio `I` / fin `O` (marcados en verde y rojo), campos de tiempo que aceptan `50`, `1:19` o `1m19s`, línea de tiempo con zoom (`Ctrl+rueda`) y una regla en la que hacés clic para saltar a ese momento.
 - **Montaje**: `Enter` suma la selección; podés juntar trozos de videos distintos, reordenarlos arrastrando y previsualizarlos seguidos.
 - **Dibujo** (`D`): flecha, círculo, rectángulo, lápiz y texto sobre el cuadro actual. Cada dibujo tiene su **barra en la línea de tiempo**: estirá sus bordes para elegir desde qué cuadro hasta cuál se ve, y con clic derecho lo editás o lo borrás (también con el tacho de la barra de dibujo o Supr). Con el cursor se mueven los dibujos, se les cambia el tamaño desde sus manijas y un doble clic edita un texto. Para **animarlos**: ◆ fija la posición en un cuadro, en otro cuadro lo arrastrás y se desplaza solo entre los dos. Con ✨ elegís **efectos** (aparecer, desvanecer, zoom, deslizar, parpadeo, latido) y cuántos segundos duran, y el último color de la paleta es uno propio que mezclás con RGB. Lo que ves es lo que se exporta.
-- **Exportar a disco** (`Ctrl+E`): elegís dónde guardarlo; H.265 por GPU por defecto (NVIDIA NVENC, AMD AMF o Intel Quick Sync, desactivable en Ajustes). Apunta al 95% del límite y, si igual se pasa, recodifica más liviano. El peso estimado se actualiza en tiempo real.
-- **Mandarlo**: “Copiar para Discord” deja el archivo en el portapapeles (Ctrl+V en Discord), o “Enviar a canal” lo publica directo en un canal mediante un webhook.
+- **Exportar a disco** (`Ctrl+E`): elegís dónde guardarlo; H.265 por GPU por defecto (NVIDIA NVENC, AMD AMF o Intel Quick Sync, desactivable en Ajustes). Apunta al 95% del límite y, si igual se pasa, recodifica más liviano. El peso máximo estimado y la calidad se ven lado a lado y se actualizan en tiempo real.
+- **Mandarlo**: “Copiar para Discord” deja el archivo en el portapapeles (Ctrl+V en Discord), o “Enviar a canal” lo publica directo en un canal mediante un webhook, sin abrir Discord (los canales guardados se pueden editar).
+- **Ventana e idioma**: se achica hasta 600×440 (los paneles laterales pasan a ser cajones) y está en español o en inglés (Ajustes › General).
 
 ### Límite de Discord
 
 Sin Nitro el máximo es **20 MB por archivo** (Discord lo subió de 10 MB en agosto de 2026; [FAQ oficial](https://support.discord.com/hc/en-us/articles/25444343291031-File-Attachments-FAQ)). Clipea2 usa 20 MB y se puede cambiar a 50 MB (Nitro Basic), 10 MB o sin límite.
 
-## Vista previa
-
-![Clipea2 de punta a punta: elegir un clip, recortarlo, dibujarle encima, armar un montaje, exportarlo y mandarlo a Discord](docs/preview.webp)
-
-[Ver en MP4](docs/preview.mp4). El Discord del video es una simulación con nombres inventados.
-
 ## Requisitos
 
 - Windows 10/11, Node 22+.
-- `ffmpeg` y `ffprobe` en el PATH (`winget install Gyan.FFmpeg`). Usa la GPU que encuentre (NVIDIA, AMD o Intel); sin GPU, cae a x264/x265 por CPU.
+- `ffmpeg` y `ffprobe`: si no los encuentra, Clipea2 los instala con un clic (o `winget install Gyan.FFmpeg`). Usa la GPU que encuentre (NVIDIA, AMD o Intel); sin GPU, cae a x264/x265 por CPU.
 
 ## Scripts
 
